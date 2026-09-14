@@ -35,15 +35,12 @@ export const fr: Record<TranslationKey, string> = {
   'project.seeLess': 'Voir moins',
   'section.description': 'Description de la section',
   'section.addDescription': 'Ajouter une description',
-  'connect.demo': 'Découvrir avec des données de démonstration',
-  'connect.demoHint': 'Charge un compte fictif pour explorer l’outil. Rien n’est envoyé à Todoist.',
   'demo.banner': 'Données de démonstration. Rien ici n’est relié à Todoist.',
   'demo.exit': 'Quitter la démo',
   'nav.labels': 'Tags',
   'nav.myProjects': 'Mes projets',
   'nav.addProject': 'Ajouter un projet',
   'nav.addTag': 'Ajouter une étiquette',
-  'labels.subtitle': 'Toutes les étiquettes de votre compte. Mettez-en une en favori pour l’épingler.',
   'labels.favourite': 'Ajouter aux favoris',
   'labels.unfavourite': 'Retirer des favoris',
   'labels.none': 'Aucune étiquette.',
@@ -52,11 +49,6 @@ export const fr: Record<TranslationKey, string> = {
   'project.colour': 'Couleur',
   'project.createSubmit': 'Ajouter le projet',
 
-  /* View subtitles */
-  'week.subtitle': 'Tout ce que vous avez engagé pour cette semaine, au même endroit.',
-  'upcoming.subtitle': 'Les tâches datées à partir de demain.',
-  'someday.subtitle': 'Les tâches sans date qui ne sont pas engagées pour cette semaine.',
-  'inbox.subtitle': 'Tout ce qui n’est pas encore classé dans un projet.',
   'anytime.subtitle': 'Les tâches à réaliser cette semaine sans jour précis.',
 
   /* Groups */
@@ -149,7 +141,6 @@ export const fr: Record<TranslationKey, string> = {
   'task.removeDate': 'Retirer la date',
   'task.deleteTitle': 'Supprimer cette tâche ?',
   'common.confirm': 'Confirmer',
-  'task.moveTo': 'Déplacer vers',
   'task.moveToProject': 'Déplacer vers un projet',
   'task.moveToHint': 'Ajuste la date et l’étiquette week pour que la tâche arrive dans cette vue.',
   'task.movedTo': 'Déplacée vers {destination}',
@@ -171,7 +162,6 @@ export const fr: Record<TranslationKey, string> = {
   'detail.descriptionPlaceholder': 'Ajouter une description',
   'detail.project': 'Projet',
   'detail.section': 'Section',
-  'detail.date': 'Date',
   'detail.startDate': 'Date de début',
   'detail.deadline': 'Échéance',
   'detail.priority': 'Priorité',
@@ -291,7 +281,6 @@ export const fr: Record<TranslationKey, string> = {
 
   /* Settings */
   'settings.title': 'Réglages',
-  'settings.subtitle': 'Ajustez les règles d’organisation sans perdre la simplicité de Todoist.',
   'settings.account': 'Compte',
   'settings.general': 'Général',
   'settings.week': 'Cette semaine',
@@ -331,8 +320,6 @@ export const fr: Record<TranslationKey, string> = {
   'connect.intro': 'Cette application dialogue avec Todoist directement depuis votre navigateur. Votre jeton reste sur cet appareil et n’est envoyé nulle part ailleurs.',
   'connect.tokenLabel': 'Jeton API personnel',
   'connect.tokenPlaceholder': 'Collez votre jeton',
-  'connect.help': 'Vous le trouverez dans Todoist, dans Réglages, puis Intégrations, puis Développeur.',
-  'connect.openSettings': 'Ouvrir les intégrations Todoist',
   'connect.submit': 'Connecter',
   'connect.checking': 'Vérification…',
   'connect.invalid': 'Todoist a refusé ce jeton. Vérifiez-le et réessayez.',

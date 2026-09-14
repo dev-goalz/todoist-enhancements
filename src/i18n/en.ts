@@ -33,15 +33,12 @@ export const en = {
   'project.seeLess': 'See less',
   'section.description': 'Section description',
   'section.addDescription': 'Add a description',
-  'connect.demo': 'Explore with demo data',
-  'connect.demoHint': 'Loads a made-up account so you can look around. Nothing is sent to Todoist.',
   'demo.banner': 'Demo data. Nothing here is connected to Todoist.',
   'demo.exit': 'Leave demo',
   'nav.labels': 'Tags',
   'nav.myProjects': 'My projects',
   'nav.addProject': 'Add project',
   'nav.addTag': 'Add tag',
-  'labels.subtitle': 'Every tag on your account. Star one to pin it to the sidebar.',
   'labels.favourite': 'Add to favourites',
   'labels.unfavourite': 'Remove from favourites',
   'labels.none': 'No tags yet.',
@@ -50,11 +47,6 @@ export const en = {
   'project.colour': 'Colour',
   'project.createSubmit': 'Add project',
 
-  /* View subtitles */
-  'week.subtitle': 'Everything you committed to this week, in one place.',
-  'upcoming.subtitle': 'Dated tasks from tomorrow onwards.',
-  'someday.subtitle': 'Tasks with no date that are not committed to this week.',
-  'inbox.subtitle': 'Everything not yet filed into a project.',
   'anytime.subtitle': 'Tasks to do this week, on no particular day.',
 
   /* Groups */
@@ -147,7 +139,6 @@ export const en = {
   'task.removeDate': 'Remove the date',
   'task.deleteTitle': 'Delete this task?',
   'common.confirm': 'Confirm',
-  'task.moveTo': 'Move to',
   'task.moveToProject': 'Move to project',
   'task.moveToHint': 'Changes the date and the week label so the task lands in that view.',
   'task.movedTo': 'Moved to {destination}',
@@ -169,7 +160,6 @@ export const en = {
   'detail.descriptionPlaceholder': 'Add a description',
   'detail.project': 'Project',
   'detail.section': 'Section',
-  'detail.date': 'Date',
   'detail.startDate': 'Start date',
   'detail.deadline': 'Deadline',
   'detail.priority': 'Priority',
@@ -289,7 +279,6 @@ export const en = {
 
   /* Settings */
   'settings.title': 'Settings',
-  'settings.subtitle': 'Adjust the organisation rules without losing Todoist’s simplicity.',
   'settings.account': 'Account',
   'settings.general': 'General',
   'settings.week': 'My week',
@@ -329,8 +318,6 @@ export const en = {
   'connect.intro': 'This app talks to Todoist straight from your browser. Your token stays on this device and is never sent anywhere else.',
   'connect.tokenLabel': 'Personal API token',
   'connect.tokenPlaceholder': 'Paste your token',
-  'connect.help': 'Find it in Todoist under Settings, then Integrations, then Developer.',
-  'connect.openSettings': 'Open Todoist integrations',
   'connect.submit': 'Connect',
   'connect.checking': 'Checking…',
   'connect.invalid': 'That token was refused by Todoist. Check it and try again.',
