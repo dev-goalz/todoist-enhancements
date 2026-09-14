@@ -3,8 +3,8 @@ import { addDays, format, startOfDay } from 'date-fns';
 import { Icon } from '@/components/Icon';
 import { TaskRow } from '@/components/TaskRow';
 import {
-  Bars, ChartCard, RankedBars, Ring, StatTile, seriesColor,
-  type BarDatum, type RankedDatum,
+  Bars, ChartCard, CompareBars, Donut, Ring, SplitBar, StatTile, seriesColor,
+  type BarDatum, type CompareDatum, type SliceDatum,
 } from '@/components/charts';
 import { useT } from '@/hooks/useT';
 import { useData } from '@/hooks/useData';
@@ -33,7 +33,7 @@ export function DashboardView({ onOpen, onIssues }: DashboardViewProps) {
   const { t, locale } = useT();
   const { snapshot, items, childrenOf } = useData();
   const prefs = useStore((s) => s.prefs);
-  const { data: completed } = useCompleted('month', true);
+  const { data: completed, previous } = useCompleted('month', true);
 
   const roots = useMemo(() => rootItems(items), [items]);
   const week = useMemo(() => weekItems(roots), [roots]);
@@ -62,15 +62,37 @@ export function DashboardView({ onOpen, onIssues }: DashboardViewProps) {
 
   const intl = locale === 'fr' ? 'fr-FR' : 'en-GB';
 
-  const momentum: BarDatum[] = useMemo(() => {
-    const todayKey = format(startOfDay(new Date()), 'yyyy-MM-dd');
-    return summary.byDay.slice(-21).map((day) => ({
-      key: day.date,
-      label: new Intl.DateTimeFormat(intl, { day: 'numeric' }).format(new Date(day.date)),
-      value: day.count,
-      current: day.date === todayKey,
-    }));
-  }, [summary.byDay, intl]);
+  /* The last three weeks, each day set against the same day three weeks
+     earlier. One axis carries both: the dot is a position, not a second scale. */
+  const momentum: CompareDatum[] = useMemo(() => {
+    const today = startOfDay(new Date());
+    const todayKey = format(today, 'yyyy-MM-dd');
+    const SPAN = 21;
+
+    const count = (items: typeof completed) => {
+      const map = new Map<string, number>();
+      for (const item of items) {
+        const key = format(new Date(item.completed_at), 'yyyy-MM-dd');
+        map.set(key, (map.get(key) ?? 0) + 1);
+      }
+      return map;
+    };
+    const current = count(completed);
+    const earlier = count([...previous, ...completed]);
+
+    return Array.from({ length: SPAN }, (_, offset) => {
+      const day = new Date(today.getTime() - (SPAN - 1 - offset) * 86_400_000);
+      const key = format(day, 'yyyy-MM-dd');
+      const before = format(new Date(day.getTime() - SPAN * 86_400_000), 'yyyy-MM-dd');
+      return {
+        key,
+        label: new Intl.DateTimeFormat(intl, { day: 'numeric' }).format(day),
+        value: current.get(key) ?? 0,
+        previous: earlier.get(before) ?? 0,
+        current: key === todayKey,
+      };
+    });
+  }, [completed, previous, intl]);
 
   /** Estimated minutes already committed to each of the next seven days. */
   const weekAhead: BarDatum[] = useMemo(() => {
@@ -90,7 +112,7 @@ export function DashboardView({ onOpen, onIssues }: DashboardViewProps) {
     });
   }, [roots, childrenOf, intl]);
 
-  const openByProject: RankedDatum[] = useMemo(() => {
+  const openByProject: SliceDatum[] = useMemo(() => {
     const counts = new Map<string, number>();
     for (const item of roots) counts.set(item.project_id, (counts.get(item.project_id) ?? 0) + 1);
     return [...counts.entries()]
@@ -159,11 +181,16 @@ export function DashboardView({ onOpen, onIssues }: DashboardViewProps) {
           />
         </section>
 
-        <section className="card w3">
-          <StatTile
-            label={t('insights.focusScore')}
-            value={`${summary.focusScore}%`}
-            hint={t('insights.period.month')}
+        <section className="card w3 focuscardv">
+          <h3>{t('insights.focusScore')}</h3>
+          <p className="hero">{summary.focusScore}%</p>
+          <SplitBar
+            data={([1, 2, 3, 4] as const).map((p) => ({
+              key: `p${p}`,
+              label: `P${p}`,
+              value: summary.priorities[`p${p}` as 'p1'],
+              color: `var(--p${p})`,
+            }))}
           />
         </section>
 
@@ -240,20 +267,23 @@ export function DashboardView({ onOpen, onIssues }: DashboardViewProps) {
           span={6}
           trailing={<span className="kpi-label">{summary.completedCount}</span>}
         >
-          <Bars
+          <CompareBars
             data={momentum}
             height={130}
             labelEvery={3}
             emptyLabel={t('insights.noHistory')}
-            format={(value) => t('metrics.tasks', { count: value })}
+            currentLabel={t('insights.thisPeriod')}
+            previousLabel={t('insights.previousPeriod')}
           />
         </ChartCard>
 
         <ChartCard title={t('dashboard.openByProject')} span={6}>
-          <RankedBars
+          <Donut
             data={openByProject}
             limit={6}
             otherLabel={t('insights.otherProjects')}
+            total={roots.length}
+            caption={t('insights.tasks')}
             emptyLabel={t('task.noTasks')}
           />
         </ChartCard>

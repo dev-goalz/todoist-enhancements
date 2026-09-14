@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { Overlay } from './Overlay';
 import { Icon } from '../Icon';
+import { Bars, SplitBar, type BarDatum, type SliceDatum } from '../charts';
 import { useT } from '@/hooks/useT';
 import { useData } from '@/hooks/useData';
 import { useCompleted } from '@/hooks/useCompleted';
@@ -9,6 +10,7 @@ import { summariseInsights } from '@/domain/insights';
 import { effectiveEstimate, formatDuration } from '@/domain/estimates';
 import { isOverdue, overdueBy } from '@/domain/dates';
 import type { Item } from '@/domain/types';
+import type { TranslationKey } from '@/i18n';
 
 interface InsightsPanelProps {
   open: boolean;
@@ -42,16 +44,26 @@ export function InsightsPanel({
     0,
   );
 
-  const weekBars = useMemo(() => {
-    const last7 = summary.byDay.slice(-7);
-    const max = Math.max(1, ...last7.map((d) => d.count));
-    return last7.map((d) => ({ ...d, height: Math.round((d.count / max) * 100) }));
-  }, [summary.byDay]);
+  const weekBars: BarDatum[] = useMemo(
+    () =>
+      summary.byDay.slice(-7).map((day) => ({
+        key: day.date,
+        label: new Intl.DateTimeFormat(locale === 'fr' ? 'fr-FR' : 'en-GB', { weekday: 'narrow' })
+          .format(new Date(day.date)),
+        value: day.count,
+      })),
+    [summary.byDay, locale],
+  );
 
-  const maxPriority = Math.max(
-    1,
-    summary.priorities.p1, summary.priorities.p2,
-    summary.priorities.p3, summary.priorities.p4,
+  const byPriority: SliceDatum[] = useMemo(
+    () =>
+      ([1, 2, 3, 4] as const).map((p) => ({
+        key: `p${p}`,
+        label: t(`common.p${p}` as TranslationKey),
+        value: summary.priorities[`p${p}` as 'p1'],
+        color: `var(--p${p})`,
+      })),
+    [summary.priorities, t],
   );
 
   return (
@@ -109,18 +121,7 @@ export function InsightsPanel({
             <div className="ibig">{summary.focusScore}%</div>
           </div>
         </div>
-        <div className="priolines">
-          {([1, 2, 3, 4] as const).map((p) => {
-            const value = summary.priorities[`p${p}` as 'p1'];
-            return (
-              <div className="prioline" key={p}>
-                <span>P{p}</span>
-                <i style={{ '--pc': `var(--p${p})`, '--pv': `${Math.round((value / maxPriority) * 100)}%` } as React.CSSProperties} />
-                <b>{value}</b>
-              </div>
-            );
-          })}
-        </div>
+        <SplitBar data={byPriority} />
         <p className="psub" style={{ marginTop: 'var(--s2)' }}>{t('insights.focusExplainer')}</p>
       </div>
 
@@ -141,21 +142,12 @@ export function InsightsPanel({
         ) : weekBars.length === 0 ? (
           <p className="psub">{t('insights.noHistory')}</p>
         ) : (
-          <>
-            <div className="bars" style={{ height: 88 }}>
-              {weekBars.map((bar) => (
-                <i className="fill" key={bar.date} style={{ height: `${bar.height}%` }} />
-              ))}
-            </div>
-            <div className="barlabels">
-              {weekBars.map((bar) => (
-                <span key={bar.date}>
-                  {new Intl.DateTimeFormat(locale === 'fr' ? 'fr-FR' : 'en-GB', { weekday: 'short' })
-                    .format(new Date(bar.date))}
-                </span>
-              ))}
-            </div>
-          </>
+          <Bars
+            data={weekBars}
+            height={88}
+            emptyLabel={t('insights.noHistory')}
+            format={(value) => t('metrics.tasks', { count: value })}
+          />
         )}
       </div>
 

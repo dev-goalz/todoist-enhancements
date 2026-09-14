@@ -231,8 +231,8 @@ ul{margin:0;padding:0;list-style:none}
 .btn.primary{border-radius:var(--r-ctl)}
 
 /* metric line — same three facts, same order, on every list view */
-.metrics,.count,.gcount,.gtime,.gdate,.est,.loadpill,.fcount,.capacity,.barlabels,.minifacts strong,
-.latelist time,.prow,.prioline,.loadweek,.kpi-value,.ibig,.attn-n{font-variant-numeric:tabular-nums}
+.metrics,.count,.gcount,.gtime,.gdate,.est,.loadpill,.fcount,.capacity,.minifacts strong,
+.latelist time,.prow,.loadweek,.kpi-value,.ibig,.attn-n{font-variant-numeric:tabular-nums}
 .metrics{display:flex;align-items:center;flex-wrap:wrap;gap:14px;margin-bottom:var(--s5);
   color:var(--muted);font-size:var(--fs-13)}
 .metrics b{color:var(--text);font-weight:600;font-variant-numeric:tabular-nums}
@@ -500,15 +500,6 @@ ul{margin:0;padding:0;list-style:none}
 .goalcopy{color:var(--muted);font-size:var(--fs-12);line-height:1.55}
 .goalcopy b{display:block;color:var(--ok);font-size:var(--fs-13)}
 
-/* charts: shared bar component, accent reserved for "today / selected" */
-.bars{display:flex;align-items:flex-end;gap:6px;height:104px;margin-top:var(--s3)}
-.bars i{flex:1;min-height:4px;border-radius:3px 3px 2px 2px;background:var(--c-track)}
-.bars i.fill{background:#cdd8ca}
-.bars i.now{background:var(--accent)}
-.barlabels{display:flex;margin-top:6px;color:var(--faint);font-size:10px}
-.barlabels span{flex:1;text-align:center}
-.barlabels .now{color:var(--accent);font-weight:700}
-
 .progress-rows{display:grid;gap:var(--s4);margin-top:var(--s3)}
 .prow{display:grid;grid-template-columns:150px minmax(60px,1fr) 40px;align-items:center;gap:var(--s3);font-size:var(--fs-13)}
 .prow > span:first-child{display:flex;align-items:center;gap:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -562,11 +553,6 @@ ul{margin:0;padding:0;list-style:none}
 .kpi-value{margin-top:6px;font-size:var(--fs-26);font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
 .kpi-delta{margin-top:4px;display:inline-flex;align-items:center;gap:3px;color:var(--ok);font-size:var(--fs-11);font-weight:600}
 
-.priolines{display:grid;gap:10px;margin-top:var(--s3)}
-.prioline{display:grid;grid-template-columns:24px 1fr 34px;align-items:center;gap:var(--s2);
-  color:var(--muted);font-size:var(--fs-12)}
-.prioline i{height:8px;border-radius:var(--r-full);background:linear-gradient(90deg,var(--pc) var(--pv),var(--c-track) var(--pv))}
-.prioline b{color:var(--text);text-align:right;font-weight:600;font-variant-numeric:tabular-nums}
 
 /* ==========================================================================
    10. SETTINGS
@@ -674,7 +660,7 @@ kbd{padding:2px 5px;border:1px solid var(--border-strong);border-radius:var(--r-
   border-radius:var(--r-lg);background:var(--surface);text-align:left}
 .icard:hover{border-color:var(--border-strong)}
 .ikicker{color:var(--muted);font-size:var(--fs-11);font-weight:700;letter-spacing:.03em}
-.icard.late{border-color:#f3d8d4;background:#fdfaf9}
+.icard.late{border-color:transparent;background:var(--accent-wash-deep)}
 .icard.late .ikicker{color:var(--accent)}
 .ihead{display:flex;align-items:flex-start;justify-content:space-between;gap:var(--s3);margin-bottom:var(--s3)}
 .ibig{font-size:var(--fs-26);font-weight:700;letter-spacing:-.02em}
