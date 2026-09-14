@@ -260,8 +260,8 @@ export function Sidebar({
 
       <div className="side-foot">
         <button className="addbtn" onClick={onAddTask}>
-          <Icon name="plus" />
           {t('nav.addTask')}
+          <Icon name="plus" />
         </button>
         {/* Status and the issues badge share the last line, baseline aligned. */}
         <div className="footrow">

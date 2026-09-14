@@ -337,9 +337,9 @@
 .metric .ic{color:var(--faint)}
 
 /* Display leads the controls line; Insights follows it in the accent colour. */
-.btn.accent{color:var(--accent-dark);border-color:var(--border-strong)}
+.btn.accent{color:var(--accent);border-color:var(--accent);background:var(--accent-tint)}
 .btn.accent .ic{color:var(--accent)}
-.btn.accent:hover{background:var(--accent-soft);border-color:var(--accent)}
+.btn.accent:hover{background:#ffe4e2;border-color:var(--accent)}
 
 /* ==========================================================================
    Composer — one labelled control per thing a task can carry
@@ -591,21 +591,17 @@
 /* ---------- Behind schedule and Quick read as callouts ---------- */
 .group.accent-late,
 .group.accent-quick{
-  padding:var(--s4);
-  /* The bleed covers the border as well as the padding, so the text inside
-     lands on exactly the same left edge as an unframed section. */
-  margin-inline:calc((var(--s4) + 1px) * -1);
-  border:1px solid;
+  padding:var(--s4) 20px;
+  /* The bleed covers the padding, so the text inside lands on exactly the
+     same left edge as an unframed section. */
+  margin-inline:-20px;
+  border:0;
   border-radius:var(--r-lg);
 }
-.group.accent-late{
-  background:#fdf4f3;
-  border-color:#f3d9d6;
-}
-.group.accent-quick{
-  background:#f2f7fd;
-  border-color:#d6e4f6;
-}
+.group.accent-late{background:var(--accent-wash)}
+.group.accent-quick{background:#f5f8fd}
+/* A count sitting on a wash needs its own chip, or it disappears. */
+.group.accent-late .gcount{color:var(--accent-dark);background:var(--accent-badge)}
 /* Inside a callout the heading no longer needs its own rule to stand out. */
 .group.accent-late .ghead,
 .group.accent-quick .ghead{border-bottom-color:transparent}
