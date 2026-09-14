@@ -143,7 +143,7 @@ export const useStore = create<AppState>((set, get) => ({
       connected: true,
       ready: true,
       syncState: 'idle',
-      snapshot: buildDemoSnapshot(),
+      snapshot: buildDemoSnapshot(get().prefs.locale),
       pendingCount: 0,
     });
   },
@@ -233,6 +233,9 @@ export const useStore = create<AppState>((set, get) => ({
   setLocale(locale) {
     get().setPrefs({ locale });
     document.documentElement.lang = locale;
+    // The demo account is written in the interface language, so switching
+    // language rebuilds it rather than leaving half the screen translated.
+    if (get().demo) set({ snapshot: buildDemoSnapshot(locale) });
   },
 
   /**

@@ -59,36 +59,45 @@ export function ProjectView({
   const sorted = (list: typeof scoped) => sortItems(list, current.sort, childrenOf);
 
   const sectionGroups = useMemo(
-    () => [
-      ...sections.map((section) => ({
+    () => {
+      const grouped = sections.map((section) => ({
         id: section.id,
         title: section.name,
-        description: section.description ?? '',
+        description: (section.description ?? '') as string | null,
         items: sorted(scoped.filter((i) => i.section_id === section.id)),
-      })),
-      {
-        id: 'none',
-        title: t('group.noSection'),
-        description: null as string | null,
-        items: sorted(scoped.filter((i) => !i.section_id)),
-      },
-    ],
+      }));
+
+      const loose = sorted(scoped.filter((i) => !i.section_id));
+      // With no sections at all there is nothing to distinguish, so the list
+      // is shown plainly rather than under a "no section" heading.
+      if (sections.length === 0) {
+        return [{ id: 'none', title: '', description: null as string | null, items: loose }];
+      }
+      return [
+        ...grouped,
+        { id: 'none', title: t('group.noSection'), description: null as string | null, items: loose },
+      ];
+    },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [sections, scoped, current.sort, childrenOf, t],
   );
 
   const boardColumns = useMemo(
     () =>
-      sectionGroups.map((group) => ({
-        id: group.id,
-        title: group.title,
-        items: group.items,
-        dropTarget: {
-          kind: 'section' as const,
-          sectionId: group.id === 'none' ? null : group.id,
-          projectId,
-        },
-      })),
+      sectionGroups
+        // An empty "no section" column is noise; a real section stays, because
+        // an empty column of your own is still somewhere to drop work.
+        .filter((group) => group.id !== 'none' || group.items.length > 0)
+        .map((group) => ({
+          id: group.id,
+          title: group.title,
+          items: group.items,
+          dropTarget: {
+            kind: 'section' as const,
+            sectionId: group.id === 'none' ? null : group.id,
+            projectId,
+          },
+        })),
     [sectionGroups, projectId],
   );
 

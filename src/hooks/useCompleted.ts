@@ -15,6 +15,7 @@ export type Period = 'day' | 'week' | 'month' | 'quarter' | 'year';
 export function useCompleted(period: Period, enabled: boolean) {
   const connected = useStore((s) => s.connected);
   const demo = useStore((s) => s.demo);
+  const locale = useStore((s) => s.prefs.locale);
   const [data, setData] = useState<CompletedItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -34,7 +35,7 @@ export function useCompleted(period: Period, enabled: boolean) {
 
     if (demo) {
       const cutoff = since.getTime();
-      setData(buildDemoCompleted().filter((c) => new Date(c.completed_at).getTime() >= cutoff));
+      setData(buildDemoCompleted(locale).filter((c) => new Date(c.completed_at).getTime() >= cutoff));
       setLoading(false);
       return;
     }
@@ -53,7 +54,7 @@ export function useCompleted(period: Period, enabled: boolean) {
       });
 
     return () => controller.abort();
-  }, [period, enabled, connected, demo]);
+  }, [period, enabled, connected, demo, locale]);
 
   return { data, loading, error };
 }

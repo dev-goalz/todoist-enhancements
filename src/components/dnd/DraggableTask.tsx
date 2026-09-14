@@ -19,7 +19,7 @@ export function DraggableTask({ item, childrenOf, onOpen, showProject }: Draggab
   const { setNodeRef, attributes, listeners, isDragging } = useDraggable({ id: item.id });
 
   return (
-    <div ref={setNodeRef} className={isDragging ? 'dragging' : undefined}>
+    <div ref={setNodeRef} className={`taskwrap${isDragging ? ' dragging' : ''}`}>
       <TaskRow
         item={item}
         childrenOf={childrenOf}

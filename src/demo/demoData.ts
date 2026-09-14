@@ -3,11 +3,15 @@ import type {
   CompletedItem, Item, Label, Project, Section, Snapshot, TodoistUser,
 } from '@/domain/types';
 import { emptySnapshot } from '@/domain/types';
+import type { Locale } from '@/i18n';
 
 /**
  * A made-up account, so the product can be shown or tried without connecting
- * anyone's real Todoist. Nothing here is ever written back: the demo snapshot
- * lives in memory and the store refuses to send commands while it is loaded.
+ * anyone's real Todoist.
+ *
+ * Everything here is invented for the demo: no name, project or task is taken
+ * from a real account. The snapshot lives in memory only, and the store
+ * refuses to send commands or cache anything while it is loaded.
  */
 
 /** Deterministic per session, so a demo can be talked through without it shifting. */
@@ -19,47 +23,154 @@ function makeRandom(seed: number) {
   };
 }
 
-const TASKS = [
-  ['Répondre à Amélie sur la sélection print', 'Relire le fil et proposer **deux options** avant vendredi.'],
-  ['Relire le brief de la refonte', 'Vérifier que la cible et le périmètre correspondent à ce qui a été validé.'],
-  ['Préparer la revue hebdomadaire', '- Relever les blocages\n- Ranger la boîte de réception\n- Fixer les trois priorités'],
-  ['Envoyer la facture de septembre', ''],
-  ['Choisir la police du site', 'Comparer deux familles sur un écran réel, pas seulement dans Figma.'],
-  ['Arroser les plantes', ''],
-  ['Sortir les poubelles', ''],
-  ['Sauvegarder les photos du week-end', 'Copier sur le disque externe puis vérifier un fichier au hasard.'],
-  ['Appeler le garage', ''],
-  ['Mettre à jour le portfolio', 'Ajouter les deux derniers projets et raccourcir les textes.'],
-  ['Lire le rapport annuel', ''],
-  ['Réserver le vol de novembre', 'Comparer les horaires du matin, éviter la correspondance courte.'],
-  ['Trier la boîte mail', ''],
-  ['Préparer la démo client', 'Une page par sujet, pas de jargon, finir par les prochaines étapes.'],
-  ['Automatiser la relance de factures', ''],
-  ['Réponse du syndic sur les travaux', ''],
-  ['Corriger le formulaire de contact', 'Le champ téléphone accepte encore du texte.'],
-  ['Écrire la note de cadrage', 'Contexte, décision attendue, options, recommandation.'],
-  ['Ranger le bureau', ''],
-  ['Préparer le déjeuner de samedi', ''],
-  ['Revoir les estimations du sprint', ''],
-  ['Publier l’article sur les habitudes', 'Relire à voix haute avant de publier.'],
-  ['Changer les draps', ''],
-  ['Vérifier les sauvegardes du serveur', ''],
-  ['Planifier les congés de décembre', ''],
-] as const;
+interface Copy {
+  person: string;
+  email: string;
+  projects: {
+    inbox: string;
+    personal: string;
+    home: string;
+    site: string;
+    siteDescription: string;
+    homeDescription: string;
+    clients: string;
+    clientA: string;
+    clientB: string;
+  };
+  sections: Array<{ name: string; description?: string }>;
+  parent: { title: string; description: string; children: string[] };
+  tasks: Array<[string, string]>;
+  completed: string[];
+}
 
-const COMPLETED_TITLES = [
-  'Relire la proposition', 'Envoyer le devis', 'Appeler la banque', 'Ranger le dressing',
-  'Mettre à jour le CV', 'Publier la newsletter', 'Payer la taxe foncière',
-  'Réparer le vélo', 'Trier les photos', 'Préparer la réunion', 'Faire les courses',
-  'Répondre aux candidatures', 'Nettoyer la base de données', 'Relancer le client',
-  'Écrire le compte-rendu', 'Réserver le restaurant', 'Commander les cartes de visite',
-];
+const COPY: Record<Locale, Copy> = {
+  fr: {
+    person: 'Camille Durand',
+    email: 'camille@demo.test',
+    projects: {
+      inbox: 'Boîte de réception',
+      personal: 'Perso',
+      home: 'Logement',
+      site: 'Site vitrine',
+      siteDescription:
+        'Refonte complète du site.\n\n- Nouvelle grille\n- Textes raccourcis\n- Blog migré',
+      homeDescription: 'Entretien, courses et petites réparations.',
+      clients: 'Missions',
+      clientA: 'Librairie Vermeil',
+      clientB: 'Studio Ardoise',
+    },
+    sections: [
+      { name: 'À faire', description: 'Tout ce qui est prêt à démarrer.' },
+      { name: 'En cours', description: 'Deux tâches maximum ici, sinon plus rien n’avance.' },
+      { name: 'À relire' },
+    ],
+    parent: {
+      title: 'Refonte de la page d’accueil',
+      description: 'Trois blocs, une seule idée par bloc.',
+      children: ['Écrire les textes', 'Choisir les images', 'Intégrer la maquette'],
+    },
+    tasks: [
+      ['Relire le devis avant envoi', 'Vérifier les quantités et **la date de validité**.'],
+      ['Préparer la réunion de lancement', '- Rappeler le contexte\n- Présenter le planning\n- Lister les décisions à prendre'],
+      ['Envoyer la facture du mois', ''],
+      ['Choisir la police du site', 'Comparer deux familles sur un écran réel, pas dans l’éditeur.'],
+      ['Arroser les plantes', ''],
+      ['Sortir le recyclage', ''],
+      ['Sauvegarder les photos', 'Copier sur le disque externe puis vérifier un fichier au hasard.'],
+      ['Appeler le garage', ''],
+      ['Mettre à jour le portfolio', 'Ajouter les deux derniers projets et raccourcir les textes.'],
+      ['Lire le rapport du trimestre', ''],
+      ['Réserver le train de novembre', 'Éviter la correspondance de moins de vingt minutes.'],
+      ['Trier la boîte mail', ''],
+      ['Préparer la démonstration', 'Un sujet par écran, finir par les prochaines étapes.'],
+      ['Automatiser les relances', ''],
+      ['Attendre le retour du syndic', ''],
+      ['Corriger le formulaire de contact', 'Le champ téléphone accepte encore du texte.'],
+      ['Écrire la note de cadrage', 'Contexte, décision attendue, options, recommandation.'],
+      ['Ranger le bureau', ''],
+      ['Préparer le déjeuner de samedi', ''],
+      ['Revoir les estimations', ''],
+      ['Publier l’article sur les habitudes', 'Relire à voix haute avant de publier.'],
+      ['Changer les draps', ''],
+      ['Vérifier les sauvegardes', ''],
+      ['Planifier les congés', ''],
+      ['Commander les cartes de visite', ''],
+    ],
+    completed: [
+      'Relire la proposition', 'Envoyer le devis', 'Appeler la banque', 'Ranger le dressing',
+      'Mettre à jour le CV', 'Publier la lettre d’information', 'Payer la cotisation',
+      'Réparer le vélo', 'Trier les photos', 'Préparer la réunion', 'Faire les courses',
+      'Répondre aux candidatures', 'Nettoyer la base de données', 'Relancer le client',
+      'Écrire le compte-rendu', 'Réserver le restaurant', 'Renouveler le domaine',
+    ],
+  },
+  en: {
+    person: 'Robin Hale',
+    email: 'robin@demo.test',
+    projects: {
+      inbox: 'Inbox',
+      personal: 'Personal',
+      home: 'Home',
+      site: 'Website',
+      siteDescription:
+        'Full rebuild of the site.\n\n- New grid\n- Shorter copy\n- Blog migrated',
+      homeDescription: 'Upkeep, shopping and small repairs.',
+      clients: 'Client work',
+      clientA: 'Vermilion Books',
+      clientB: 'Slate Studio',
+    },
+    sections: [
+      { name: 'To do', description: 'Everything ready to start.' },
+      { name: 'In progress', description: 'Two tasks here at most, or nothing moves.' },
+      { name: 'To review' },
+    ],
+    parent: {
+      title: 'Rebuild the home page',
+      description: 'Three blocks, one idea each.',
+      children: ['Write the copy', 'Choose the images', 'Build the layout'],
+    },
+    tasks: [
+      ['Check the quote before sending', 'Verify the quantities and **the expiry date**.'],
+      ['Prepare the kick-off meeting', '- Recap the context\n- Walk through the plan\n- List the decisions needed'],
+      ['Send this month’s invoice', ''],
+      ['Choose the site typeface', 'Compare two families on a real screen, not in the editor.'],
+      ['Water the plants', ''],
+      ['Take out the recycling', ''],
+      ['Back up the photos', 'Copy to the external drive, then open one file to check.'],
+      ['Call the garage', ''],
+      ['Update the portfolio', 'Add the last two projects and cut the copy back.'],
+      ['Read the quarterly report', ''],
+      ['Book the November train', 'Avoid any connection under twenty minutes.'],
+      ['Clear the mailbox', ''],
+      ['Prepare the demo', 'One subject per screen, finish with next steps.'],
+      ['Automate the reminders', ''],
+      ['Waiting on the building manager', ''],
+      ['Fix the contact form', 'The phone field still accepts letters.'],
+      ['Write the scoping note', 'Context, decision needed, options, recommendation.'],
+      ['Tidy the desk', ''],
+      ['Plan Saturday lunch', ''],
+      ['Revisit the estimates', ''],
+      ['Publish the piece on habits', 'Read it aloud before publishing.'],
+      ['Change the bedding', ''],
+      ['Check the backups', ''],
+      ['Plan the time off', ''],
+      ['Order business cards', ''],
+    ],
+    completed: [
+      'Review the proposal', 'Send the quote', 'Call the bank', 'Sort the wardrobe',
+      'Update the CV', 'Publish the newsletter', 'Pay the subscription',
+      'Fix the bike', 'Sort the photos', 'Prepare the meeting', 'Do the shopping',
+      'Reply to applicants', 'Clean the database', 'Follow up with the client',
+      'Write the notes', 'Book the restaurant', 'Renew the domain',
+    ],
+  },
+};
 
-export function buildDemoSnapshot(seed = 20260914): Snapshot {
+export function buildDemoSnapshot(locale: Locale = 'en', seed = 20260914): Snapshot {
+  const copy = COPY[locale] ?? COPY.en;
   const random = makeRandom(seed);
   const today = startOfDay(new Date());
   const iso = (d: Date) => format(d, 'yyyy-MM-dd');
-  const pick = <T,>(list: readonly T[]): T => list[Math.floor(random() * list.length)];
 
   const projects: Record<string, Project> = {};
   const addProject = (
@@ -73,43 +184,38 @@ export function buildDemoSnapshot(seed = 20260914): Snapshot {
     };
   };
 
-  addProject('inbox', 'Boîte de réception', 'charcoal', 0, { inbox_project: true });
-  addProject('perso', 'Personnel', 'orange', 1, { is_favorite: true });
-  addProject('maison', 'Maison', 'green', 2, { description: 'Entretien, courses et petites réparations.' });
-  addProject('site', 'www.exemple.fr', 'blue', 3, {
+  addProject('inbox', copy.projects.inbox, 'charcoal', 0, { inbox_project: true });
+  addProject('personal', copy.projects.personal, 'orange', 1, { is_favorite: true });
+  addProject('home', copy.projects.home, 'green', 2, { description: copy.projects.homeDescription });
+  addProject('site', copy.projects.site, 'blue', 3, {
     is_favorite: true,
-    description: 'Refonte du portfolio.\n\n- Nouvelle grille\n- Textes raccourcis\n- Blog migré',
+    description: copy.projects.siteDescription,
   });
-  addProject('clients', 'Clients', 'grey', 4, { is_folder: true });
-  addProject('client-a', 'Atelier Berger', 'grape', 5, { parent_id: 'clients' });
-  addProject('client-b', 'Studio Nord', 'teal', 6, { parent_id: 'clients' });
+  addProject('clients', copy.projects.clients, 'grey', 4, { is_folder: true });
+  addProject('client-a', copy.projects.clientA, 'grape', 5, { parent_id: 'clients' });
+  addProject('client-b', copy.projects.clientB, 'teal', 6, { parent_id: 'clients' });
 
-  const sections: Record<string, Section> = {
-    's-todo': {
-      id: 's-todo', project_id: 'site', name: 'À faire', section_order: 0,
-      is_archived: false, is_deleted: false,
-      description: 'Tout ce qui est prêt à démarrer.',
-    },
-    's-doing': {
-      id: 's-doing', project_id: 'site', name: 'En cours', section_order: 1,
-      is_archived: false, is_deleted: false,
-      description: 'Deux tâches maximum ici, sinon plus rien n’avance.',
-    },
-    's-review': {
-      id: 's-review', project_id: 'site', name: 'À relire', section_order: 2,
-      is_archived: false, is_deleted: false,
-    },
-  };
+  const sections: Record<string, Section> = {};
+  ['s-todo', 's-doing', 's-review'].forEach((id, index) => {
+    const source = copy.sections[index];
+    sections[id] = {
+      id,
+      project_id: 'site',
+      name: source.name,
+      section_order: index,
+      is_archived: false,
+      is_deleted: false,
+      ...(source.description ? { description: source.description } : {}),
+    };
+  });
 
   const labels: Record<string, Label> = {
     l1: { id: 'l1', name: 'quick', color: 'sky_blue', item_order: 1, is_deleted: false, is_favorite: true },
     l2: { id: 'l2', name: 'week', color: 'olive_green', item_order: 2, is_deleted: false, is_favorite: false },
     l3: { id: 'l3', name: 'automation', color: 'grape', item_order: 3, is_deleted: false, is_favorite: true },
     l4: { id: 'l4', name: 'waiting', color: 'charcoal', item_order: 4, is_deleted: false, is_favorite: true },
-    l5: { id: 'l5', name: 'rappel', color: 'magenta', item_order: 5, is_deleted: false, is_favorite: false },
   };
 
-  const projectIds = ['inbox', 'perso', 'maison', 'site', 'client-a', 'client-b'];
   const items: Record<string, Item> = {};
   let counter = 0;
 
@@ -147,81 +253,85 @@ export function buildDemoSnapshot(seed = 20260914): Snapshot {
     date: time ? `${iso(date)}T${time}` : iso(date),
     timezone: null,
     string: recurring ?? iso(date),
-    lang: 'fr',
+    lang: locale,
     is_recurring: !!recurring,
   });
+
+  const everyWeek = locale === 'fr' ? 'tous les lundis' : 'every Monday';
 
   // A spread that exercises every rule: overdue, quick, timed, week, backlog.
   const plan: Array<Partial<Item>> = [
     { due: due(subDays(today, 4)), priority: 4, labels: ['est-40'] },
     { due: due(subDays(today, 1)), priority: 3, labels: ['est-25'] },
     { due: due(today), priority: 2, labels: ['quick', 'est-10'] },
-    { due: due(today), priority: 1, labels: ['est-3'], project_id: 'maison' },
-    { due: due(today, undefined, 'tous les lundis'), priority: 1, labels: ['est-5'], project_id: 'maison' },
+    { due: due(today), priority: 1, labels: ['est-3'], project_id: 'home' },
+    { due: due(today, undefined, everyWeek), priority: 1, labels: ['est-5'], project_id: 'home' },
     { due: due(today, '14:00:00'), priority: 3, labels: ['est-60'] },
     { due: due(today, '09:30:00'), priority: 2, labels: ['est-30'], project_id: 'client-a' },
     { labels: ['week', 'est-90'], priority: 4, project_id: 'site', section_id: 's-doing' },
-    { labels: ['week', 'est-45'], priority: 3, project_id: 'site', section_id: 's-doing' },
+    { labels: ['week', 'est-45'], priority: 3, project_id: 'site', section_id: 's-todo' },
     { labels: ['week'], priority: 2, project_id: 'site', section_id: 's-todo' },
     { due: due(addDays(today, 1)), priority: 3, labels: ['est-20'] },
-    { due: due(addDays(today, 2)), priority: 4, labels: ['est-120'], deadline: { date: iso(addDays(today, 6)), lang: 'fr' } },
+    { due: due(addDays(today, 2)), priority: 4, labels: ['est-120'], deadline: { date: iso(addDays(today, 6)), lang: locale } },
     { due: due(addDays(today, 3)), priority: 1, labels: ['est-15'], project_id: 'client-b' },
     { due: due(addDays(today, 5)), priority: 2, project_id: 'site', section_id: 's-review' },
-    { due: due(addDays(today, 9)), priority: 1, labels: ['est-45'], project_id: 'perso' },
-    { labels: ['automation'], priority: 2, project_id: 'perso' },
-    { labels: ['waiting'], priority: 1, project_id: 'maison' },
-    { priority: 1, project_id: 'perso' },
-    { priority: 1, labels: ['est-25'], project_id: 'maison' },
+    { due: due(addDays(today, 9)), priority: 1, labels: ['est-45'], project_id: 'personal' },
+    { labels: ['automation'], priority: 2, project_id: 'personal' },
+    { labels: ['waiting'], priority: 1, project_id: 'home' },
+    { priority: 1, project_id: 'personal' },
+    { priority: 1, labels: ['est-25'], project_id: 'home' },
     { priority: 2, project_id: 'site', section_id: 's-todo', labels: ['est-60'] },
     { priority: 1, project_id: 'client-a' },
     { priority: 3, project_id: 'client-b', labels: ['est-180'] },
     { priority: 1 },
-    { priority: 1, labels: ['est-30'], project_id: 'perso' },
-    { priority: 1, project_id: 'maison' },
+    { priority: 1, labels: ['est-30'], project_id: 'personal' },
+    { priority: 1, project_id: 'home' },
   ];
 
   plan.forEach((shape, index) => {
-    const [content, description] = TASKS[index % TASKS.length];
-    addItem({
-      content,
-      description,
-      project_id: shape.project_id ?? pick(projectIds),
-      ...shape,
-    } as Partial<Item> & { content: string });
+    const [content, description] = copy.tasks[index % copy.tasks.length];
+    addItem({ content, description, ...shape } as Partial<Item> & { content: string });
   });
 
   // One parent with subtasks, so hierarchy and rolled-up estimates are visible.
   const parent = addItem({
-    content: 'Refonte de la page d’accueil',
-    description: 'Trois blocs, une seule idée par bloc.',
+    content: copy.parent.title,
+    description: copy.parent.description,
     project_id: 'site',
     section_id: 's-doing',
     priority: 4,
     labels: ['week'],
   });
-  addItem({ content: 'Écrire les textes', parent_id: parent.id, project_id: 'site', labels: ['est-45'] });
-  addItem({ content: 'Choisir les images', parent_id: parent.id, project_id: 'site', labels: ['est-30'] });
-  addItem({ content: 'Intégrer la maquette', parent_id: parent.id, project_id: 'site', labels: ['est-120'] });
+  const childEstimates = ['est-45', 'est-30', 'est-120'];
+  copy.parent.children.forEach((title, index) => {
+    addItem({
+      content: title,
+      parent_id: parent.id,
+      project_id: 'site',
+      section_id: 's-doing',
+      labels: [childEstimates[index]],
+    });
+  });
 
   // A couple of deliberate contradictions, so the conflicts centre has content.
   addItem({
-    content: 'Préparer le point mensuel',
-    project_id: 'perso',
+    content: copy.tasks[1][0],
+    project_id: 'personal',
     priority: 3,
     due: due(addDays(today, 2)),
     labels: ['week', 'est-45'],
   });
   addItem({
-    content: 'Classer les reçus',
-    project_id: 'perso',
+    content: copy.tasks[17][0],
+    project_id: 'personal',
     priority: 1,
     labels: ['quick', 'est-25'],
   });
 
   const user: TodoistUser = {
     id: 'demo-user',
-    email: 'demo@exemple.fr',
-    full_name: 'Alex Martin',
+    email: copy.email,
+    full_name: copy.person,
     inbox_project_id: 'inbox',
     tz_info: { timezone: 'Europe/Paris', hours: 2, minutes: 0, is_dst: 1 },
     start_day: 1,
@@ -243,10 +353,11 @@ export function buildDemoSnapshot(seed = 20260914): Snapshot {
 }
 
 /** A year of plausible history, so Insights has something to chart. */
-export function buildDemoCompleted(seed = 20260914): CompletedItem[] {
+export function buildDemoCompleted(locale: Locale = 'en', seed = 20260914): CompletedItem[] {
+  const copy = COPY[locale] ?? COPY.en;
   const random = makeRandom(seed + 7);
   const today = startOfDay(new Date());
-  const projectIds = ['inbox', 'perso', 'maison', 'site', 'client-a', 'client-b'];
+  const projectIds = ['inbox', 'personal', 'home', 'site', 'client-a', 'client-b'];
   const out: CompletedItem[] = [];
   let id = 0;
 
@@ -268,7 +379,7 @@ export function buildDemoCompleted(seed = 20260914): CompletedItem[] {
         user_id: 'demo-user',
         project_id: projectIds[Math.floor(random() * projectIds.length)],
         section_id: null,
-        content: COMPLETED_TITLES[Math.floor(random() * COMPLETED_TITLES.length)],
+        content: copy.completed[Math.floor(random() * copy.completed.length)],
         completed_at: at.toISOString(),
         priority: (1 + Math.floor(random() * 4)) as 1 | 2 | 3 | 4,
         labels: random() > 0.35 ? [`est-${minutes}`] : [],
