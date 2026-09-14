@@ -7,106 +7,125 @@ Screenshot slots are in square brackets, remove them when you post.
 
 ## Title
 
-**This is what would make Todoist perfect for me**
+**I redesigned Todoist the way I think it should look**
+
+Your version was "the way it should look like", which mixes up two ways of
+saying it. Either of these is correct, pick whichever sounds more like you:
+
+- I redesigned Todoist the way I think it should look
+- This is what I think Todoist should look like
+
+The first keeps your phrasing. The second is closer to how these posts usually
+get titled over there.
 
 ---
 
 ## Post
 
-I've used Todoist for years and I'm not leaving it. But there were a handful of
-things I kept wishing for, so I built a front end for my own account using the
-API. The important part, and the reason it's actually usable day to day: I
-didn't invent any new concepts. Every feature here maps onto something Todoist
-already has. Time estimates are labels like `@est-40`. "This week without a
-specific day" is the `@week` label with no date. Quick wins are `@quick`.
-Everything else runs on projects, sections, priorities, dates and deadlines as
-they already exist. Todoist stays the source of truth, everything I do here
-writes straight back, and if I stopped using this tomorrow my data would still
-read perfectly fine in the normal app.
+Todoist has a great design, and I've built my whole system around it over the
+years ([here's how I use it](LINK TO YOUR WORKFLOW POST)). A while back I
+started playing with their API for a small side thing called Todoist Rewind
+([post here](LINK TO YOUR REWIND POST)), and once you've spent a weekend inside
+someone's API you start having opinions. Eventually I thought: why not just
+build myself the interface I keep wishing for?
+
+So that's what this is. A different front end for my own Todoist account. Not a
+replacement, not a competitor. Everything still lives in Todoist, everything I
+do here is written straight back through the API, and the official apps keep
+working exactly as before. The only thing that changes is what I'm looking at.
+
+One thing before the screenshots, because I'd rather say it than have twelve
+people say it for me: **the design is not good yet.** I haven't done the design
+pass. What you're looking at is the structure, the logic and the behaviour, all
+of it working against real data, but the visual side is essentially a detailed
+wireframe. Treat it as a proof of concept. If the ideas hold up, the polish
+comes after.
 
 [screenshot: My week, the main view]
 
-### The things I wished for
+### What's in it
 
-- Time estimates, written as `@est-40` for forty minutes or `@est-90` for an hour and a half. The label is never shown as a tag, it renders as "40 min" with a clock. You hover a task and type 25, or 1h15, or 90 min
-- A load percentage on every view, so a page tells me if it actually fits. Grey under 80%, amber to 100%, red above
-- Daily capacity I set per weekday. Mine is five hours, because a working day isn't eight hours of tasks
-- Estimates that roll up, so a parent with no estimate shows the sum of its subtasks
-- A count of unestimated tasks that's clickable, giving me just those tasks with one small field each so I can fill a whole page in twenty seconds
-- "Anytime this week", meaning `@week` with no date. Work I've committed to this week but haven't pinned to a day. Todoist gives me today and it gives me a backlog, with nothing in between
-- A quick section that catches anything under five minutes or labelled `@quick`, in its own callout
-- A behind-schedule callout with one button to move everything to today
-- A real backlog view, `@week`-less and dateless, with no percentage because a backlog has no deadline to measure against
+- Time estimates. This is the thing I wanted most and the reason the rest exists. An estimate is a label, `@est-40` for forty minutes, `@est-90` for an hour and a half. It never shows up as a tag, it renders as "40 min" with a small clock. You hover a task, type 25 or 1h15 or 90 min, and it sorts out the format. I did try the native duration field first, but duration is really about putting a task in a time slot, and most of my work isn't scheduled, it just takes a while.
 
-[screenshot: the Anytime this week section and the load line]
+- A load percentage on every view. Once tasks have estimates, every page can tell you whether it actually fits. The header reads how many tasks, how much time that adds up to, and what share of your capacity that is. Grey under 80%, amber up to 100, red above. My old failure mode was looking at nine tasks, thinking "that's a normal Tuesday", and discovering at six in the evening that nine tasks was six hours of work.
 
-### Things it refuses to do for me
+- Capacity you set per weekday. Mine is five hours, not eight, because a working day isn't eight hours of tasks and pretending otherwise is how my weeks kept breaking. Yours might be three, or nine. The point is that the number is yours and everything measures against it.
 
-- It never silently fixes my data. A sidebar badge collects contradictions and asks rather than guesses
-- The contradictions it catches: two estimate labels on one task, an estimate that isn't a number, a date and `@week` at the same time, a `@quick` task estimated at 25 minutes, a parent and its subtasks both estimated
-- Each one is offered with the two or three choices that match what I might have meant. Remove the label or remove the date. Keep 45 minutes or keep an hour
-- Tasks with no estimate live in a separate tab that isn't called errors, because a missing estimate isn't a mistake
+- A shortcut for filling in estimates. The count of unestimated tasks is clickable. It gives you a list of exactly those tasks, one small field each, and you can tab straight down it. A page goes from half-filled to done in about twenty seconds. Without this I'd have abandoned the whole estimate habit inside a week.
+
+- Anytime this week. Tasks carrying `@week` with no date at all. This is work I've committed to this week but deliberately haven't pinned to a day. Todoist gives you today, and it gives you a backlog, and there's nothing in between for the thing you know you'll get to by Friday. This section changed how I plan more than anything else here.
+
+[screenshot: the Anytime this week section]
+
+- My week replaces Today. The home view holds today plus that undated week work, and today is ordered the way I actually move through a day. Anything late first, in its own callout with a button to move it all forward. Then quick things. Then today's untimed tasks. Then today's timed ones last, because those are appointments rather than decisions.
+
+- A quick section. Anything labelled `@quick` or estimated under five minutes gets collected together. There's a particular kind of afternoon where you have twenty minutes and no brain left, and this is the section for it.
+
+- A place for contradictions, which never fixes them for you. A small badge collects tasks that argue with themselves. Two estimate labels on one task. A date and `@week` at the same time. A `@quick` task you've estimated at 25 minutes. A parent and its subtasks both estimated. Each one is shown with the two or three choices that match what you might have meant, and nothing changes until you pick one. An app that quietly tidies my data behind my back is an app I stop trusting about a week later.
 
 [screenshot: the conflicts panel]
 
-### Interface changes
+- Tasks without estimates are listed separately, and that tab isn't called errors. A task without an estimate isn't wrong. It just isn't filled in yet, and the wording matters more than it sounds like it should.
 
-- Today is gone as a standalone view. The home view is My week, holding today plus the undated `@week` work
-- Today is ordered the way I work through a day: late, then quick, then untimed, then timed last because those are appointments
-- One rule sorts everything, and a real date always beats `@week`
-- Dragging does exactly one thing per destination. Today sets today's date and removes `@week`. Anytime clears the date and adds `@week`. Someday clears both. A day column sets that date. A tag adds itself without touching the others
-- Everything is undoable from the bar that appears after
-- The same destinations exist as a plain menu on each row, because dragging on a phone is miserable
-- List, board and calendar per page rather than globally, with the board only where sections exist
-- One Display button for presentation, grouping, sorting and filters, filters as real checkboxes
-- Every setting remembered per view, because a client project isn't looked at the way a week is
-- Descriptions render their Markdown, so bold is bold and lists are lists. Project and section descriptions are editable too
-- Subtasks open by default, and a parent plus its subtasks stay one card on a board
-- Projects and tags in their own Todoist colours everywhere
-- Karma rank in the sidebar with a bar to the next one
-- Add a task straight into a section from that section
-- Confirmations inside the app, no browser popups
-- French and English
+- Dragging that means one specific thing per destination. Drop something on today and it gets today's date and loses `@week`. Drop it on anytime and it loses the date and gains the label. Drop it on someday and it loses both. Drop it on a tag and it gains that tag without disturbing the others. Everything is undoable from the bar that appears afterwards, and because dragging on a phone is genuinely unpleasant, every task also has a plain menu with the same destinations.
 
-[screenshot: the Display panel]
+- View settings that are remembered per page. The way I look at a client project has nothing to do with how I look at my week, so list, board, calendar, grouping, sorting and filters are all stored per view rather than globally. It's behind one Display button, with filters as real checkboxes so you can see what's switched on.
 
-### The stats side
+- Descriptions that render their Markdown. Bold is bold, lists are lists, links are links. Editing shows you the source, reading shows you the result. Project and section descriptions are editable too, which I kept expecting to exist already.
 
-- Built on the same idea as a smaller thing I made a while back, Todoist Rewind
-- Completed tasks over any period from today to a year
-- Which hours of the day I actually finish things
-- Breakdowns by project and by priority
-- Estimate coverage, and how much estimated time is still sitting in the backlog
-- A focus score that weighs each finished task by its priority. A week on P1s reads 100, a week on P4s reads 25. Blunt, but it answers whether I did the work that mattered or the work that was easy
-- A logbook grouped by day, with filters
+- A stats side, grown out of Todoist Rewind. Completed tasks over any period, which hours of the day you actually finish things, breakdowns by project and priority, and a focus score that weighs each finished task by its priority. A week spent on P1s reads 100, a week spent on P4s reads 25. It's a blunt measure and I like it for that, because it answers whether I did the work that mattered or the work that was easy.
 
 [screenshot: insights]
 
-### How it runs
+- Smaller things that add up. Subtasks open by default. Projects and tags in their own Todoist colours everywhere. Karma rank in the sidebar. Adding a task straight into a section. Confirmations inside the app instead of browser popups. It installs as a PWA and works offline. French and English.
 
-- No server, no database, no account. The browser talks to the Todoist API directly, which their CORS setup allows, including the sync endpoint
-- My token is entered once and stays on my device. Everything else sits in IndexedDB
-- Reads use a sync token, so after the first load only what changed comes down
-- Writes go out as sync commands and show immediately, rolling back if Todoist refuses them
-- Offline, changes queue and go out when I'm back
-- It installs as a PWA
-- There's a demo mode with a made up account and a year of invented history, so you can click through everything without handing over a token
+### Why it's actually compatible
 
-### What I'd like to hear
+This is the part I think matters most, and the reason I'd trust it with my own
+account.
 
-- Does the label trick for estimates bother anyone? I still go back and forth on whether I should have fought harder to make native duration work
-- Is five hours a sane daily default, or is that just me and my particular brand of optimism?
-- What would you put in "anytime this week" that I haven't thought of? That one changed how I plan more than anything else here
+Every single feature translates to something that already exists in Todoist's
+back end. Nothing here is stored in a private database that only my version
+understands. What decides whether a task sits in Someday or in Anytime this week
+is the `@week` label. Estimates are labels. Quick is a label. Everything else
+runs on projects, sections, priorities, dates and deadlines exactly as they
+already are.
 
-Happy to answer anything about the API side. The sync layer took longer than the
-whole interface did.
+Which means two things. The official apps keep working normally while I use
+this, because there's nothing for them to fail to understand. And if I dropped
+this front end tomorrow, my account would still make complete sense in Todoist.
+No migration, no export, no lock-in. The worst case is that I have some labels I
+no longer use.
+
+On the technical side there's no server and no database. The browser talks to
+the Todoist API directly, your token stays on your device, and the local copy
+lives in the browser's own storage. Changes queue up when you're offline and go
+out when you're back.
+
+There's a demo mode with a made up account and a year of invented history, so
+anyone can click through the whole thing without handing over a token.
+
+### If you'd want this
+
+I built it for myself, and right now it's just running on my machine. If enough
+people would actually use it, I'll do the design pass properly and put it
+somewhere public.
+
+In the meantime I'd like to hear a few things. Does the label approach for
+estimates bother anyone, or does it seem reasonable? Is five hours a sane
+default daily capacity or is that just my particular brand of optimism? And what
+would you put in "anytime this week" that I haven't thought of?
+
+Happy to answer anything about the API side too. The sync layer took me longer
+than the entire interface did.
 
 ---
 
 ## Before you post
 
-- **Check Doist's trademark and developer terms.** The name mustn't suggest an official product. Leading with your own name is safer than "Enhancements for Todoist".
-- Read the subreddit sidebar the day you post. Self-promotion rules expect substance over a bare link, which this has, but rules move.
-- Post it as a gallery. This kind of post lives or dies on the first image, so lead with My week full of colour and a load percentage sitting in the amber band.
+- Fill in the two links at the top, to your workflow post and your Todoist Rewind post.
+- **Check Doist's trademark and developer terms before making anything public.** The name mustn't suggest an official product. Leading with your own name is safer than "Enhancements for Todoist".
+- Saying the design isn't finished protects the post. People will still tell you the design isn't finished, but they'll tell you nicely, and the comments will be about the ideas.
+- Post it as a gallery. Lead with My week, full of colour, with a load percentage sitting in the amber band.
 - Weekday morning US time gives the widest window.
-- If you cross-post to r/productivity, cut the interface and how-it-runs lists. That audience wants the idea, not the controls.
+- If you want the feature names to stand out more, bold the first few words of each bullet. I left them plain so the list reads as writing rather than a spec sheet, but it's a fair trade either way.
