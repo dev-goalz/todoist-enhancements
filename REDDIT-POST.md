@@ -22,24 +22,36 @@ get titled over there.
 
 ## Post
 
-Todoist has a great design, and I've built my whole system around it over the
-years ([here's how I use it](LINK TO YOUR WORKFLOW POST)). A while back I
-started playing with their API for a small side thing called Todoist Rewind
-([post here](LINK TO YOUR REWIND POST)), and once you've spent a weekend inside
-someone's API you start having opinions. Eventually I thought: why not just
-build myself the interface I keep wishing for?
+Two disclaimers before anything else, because that title is deliberately
+provocative and I'd rather set expectations myself.
+
+First, the design isn't refined. I haven't done the design pass at all. What
+you're looking at is structure, logic and behaviour running against real data,
+with the visual side sitting somewhere between a proof of concept and a very
+detailed wireframe. It's a base, not a finished look.
+
+Second, and more importantly: I'm not claiming Doist should ship any of this.
+I'm one person building for exactly one user, which is an absurdly easy problem
+compared to theirs. They're supporting millions of people with completely
+different ways of working, across a dozen platforms, without breaking anyone's
+existing setup, while staying simple enough that a newcomer isn't frightened off
+on day one. Half of what's below would be wrong for most of their users. I get
+to be opinionated precisely because I don't carry any of that.
+
+With that said, here's what I'd want.
+
+Todoist has a genuinely great design, and I've built my whole system around it
+over the years ([here's how I use it](https://www.reddit.com/r/todoist/comments/1fit8rq/i_created_the_perfect_todoist_workflow_for_me/)).
+A while back I started playing with their API for a small side thing that
+reworked the logbook ([post here](https://www.reddit.com/r/todoist/comments/1wak3s3/todoists_logbook_finally_got_the_update_it_needed/)),
+and once you've spent a weekend inside someone's API you start having opinions.
+Eventually I thought: why not just build myself the interface I keep wishing
+for?
 
 So that's what this is. A different front end for my own Todoist account. Not a
 replacement, not a competitor. Everything still lives in Todoist, everything I
 do here is written straight back through the API, and the official apps keep
 working exactly as before. The only thing that changes is what I'm looking at.
-
-One thing before the screenshots, because I'd rather say it than have twelve
-people say it for me: **the design is not good yet.** I haven't done the design
-pass. What you're looking at is the structure, the logic and the behaviour, all
-of it working against real data, but the visual side is essentially a detailed
-wireframe. Treat it as a proof of concept. If the ideas hold up, the polish
-comes after.
 
 [screenshot: My week, the main view]
 
@@ -73,7 +85,7 @@ comes after.
 
 - Descriptions that render their Markdown. Bold is bold, lists are lists, links are links. Editing shows you the source, reading shows you the result. Project and section descriptions are editable too, which I kept expecting to exist already.
 
-- A stats side, grown out of Todoist Rewind. Completed tasks over any period, which hours of the day you actually finish things, breakdowns by project and priority, and a focus score that weighs each finished task by its priority. A week spent on P1s reads 100, a week spent on P4s reads 25. It's a blunt measure and I like it for that, because it answers whether I did the work that mattered or the work that was easy.
+- A stats side, grown out of the logbook project linked up top. Completed tasks over any period, which hours of the day you actually finish things, breakdowns by project and priority, and a focus score that weighs each finished task by its priority. A week spent on P1s reads 100, a week spent on P4s reads 25. It's a blunt measure and I like it for that, because it answers whether I did the work that mattered or the work that was easy.
 
 [screenshot: insights]
 
@@ -123,9 +135,8 @@ than the entire interface did.
 
 ## Before you post
 
-- Fill in the two links at the top, to your workflow post and your Todoist Rewind post.
 - **Check Doist's trademark and developer terms before making anything public.** The name mustn't suggest an official product. Leading with your own name is safer than "Enhancements for Todoist".
-- Saying the design isn't finished protects the post. People will still tell you the design isn't finished, but they'll tell you nicely, and the comments will be about the ideas.
+- The two disclaimers do a lot of work. The provocative title will still pull people in, and the opening stops the thread turning into a pile-on about either the visuals or the presumption of telling Doist their job.
 - Post it as a gallery. Lead with My week, full of colour, with a load percentage sitting in the amber band.
 - Weekday morning US time gives the widest window.
 - If you want the feature names to stand out more, bold the first few words of each bullet. I left them plain so the list reads as writing rather than a spec sheet, but it's a fair trade either way.
