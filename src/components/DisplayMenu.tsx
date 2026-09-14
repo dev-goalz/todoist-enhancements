@@ -21,7 +21,6 @@ interface DisplayMenuProps {
 const MODE_ICON: Record<DisplayMode, IconName> = {
   list: 'list',
   board: 'board',
-  calendar: 'calendar',
   focus: 'stack',
 };
 

@@ -145,9 +145,6 @@ export function ProjectView({
   }
 
   // A Kanban is only offered where sections exist to give it columns.
-  const modes = sections.length > 0
-    ? (['list', 'board', 'calendar'] as const)
-    : (['list', 'calendar'] as const);
 
   return (
     <div className="page">
@@ -164,7 +161,7 @@ export function ProjectView({
           <>
             <DisplayMenu
               viewKey={viewKey}
-              modes={[...modes]}
+              modes={['list', 'board']}
               groups={['none', 'scheduled', 'priority', 'label', 'estimate', 'day']}
             />
             <button className="btn accent" onClick={onInsights}>

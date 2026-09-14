@@ -1,12 +1,12 @@
 {
   "name": "todoist-enhancements",
   "private": true,
-  "version": "0.7.0",
+  "version": "0.8.1",
   "engines": {
     "node": ">=20"
   },
   "type": "module",
-  "description": "Enhancements for Todoist — an alternative, local-first Todoist client.",
+  "description": "A different front end for Todoist, built around planning a week.",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",

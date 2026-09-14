@@ -31,6 +31,11 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+        // A new build takes effect on the next reload instead of sitting behind
+        // the old one until every tab has been closed.
+        skipWaiting: true,
+        clientsClaim: true,
+        cleanupOutdatedCaches: true,
         // The Todoist API is never cached: the app owns its own offline cache in IndexedDB.
         navigateFallbackDenylist: [/^\/api/],
         runtimeCaching: [],

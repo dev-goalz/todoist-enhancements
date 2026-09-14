@@ -131,7 +131,14 @@ export function TaskGroup({
   );
 
   if (!dropTarget) return body(false);
-  return <Droppable target={dropTarget}>{({ isOver }) => body(isOver)}</Droppable>;
+  /* Several sections can offer the same destination — Behind schedule, Quick
+     and Today all mean "today" — and droppables sharing an id all report
+     themselves as hovered at once. The title separates them. */
+  return (
+    <Droppable target={dropTarget} scope={`group:${sectionId ?? title ?? ''}`}>
+      {({ isOver }) => body(isOver)}
+    </Droppable>
+  );
 }
 
 /**

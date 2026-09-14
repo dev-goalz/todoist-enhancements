@@ -435,7 +435,13 @@
 /* ==========================================================================
    Charts — thin marks, recessive axes, a read-out under every plot
    ========================================================================== */
-.chart{display:grid;gap:6px}
+.chart{display:grid;gap:6px;min-width:0}
+.chart-plot,.chart-axis{min-width:0}
+/* A chart with two dozen marks can reach a width its card cannot give it. It
+   scrolls inside its own card rather than past the edge of the page. */
+.chart-plot{overflow-x:auto;scrollbar-width:none}
+.chart-plot::-webkit-scrollbar{display:none}
+.chart-axis span{min-width:0}
 .chart-plot{
   display:flex;align-items:flex-end;gap:2px;   /* 2px surface gap between fills */
   padding-top:4px;
@@ -837,13 +843,14 @@
 .fselect-label{font-size:var(--fs-11);font-weight:600;color:var(--faint)}
 .fselect-face{
   display:flex;align-items:center;justify-content:space-between;gap:var(--s2);
+  min-width:0;max-width:100%;
   min-height:34px;padding:0 10px;border:1px solid var(--border-strong);
   border-radius:var(--r-ctl);background:var(--surface);
   font-size:var(--fs-13);font-weight:600;letter-spacing:-.02em;color:var(--text);
   transition:border-color .14s ease-out,background .14s ease-out;
 }
 .fselect-face .ic{color:var(--muted);flex:0 0 auto}
-.fselect-value{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fselect-value{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .fselect:hover .fselect-face{border-color:var(--accent);background:var(--accent-tint)}
 /* The native control still runs the interaction; it is simply invisible. */
 .fselect select{
@@ -992,6 +999,10 @@
 /* The title column takes the room the actions leave, so a project's
    description reads as prose instead of a narrow ribbon beside the buttons. */
 .phead-text{flex:1 1 auto;min-width:0}
+/* A narrow column wraps the controls under the title instead of pushing them
+   off the page. */
+.phead{flex-wrap:wrap}
+.pactions{flex-wrap:wrap;max-width:100%}
 .phead .psub{max-width:none}
 /* A project description is editable, so it needs the full measure to type in. */
 .phead .psub .descwrap,
@@ -1008,7 +1019,12 @@
    ========================================================================== */
 /* Nothing at rest; under the pointer, a rule marking exactly where the new
    section will land. */
-.addsection-slot{margin:2px 0}
+.addsection-slot{margin:2px 0;transition:height .14s ease-out}
+/* While a section is in flight every slot becomes a real target. */
+.addsection-slot.armed{height:44px;display:flex;align-items:center}
+.addsection-slot.armed .addsection{opacity:.35}
+.addsection-slot.armed .addsection-label{visibility:hidden}
+.addsection-slot.armed.over .addsection{opacity:1}
 .addsection{
   display:flex;align-items:center;gap:10px;width:100%;
   height:20px;padding:0;
@@ -1130,18 +1146,30 @@
 .namepicker button[aria-selected="true"]{background:var(--accent-soft);color:var(--accent-dark)}
 .namepicker .hash{width:18px;height:18px;font-size:var(--fs-12)}
 
-/* An empty description is an offer, not a statement: it waits under the
-   pointer, and takes no room while it waits, so the title sits on top of the
-   numbers rather than a line of blank space. */
-.descwrap.unset{display:grid;grid-template-rows:0fr;transition:grid-template-rows .14s ease-out}
-.descwrap.unset .descview{
-  min-height:0;overflow:hidden;padding-block:0;
-  opacity:0;transition:opacity .12s ease-out;
+/* ---------- A description in a page header ---------- */
+/* One line, always visible, with the whole thing on hover. */
+.descwrap{position:relative;max-width:100%}
+.descline{
+  display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  max-width:100%;
 }
-.phead:hover .descwrap.unset,
-.descwrap.unset:focus-within{grid-template-rows:1fr}
-.phead:hover .descwrap.unset .descview,
-.descwrap.unset:focus-within .descview{opacity:1;padding-block:2px}
+.phead .descview{display:block;max-width:min(72ch,100%);text-align:left}
+
+.deschint{
+  position:absolute;z-index:60;top:calc(100% + 4px);left:-6px;
+  width:max-content;max-width:min(64ch,72vw);max-height:40vh;overflow-y:auto;
+  padding:12px 14px;border:1px solid var(--border);border-radius:12px;
+  background:var(--surface);box-shadow:var(--sh-md);
+  color:var(--text);font-size:var(--fs-13);line-height:1.6;
+  opacity:0;visibility:hidden;transform:translateY(-2px);
+  transition:opacity .12s ease-out,transform .12s ease-out,visibility .12s;
+}
+/* The panel is a sibling inside the hovered wrapper, so moving the pointer
+   into it keeps it open and its links can be clicked. */
+.descwrap:hover .deschint,
+.descwrap:focus-within .deschint{opacity:1;visibility:visible;transform:none}
+.deschint .md a{color:var(--accent-dark);text-decoration:underline}
+.deschint .md > :first-child{margin-top:0}
 
 /* Tag pickers float above their dialog instead of growing it. */
 .prop .tagpicker,

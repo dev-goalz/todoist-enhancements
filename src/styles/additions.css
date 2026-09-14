@@ -161,105 +161,6 @@
 .focusqueue h5{font-size:var(--fs-11);font-weight:600;color:var(--faint);
   text-transform:uppercase;letter-spacing:.04em;margin-bottom:var(--s2)}
 
-/* Calendar mode */
-.calgrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:1px;
-  background:var(--border);border:1px solid var(--border);
-  border-radius:var(--r-md);overflow:hidden;margin-top:var(--s5)}
-.calhead{background:var(--subtle);padding:8px;font-size:var(--fs-11);
-  font-weight:600;color:var(--faint);text-align:center;text-transform:uppercase}
-.calcell{background:var(--surface);min-height:120px;padding:6px;display:grid;
-  grid-template-rows:auto 1fr;gap:4px;align-content:start}
-.calcell.other{background:var(--subtle)}
-.calcell .caldate{font-size:var(--fs-11);color:var(--muted);font-weight:600}
-.calcell.today .caldate{color:var(--accent-dark)}
-.calchip{
-  display:block;width:100%;padding:3px 6px;border-radius:var(--r-xs);
-  font-size:var(--fs-11);line-height:1.3;text-align:left;
-  background:var(--subtle);color:var(--text);
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-}
-.calchip:hover{background:var(--hover)}
-.calchip.p1{border-left:3px solid var(--p1)}
-.calchip.p2{border-left:3px solid var(--p2)}
-.calchip.p3{border-left:3px solid var(--p3)}
-.calchip.p4{border-left:3px solid var(--p4)}
-
-/* Settings additions */
-.capgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));
-  gap:var(--s2);margin-top:var(--s3)}
-.capday{display:grid;gap:4px}
-.capday span{font-size:var(--fs-11);color:var(--faint);font-weight:600}
-.capday input{
-  height:34px;padding:0 8px;border:1px solid var(--border-strong);
-  border-radius:var(--r-sm);background:var(--surface);color:var(--text);
-  font-size:var(--fs-13);font-family:inherit;width:100%;
-}
-
-/* Drag and drop affordances */
-/* An inset ring rather than an outline: an outline sits outside the element
-   and the sidebar's own scroll container clipped its left and right edges, so
-   the hint was half invisible exactly where it mattered. */
-.dropping{
-  position:relative;
-  border-radius:var(--r-ctl);
-  background:var(--accent-tint);
-  box-shadow:inset 0 0 0 2px var(--accent);
-}
-.navitem.dropping{color:var(--accent-dark)}
-.navitem.dropping .ic,
-.navitem.dropping .count{color:var(--accent-dark)}
-/* A section is a big target, so its ring is drawn in the same colour but
-   softer, and the surface tint does the talking. */
-.group.dropping{box-shadow:inset 0 0 0 2px var(--accent);border-radius:var(--r-lg)}
-.col.dropping{box-shadow:inset 0 0 0 2px var(--accent)}
-.dragoverlay{
-  background:var(--surface);border:1px solid var(--border-strong);
-  border-radius:var(--r-sm);box-shadow:var(--sh-md);padding:8px 12px;
-  font-size:var(--fs-13);max-width:420px;
-}
-
-/* A dotted outline signals a control that is available but not yet applied. */
-.btn.dashed{border-style:dashed;color:var(--muted)}
-
-/* The detail panel's editable fields sit inside .prop rows. */
-.prop > .estinput,.prop > select.btn{width:100%;margin-top:8px}
-.prop > .meta{margin-top:8px}
-
-/* The subtask chevron sits on the title's own line, not above it. */
-.subcaret{display:inline-grid;width:20px;height:20px;margin-right:4px;vertical-align:-4px}
-
-/* Form fields shared by the dialogs */
-.fieldlabel{
-  display:block;margin:var(--s4) 0 var(--s2);
-  font-size:var(--fs-11);font-weight:600;color:var(--faint);
-  text-transform:uppercase;letter-spacing:.04em;
-}
-.sheet-body > .fieldlabel:first-child{margin-top:0}
-.textfield{
-  width:100%;height:38px;padding:0 var(--s3);box-sizing:border-box;
-  border:1px solid var(--border-strong);border-radius:var(--r-sm);
-  background:var(--surface);color:var(--text);font:inherit;font-size:var(--fs-14);
-}
-.textfield:focus{outline:2px solid var(--accent);outline-offset:1px}
-
-.swatches{display:flex;flex-wrap:wrap;gap:8px}
-.swatch{width:26px;height:26px;border-radius:var(--r-full);border:2px solid transparent;
-  box-shadow:inset 0 0 0 1px rgba(28,25,23,.08);transition:transform .12s ease-out}
-.swatch:hover{transform:scale(1.12)}
-.swatch.selected{border-color:var(--text);transform:scale(1.12)}
-.swatch:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-
-/* The avatar can hold a real picture from Todoist. */
-.avatar img{width:100%;height:100%;border-radius:inherit;object-fit:cover;display:block}
-
-/* "Add task" leads the sidebar, as it does in Todoist. */
-.addbtn-top{
-  width:100%;margin-bottom:var(--s2);justify-content:flex-start;
-  background:transparent;color:var(--accent);font-weight:600;
-}
-.addbtn-top:hover{background:var(--accent-soft)}
-.addbtn-top .ic{color:var(--accent)}
-
 /* ---------- Display menu ---------- */
 .displaywrap{position:relative}
 .displaycount{
@@ -387,22 +288,38 @@
 }
 .sethint{margin-top:var(--s2);color:var(--faint);font-size:var(--fs-12);line-height:1.55}
 
-/* Controls in a settings row keep their own width rather than stretching. */
-.setrow .fselect{flex:0 0 auto;min-width:190px}
+/* Controls in a settings row keep their own width rather than stretching, but
+   never more than the row has to give: a fixed minimum pushed them off the
+   page as soon as the column was narrow. */
+.setrow{flex-wrap:wrap}
+.setrow > div{flex:1 1 180px;min-width:0}
+.setrow .fselect{flex:0 1 auto;min-width:min(190px,100%);max-width:100%}
 .setrow .fselect-label{display:none}
 .setrow .btn{flex:0 0 auto}
 .setrow .estinput{flex:0 0 auto}
 
-.capgrid{margin-bottom:var(--s5)}
-.capday input{border-radius:var(--r-ctl)}
+/* Seven days across, wrapping when the column is too narrow for them. The
+   grid definition had been lost when the display panel's styles were
+   rewritten, which left the inputs running off the page. */
+.capgrid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(min(84px,100%),1fr));
+  gap:var(--s2);margin-bottom:var(--s5);
+}
+.capday{display:grid;gap:4px;min-width:0}
+.capday > span{font-size:var(--fs-11);font-weight:600;color:var(--faint)}
+.capday input{
+  width:100%;min-width:0;height:34px;padding:0 10px;
+  border:1px solid var(--border-strong);border-radius:var(--r-ctl);
+  background:var(--surface);color:var(--text);
+  font:inherit;font-size:var(--fs-13);font-variant-numeric:tabular-nums;
+}
+.capday input:focus{outline:2px solid var(--accent);outline-offset:-1px}
 
 @media (max-width:900px){
   .setnav{
     position:static;grid-auto-flow:column;grid-auto-columns:max-content;
     overflow-x:auto;padding-bottom:var(--s2);
   }
-  .setrow{flex-wrap:wrap}
-  .setrow .fselect{min-width:0;width:100%}
 }
 
 /* The estimate in the detail panel fills its property column, unit included. */
@@ -462,3 +379,8 @@
 
 /* A chip that names a project carries its marker, at chip scale. */
 .chip .hash{width:18px;height:18px;font-size:var(--fs-12);margin-left:-3px}
+
+/* No control in a settings row is allowed to be wider than the row. */
+.setrow .btn,
+.setrow .estinput,
+.setrow .setvalue{max-width:100%}

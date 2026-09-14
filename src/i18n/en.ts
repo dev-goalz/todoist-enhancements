@@ -86,7 +86,6 @@ export const en = {
   'toolbar.list': 'List',
   'toolbar.board': 'Board',
   'toolbar.focus': 'Focus',
-  'toolbar.calendar': 'Calendar',
 
   'group.none': 'Default',
   'group.scheduled': 'Scheduled and available',

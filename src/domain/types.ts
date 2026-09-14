@@ -223,7 +223,7 @@ export type ViewId =
   | 'labels'
   | 'insights';
 
-export type DisplayMode = 'list' | 'board' | 'focus' | 'calendar';
+export type DisplayMode = 'list' | 'board' | 'focus';
 
 export type GroupKey =
   /** What the page groups by when the user has chosen nothing: sections in a

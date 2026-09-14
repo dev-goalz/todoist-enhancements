@@ -84,6 +84,9 @@ interface AppState {
   toast: (message: string, undo?: () => void) => void;
   dismissToast: (id: string) => void;
   setDragging: (id: string | null) => void;
+  /** The section currently in flight, so the slots between sections can open up. */
+  draggingSectionId: string | null;
+  setDraggingSection: (id: string | null) => void;
 }
 
 /** Writes the snapshot to the device without blocking the interface. */
@@ -103,6 +106,7 @@ export const useStore = create<AppState>((set, get) => ({
   pendingCount: 0,
   toasts: [],
   draggingTaskId: null,
+  draggingSectionId: null,
   demo: false,
 
   async init() {
@@ -563,6 +567,8 @@ export const useStore = create<AppState>((set, get) => ({
   dismissToast(id) {
     set({ toasts: get().toasts.filter((t) => t.id !== id) });
   },
+
+  setDraggingSection(id) { set({ draggingSectionId: id }); },
 
   setDragging(id) {
     set({ draggingTaskId: id });

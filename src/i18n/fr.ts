@@ -88,7 +88,6 @@ export const fr: Record<TranslationKey, string> = {
   'toolbar.list': 'Liste',
   'toolbar.board': 'Tableau',
   'toolbar.focus': 'Focus',
-  'toolbar.calendar': 'Calendrier',
 
   'group.none': 'Par défaut',
   'group.scheduled': 'Planifiées et disponibles',

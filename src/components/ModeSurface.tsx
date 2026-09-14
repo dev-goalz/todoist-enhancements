@@ -1,12 +1,11 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { TaskGroup } from './TaskGroup';
 import { DraggableTask } from './dnd/DraggableTask';
 import { useT } from '@/hooks/useT';
 import { useStore } from '@/store/store';
-import { toDisplayPriority, type DisplayMode, type GroupKey, type Item, type SortKey } from '@/domain/types';
+import type { DisplayMode, GroupKey, Item, SortKey } from '@/domain/types';
 import { groupItems, sortItems } from '@/store/selectors';
-import { dueDate, formatRelativeDay, toApiDate } from '@/domain/dates';
-import { addDays, isSameDay, isSameMonth, startOfDay, startOfMonth, startOfWeek } from 'date-fns';
+import { formatRelativeDay } from '@/domain/dates';
 import { Droppable } from './dnd/Droppable';
 import type { DropTarget } from '@/domain/dnd';
 import type { TranslationKey } from '@/i18n';
@@ -33,7 +32,6 @@ interface ModeSurfaceProps {
 export function ModeSurface(props: ModeSurfaceProps) {
   const { mode } = props;
   if (mode === 'board') return <BoardSurface {...props} />;
-  if (mode === 'calendar') return <CalendarSurface {...props} />;
   return <ListSurface {...props} />;
 }
 
@@ -126,73 +124,6 @@ function BoardSurface(props: ModeSurfaceProps) {
           );
         })}
       </div>
-    </div>
-  );
-}
-
-function CalendarSurface(props: ModeSurfaceProps) {
-  const { t, locale } = useT();
-  const startDay = useStore((s) => s.snapshot.user?.start_day ?? 1);
-  const [monthCursor] = useState(() => startOfMonth(new Date()));
-
-  const weekStartsOn = (startDay % 7) as 0 | 1 | 2 | 3 | 4 | 5 | 6;
-  const gridStart = startOfWeek(monthCursor, { weekStartsOn });
-
-  const byDay = useMemo(() => {
-    const map = new Map<string, Item[]>();
-    for (const item of props.items) {
-      const d = dueDate(item);
-      if (!d) continue;
-      const key = toApiDate(d);
-      const bucket = map.get(key);
-      if (bucket) bucket.push(item);
-      else map.set(key, [item]);
-    }
-    return map;
-  }, [props.items]);
-
-  const cells = Array.from({ length: 42 }, (_, i) => startOfDay(addDays(gridStart, i)));
-  const weekdayNames = Array.from({ length: 7 }, (_, i) =>
-    new Intl.DateTimeFormat(locale === 'fr' ? 'fr-FR' : 'en-GB', { weekday: 'short' })
-      .format(addDays(gridStart, i)),
-  );
-
-  return (
-    <div className="mode wide">
-      <div className="calgrid">
-        {weekdayNames.map((name) => (
-          <div className="calhead" key={name}>{name}</div>
-        ))}
-        {cells.map((day) => {
-          const dayItems = byDay.get(toApiDate(day)) ?? [];
-          const outside = !isSameMonth(day, monthCursor);
-          const today = isSameDay(day, new Date());
-          return (
-            <div
-              className={`calcell${outside ? ' other' : ''}${today ? ' today' : ''}`}
-              key={day.toISOString()}
-            >
-              <span className="caldate">{day.getDate()}</span>
-              <div style={{ display: 'grid', gap: 2, alignContent: 'start' }}>
-                {dayItems.slice(0, 4).map((item) => (
-                  <button
-                    key={item.id}
-                    className={`calchip p${toDisplayPriority(item.priority)}`}
-                    onClick={() => props.onOpen(item.id)}
-                    title={item.content}
-                  >
-                    {item.content}
-                  </button>
-                ))}
-                {dayItems.length > 4 && (
-                  <span className="caldate">+{dayItems.length - 4}</span>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-      {props.items.length === 0 && <p className="empty">{t('task.noTasks')}</p>}
     </div>
   );
 }

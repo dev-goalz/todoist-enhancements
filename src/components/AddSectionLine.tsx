@@ -1,4 +1,5 @@
 import { useDroppable } from '@dnd-kit/core';
+import { useStore } from '@/store/store';
 
 interface AddSectionLineProps {
   label: string;
@@ -17,9 +18,15 @@ interface AddSectionLineProps {
  */
 export function AddSectionLine({ label, slotId, onAdd }: AddSectionLineProps) {
   const { setNodeRef, isOver } = useDroppable({ id: `slot:${slotId}` });
+  /* A 20px invisible strip is not a target anyone can hit while dragging. The
+     slots open up and show themselves for as long as a section is in flight. */
+  const armed = useStore((s) => s.draggingSectionId !== null);
 
   return (
-    <div ref={setNodeRef} className={`addsection-slot${isOver ? ' over' : ''}`}>
+    <div
+      ref={setNodeRef}
+      className={`addsection-slot${armed ? ' armed' : ''}${isOver ? ' over' : ''}`}
+    >
       <button className="addsection" onClick={onAdd} aria-label={label}>
         <span className="addsection-rule" aria-hidden="true" />
         <span className="addsection-label">{label}</span>

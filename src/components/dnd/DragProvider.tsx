@@ -40,6 +40,7 @@ export function DragProvider({ children }: { children: ReactNode }) {
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const setDragging = useStore((s) => s.setDragging);
   const moveSection = useStore((s) => s.moveSection);
+  const setDraggingSection = useStore((s) => s.setDraggingSection);
 
   // A short distance threshold keeps a plain click on a task from starting a drag.
   const sensors = useSensors(
@@ -48,15 +49,18 @@ export function DragProvider({ children }: { children: ReactNode }) {
 
   function onDragStart(event: DragStartEvent) {
     const id = String(event.active.id);
+    const isSection = id.startsWith('section:');
     setDraggingId(id);
     // Sections are not tasks, so the "a task is in flight" flag stays down.
-    setDragging(id.startsWith('section:') ? null : id);
+    setDragging(isSection ? null : id);
+    setDraggingSection(isSection ? id.slice('section:'.length) : null);
   }
 
   async function onDragEnd(event: DragEndEvent) {
     const activeId = String(event.active.id);
     setDraggingId(null);
     setDragging(null);
+    setDraggingSection(null);
     if (!event.over) return;
 
     /* A section is dragged whole, into a slot between two others. It is not a
