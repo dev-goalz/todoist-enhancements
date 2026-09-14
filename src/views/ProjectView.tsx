@@ -65,14 +65,16 @@ export function ProjectView({ projectId, onOpen, onAddTask, onInsights }: Projec
           current.sort,
           childrenOf,
         ),
+        dropTarget: { kind: 'section' as const, sectionId: section.id, projectId },
       })),
       {
         id: 'none',
         title: t('group.noSection'),
         items: sortItems(scoped.filter((i) => !i.section_id), current.sort, childrenOf),
+        dropTarget: { kind: 'section' as const, sectionId: null, projectId },
       },
     ],
-    [sections, scoped, current.sort, childrenOf, t],
+    [sections, scoped, current.sort, childrenOf, t, projectId],
   );
 
   if (!project) {

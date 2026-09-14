@@ -15,6 +15,8 @@ This project is not affiliated with, endorsed by, or approved by Doist Inc.
 - **Upcoming**, **Someday**, **Inbox**, project pages and tag pages.
 - **Display modes**: list, board, focus and calendar, offered only where each
   one makes sense.
+- **Drag and drop** with one fixed meaning per destination: today, anytime,
+  someday, a day column, a project, a section or a tag. Every drop can be undone.
 - **Insights** in the spirit of Todoist Rewind, including the Focus score.
 - **Things to settle**: tasks missing an estimate, and conflicts inside a task
   that the app refuses to resolve silently.
@@ -52,7 +54,8 @@ src/
 ```
 
 The rules live in `src/domain` and depend on nothing else, so they can be read
-and changed without touching the interface.
+and changed without touching the interface. `src/domain/dnd.ts` holds the one
+table that says what each drop destination means.
 
 ## Running it
 

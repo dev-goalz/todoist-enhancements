@@ -8,6 +8,8 @@ import { toDisplayPriority, type DisplayMode, type GroupKey, type Item, type Sor
 import { groupItems, sortItems } from '@/store/selectors';
 import { dueDate, formatRelativeDay, toApiDate } from '@/domain/dates';
 import { addDays, isSameDay, isSameMonth, startOfDay, startOfMonth, startOfWeek } from 'date-fns';
+import { Droppable } from './dnd/Droppable';
+import type { DropTarget } from '@/domain/dnd';
 import type { TranslationKey } from '@/i18n';
 
 interface ModeSurfaceProps {
@@ -19,7 +21,7 @@ interface ModeSurfaceProps {
   onOpen: (id: string) => void;
   showProject?: boolean;
   /** Board columns come from sections when a project supplies them. */
-  boardColumns?: Array<{ id: string; title: string; items: Item[] }>;
+  boardColumns?: Array<{ id: string; title: string; items: Item[]; dropTarget?: DropTarget }>;
 }
 
 /**
@@ -83,19 +85,20 @@ function ListSurface(props: ModeSurfaceProps) {
 function BoardSurface(props: ModeSurfaceProps) {
   const { t, locale } = useT();
   const groups = useGrouped(props);
-  const columns = props.boardColumns ?? groups.map((g) => ({
-    id: g.key,
-    title: g.title || t('common.all'),
-    items: g.items,
-  }));
+  // Columns derived from a grouping are not drop destinations: dropping onto
+  // "priority" or "tag" has no single unambiguous meaning.
+  const columns: NonNullable<ModeSurfaceProps['boardColumns']> =
+    props.boardColumns ??
+    groups.map((g) => ({ id: g.key, title: g.title || t('common.all'), items: g.items }));
 
   if (columns.length === 0) return <p className="empty">{t('task.noTasks')}</p>;
 
   return (
     <div className="mode">
       <div className={`board${props.group === 'day' ? ' days' : ''}`}>
-        {columns.map((column) => (
-          <section className="col" key={column.id}>
+        {columns.map((column) => {
+          const body = (isOver: boolean) => (
+            <section className={`col${isOver ? ' dropping' : ''}`}>
             <div className="chead">
               <div className="chead-title">
                 <strong>{column.title}</strong>
@@ -119,8 +122,17 @@ function BoardSurface(props: ModeSurfaceProps) {
               );
             })}
             {column.items.length === 0 && <p className="empty">{t('group.empty')}</p>}
-          </section>
-        ))}
+            </section>
+          );
+
+          return column.dropTarget ? (
+            <Droppable target={column.dropTarget} key={column.id}>
+              {({ isOver }) => body(isOver)}
+            </Droppable>
+          ) : (
+            <div key={column.id}>{body(false)}</div>
+          );
+        })}
       </div>
     </div>
   );

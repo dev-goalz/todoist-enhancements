@@ -1,6 +1,8 @@
 import { useState, type ReactNode } from 'react';
 import { Icon } from './Icon';
-import { TaskRow } from './TaskRow';
+import { DraggableTask } from './dnd/DraggableTask';
+import { Droppable } from './dnd/Droppable';
+import type { DropTarget } from '@/domain/dnd';
 import { useT } from '@/hooks/useT';
 import { formatDuration, effectiveEstimate } from '@/domain/estimates';
 import type { Item } from '@/domain/types';
@@ -16,16 +18,18 @@ interface TaskGroupProps {
   actions?: ReactNode;
   showProject?: boolean;
   defaultCollapsed?: boolean;
+  /** When set, the whole group accepts tasks dropped onto it. */
+  dropTarget?: DropTarget;
 }
 
 export function TaskGroup({
   title, items, childrenOf, onOpen, tint, description, actions,
-  showProject = true, defaultCollapsed = false,
+  showProject = true, defaultCollapsed = false, dropTarget,
 }: TaskGroupProps) {
   const { t, locale } = useT();
   const [collapsed, setCollapsed] = useState(defaultCollapsed);
 
-  if (items.length === 0) return null;
+  if (items.length === 0 && !dropTarget) return null;
 
   const totalMinutes = items.reduce(
     (acc, item) => acc + (effectiveEstimate(item, childrenOf).minutes ?? 0),
@@ -34,8 +38,8 @@ export function TaskGroup({
 
   const className = `group${tint === 'late' ? ' tinted-late' : tint === 'quick' ? ' tinted-quick' : ''}`;
 
-  return (
-    <section className={className}>
+  const body = (isOver: boolean) => (
+    <section className={`${className}${isOver ? ' dropping' : ''}`}>
       {title && (
         <div className="ghead">
           <button
@@ -56,7 +60,7 @@ export function TaskGroup({
 
       {!collapsed &&
         items.map((item) => (
-          <TaskRow
+          <DraggableTask
             key={item.id}
             item={item}
             childrenOf={childrenOf}
@@ -68,4 +72,7 @@ export function TaskGroup({
       {!collapsed && items.length === 0 && <p className="empty">{t('group.empty')}</p>}
     </section>
   );
+
+  if (!dropTarget) return body(false);
+  return <Droppable target={dropTarget}>{({ isOver }) => body(isOver)}</Droppable>;
 }

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { IconSprite } from './components/IconSprite';
 import { Icon } from './components/Icon';
 import { Sidebar } from './components/Sidebar';
+import { DragProvider } from './components/dnd/DragProvider';
 import { Composer } from './components/overlays/Composer';
 import { TaskDetail } from './components/overlays/TaskDetail';
 import { Issues } from './components/overlays/Issues';
@@ -86,19 +87,21 @@ export function App() {
   return (
     <>
       <IconSprite />
-      <AppShell
-        route={route}
-        openTaskId={openTaskId}
-        setOpenTaskId={setOpenTaskId}
-        composerOpen={composerOpen}
-        setComposerOpen={setComposerOpen}
-        searchOpen={searchOpen}
-        setSearchOpen={setSearchOpen}
-        issuesOpen={issuesOpen}
-        setIssuesOpen={setIssuesOpen}
-        insightsOpen={insightsOpen}
-        setInsightsOpen={setInsightsOpen}
-      />
+      <DragProvider>
+        <AppShell
+          route={route}
+          openTaskId={openTaskId}
+          setOpenTaskId={setOpenTaskId}
+          composerOpen={composerOpen}
+          setComposerOpen={setComposerOpen}
+          searchOpen={searchOpen}
+          setSearchOpen={setSearchOpen}
+          issuesOpen={issuesOpen}
+          setIssuesOpen={setIssuesOpen}
+          insightsOpen={insightsOpen}
+          setInsightsOpen={setInsightsOpen}
+        />
+      </DragProvider>
 
       {toasts.length > 0 && (
         <div className="toasts">

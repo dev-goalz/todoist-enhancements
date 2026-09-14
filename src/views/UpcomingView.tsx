@@ -74,6 +74,7 @@ export function UpcomingView({ onOpen, onAddTask, onInsights }: UpcomingViewProp
       id: toApiDate(day),
       title: formatRelativeDay(day, locale),
       items: sortItems(byDay.get(toApiDate(day)) ?? [], current.sort, childrenOf),
+      dropTarget: { kind: 'day' as const, date: day },
     }))
     .filter((column) => column.items.length > 0 || current.mode === 'board');
 
@@ -132,6 +133,7 @@ export function UpcomingView({ onOpen, onAddTask, onInsights }: UpcomingViewProp
               items={column.items}
               childrenOf={childrenOf}
               onOpen={onOpen}
+              dropTarget={{ kind: 'day', date: new Date(`${column.id}T00:00:00`) }}
             />
           ))}
           {scoped.length === 0 && <p className="empty">{t('task.noTasks')}</p>}

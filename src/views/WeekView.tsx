@@ -107,6 +107,7 @@ export function WeekView({ onOpen, onAddTask, onInsights }: WeekViewProps) {
             childrenOf={childrenOf}
             onOpen={onOpen}
             tint="late"
+            dropTarget={{ kind: 'today' }}
             actions={
               <button
                 className="btn sm"
@@ -125,6 +126,7 @@ export function WeekView({ onOpen, onAddTask, onInsights }: WeekViewProps) {
               childrenOf={childrenOf}
               onOpen={onOpen}
               tint="quick"
+              dropTarget={{ kind: 'today' }}
             />
           )}
 
@@ -133,6 +135,7 @@ export function WeekView({ onOpen, onAddTask, onInsights }: WeekViewProps) {
             items={sortedGroup(groups.untimed)}
             childrenOf={childrenOf}
             onOpen={onOpen}
+            dropTarget={{ kind: 'today' }}
           />
 
           <TaskGroup
@@ -148,6 +151,7 @@ export function WeekView({ onOpen, onAddTask, onInsights }: WeekViewProps) {
             childrenOf={childrenOf}
             onOpen={onOpen}
             description={t('anytime.subtitle')}
+            dropTarget={{ kind: 'anytime' }}
           />
 
           {scoped.length === 0 && <p className="empty">{t('task.noTasks')}</p>}

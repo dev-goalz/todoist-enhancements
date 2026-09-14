@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { PageHeader } from '@/components/PageHeader';
 import { Toolbar } from '@/components/Toolbar';
 import { ModeSurface } from '@/components/ModeSurface';
+import { TaskGroup } from '@/components/TaskGroup';
 import { Icon } from '@/components/Icon';
 import { useT } from '@/hooks/useT';
 import { useData } from '@/hooks/useData';
@@ -88,14 +89,25 @@ export function SimpleListView({
         onInsights={onInsights}
       />
 
-      <ModeSurface
-        items={scoped}
-        childrenOf={childrenOf}
-        mode={current.mode}
-        group={current.group}
-        sort={current.sort}
-        onOpen={onOpen}
-      />
+      {kind === 'someday' && current.mode === 'list' && current.group === 'none' ? (
+        <div className="mode">
+          <TaskGroup
+            items={scoped}
+            childrenOf={childrenOf}
+            onOpen={onOpen}
+            dropTarget={{ kind: 'someday' }}
+          />
+        </div>
+      ) : (
+        <ModeSurface
+          items={scoped}
+          childrenOf={childrenOf}
+          mode={current.mode}
+          group={current.group}
+          sort={current.sort}
+          onOpen={onOpen}
+        />
+      )}
     </div>
   );
 }

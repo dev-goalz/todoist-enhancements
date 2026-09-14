@@ -8,6 +8,8 @@ import { projectCounts, projectsByWorkspace, rootItems } from '@/store/selectors
 import { anytimeItems, hasLabel, somedayItems, upcomingItems, weekItems } from '@/domain/views';
 import { SYSTEM_LABELS, type ViewId } from '@/domain/types';
 import { SyncStatus } from './SyncStatus';
+import { Droppable } from './dnd/Droppable';
+import type { DropTarget } from '@/domain/dnd';
 
 interface SidebarProps {
   route: Route;
@@ -60,17 +62,28 @@ export function Sidebar({ route, onAddTask, onSearch, onIssues, issuesCount }: S
     );
   }
 
-  const navItem = (view: ViewId, icon: IconName, labelKey: Parameters<typeof t>[0], count: number) => (
-    <button
-      className="navitem"
-      aria-current={route.view === view ? 'page' : undefined}
-      onClick={() => navigate(view)}
-    >
-      <Icon name={icon} />
-      <span className="label">{t(labelKey)}</span>
-      {count > 0 && <span className="count">{count}</span>}
-    </button>
-  );
+  const navItem = (
+    view: ViewId,
+    icon: IconName,
+    labelKey: Parameters<typeof t>[0],
+    count: number,
+    dropTarget?: DropTarget,
+  ) => {
+    const button = (isOver: boolean) => (
+      <button
+        className={`navitem${isOver ? ' dropping' : ''}`}
+        aria-current={route.view === view ? 'page' : undefined}
+        onClick={() => navigate(view)}
+      >
+        <Icon name={icon} />
+        <span className="label">{t(labelKey)}</span>
+        {count > 0 && <span className="count">{count}</span>}
+      </button>
+    );
+
+    if (!dropTarget) return button(false);
+    return <Droppable target={dropTarget}>{({ isOver }) => button(isOver)}</Droppable>;
+  };
 
   return (
     <aside className="sidebar">
@@ -121,7 +134,7 @@ export function Sidebar({ route, onAddTask, onSearch, onIssues, issuesCount }: S
         <nav aria-label={t('nav.projects')}>
           {navItem('week', 'week', 'nav.week', counts.week)}
           {navItem('upcoming', 'upcoming', 'nav.upcoming', counts.upcoming)}
-          {navItem('someday', 'someday', 'nav.someday', counts.someday)}
+          {navItem('someday', 'someday', 'nav.someday', counts.someday, { kind: 'someday' })}
           {navItem('inbox', 'inbox', 'nav.inbox', counts.inbox)}
           {navItem('dashboard', 'dashboard', 'nav.dashboard', 0)}
         </nav>
@@ -135,16 +148,19 @@ export function Sidebar({ route, onAddTask, onSearch, onIssues, issuesCount }: S
               ['waiting', counts.waiting, '#807c77'],
             ] as const
           ).map(([name, count, colour]) => (
-            <button
-              key={name}
-              className="navitem"
-              aria-current={route.view === 'label' && route.id === name ? 'page' : undefined}
-              onClick={() => navigate('label', name)}
-            >
-              <span className="dot" style={{ color: colour }}>●</span>
-              <span className="label">{name}</span>
-              {count > 0 && <span className="count">{count}</span>}
-            </button>
+            <Droppable target={{ kind: 'label', label: name }} key={name}>
+              {({ isOver }) => (
+                <button
+                  className={`navitem${isOver ? ' dropping' : ''}`}
+                  aria-current={route.view === 'label' && route.id === name ? 'page' : undefined}
+                  onClick={() => navigate('label', name)}
+                >
+                  <span className="dot" style={{ color: colour }}>●</span>
+                  <span className="label">{name}</span>
+                  {count > 0 && <span className="count">{count}</span>}
+                </button>
+              )}
+            </Droppable>
           ))}
         </section>
 
@@ -157,18 +173,21 @@ export function Sidebar({ route, onAddTask, onSearch, onIssues, issuesCount }: S
               </span>
             </div>
             {workspace.projects.map((project) => (
-              <button
-                key={project.id}
-                className="navitem"
-                aria-current={route.view === 'project' && route.id === project.id ? 'page' : undefined}
-                onClick={() => navigate('project', project.id)}
-              >
-                <span className="hash">#</span>
-                <span className="label">{project.name}</span>
-                {(counts.byProject.get(project.id) ?? 0) > 0 && (
-                  <span className="count">{counts.byProject.get(project.id)}</span>
+              <Droppable target={{ kind: 'project', projectId: project.id }} key={project.id}>
+                {({ isOver }) => (
+                  <button
+                    className={`navitem${isOver ? ' dropping' : ''}`}
+                    aria-current={route.view === 'project' && route.id === project.id ? 'page' : undefined}
+                    onClick={() => navigate('project', project.id)}
+                  >
+                    <span className="hash">#</span>
+                    <span className="label">{project.name}</span>
+                    {(counts.byProject.get(project.id) ?? 0) > 0 && (
+                      <span className="count">{counts.byProject.get(project.id)}</span>
+                    )}
+                  </button>
                 )}
-              </button>
+              </Droppable>
             ))}
           </section>
         ))}
