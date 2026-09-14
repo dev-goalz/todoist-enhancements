@@ -291,7 +291,7 @@ function AppShell({
             <ProjectView projectId={route.id} {...viewProps} />
           )}
           {route.view === 'dashboard' && (
-            <DashboardView onOpen={openTask} onIssues={() => setIssuesOpen(true)} />
+            <DashboardView onIssues={() => setIssuesOpen(true)} />
           )}
           {route.view === 'insights' && <InsightsView />}
           {route.view === 'settings' && <SettingsView />}

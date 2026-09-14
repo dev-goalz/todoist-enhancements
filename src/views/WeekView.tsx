@@ -89,22 +89,23 @@ export function WeekView({ onOpen, onInsights, onUnestimated, onAddTaskTo }: Wee
     <div className="page">
       <PageHeader
         title={t('nav.week')}
-        subtitle={t('week.subtitle')}
+        actions={
+          <>
+            <DisplayMenu
+              viewKey="week"
+              modes={['list', 'board']}
+              groups={['none', 'project', 'priority', 'label', 'estimate']}
+            />
+            <button className="btn accent" onClick={onInsights}>
+              <Icon name="trend" />
+              {t('toolbar.insights')}
+            </button>
+          </>
+        }
         load={load}
         onOpenUnestimated={load.unestimatedCount > 0 ? onUnestimated : undefined}
       />
 
-      <div className="viewbar">
-        <DisplayMenu
-          viewKey="week"
-          modes={['list', 'board']}
-          groups={['none', 'project', 'priority', 'label', 'estimate']}
-        />
-        <button className="btn accent" onClick={onInsights}>
-          <Icon name="trend" />
-          {t('toolbar.insights')}
-        </button>
-      </div>
 
       {current.mode === 'list' && current.group === 'none' ? (
         <div className="mode">

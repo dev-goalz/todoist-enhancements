@@ -92,7 +92,8 @@ function BoardSurface(props: ModeSurfaceProps) {
   if (columns.length === 0) return <p className="empty">{t('task.noTasks')}</p>;
 
   return (
-    <div className="mode">
+    /* Columns need more room than a reading measure allows. */
+    <div className="mode wide">
       <div className={`board${props.group === 'day' ? ' days' : ''}`}>
         {columns.map((column) => {
           const body = (isOver: boolean) => (
@@ -157,7 +158,7 @@ function CalendarSurface(props: ModeSurfaceProps) {
   );
 
   return (
-    <div className="mode">
+    <div className="mode wide">
       <div className="calgrid">
         {weekdayNames.map((name) => (
           <div className="calhead" key={name}>{name}</div>

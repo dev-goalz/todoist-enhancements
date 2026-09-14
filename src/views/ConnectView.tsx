@@ -1,13 +1,20 @@
 import { useState } from 'react';
+import { Icon } from '@/components/Icon';
 import { useT } from '@/hooks/useT';
 import { useStore } from '@/store/store';
 import { looksLikeToken } from '@/api/auth';
+
+const GITHUB_URL = 'https://github.com/julesvbertolino/todoist-enhancements';
+const TODOIST_DEVELOPER_URL = 'https://app.todoist.com/app/settings/integrations/developer';
+const AUTHOR = 'julesbertolino';
+const VERSION = '1.0';
 
 /**
  * The first screen: connecting the account.
  *
  * The token is entered by the user and stays on the device. Nothing is sent
- * anywhere except to Todoist itself.
+ * anywhere except to Todoist itself, which is why the privacy note sits
+ * between the field and the button rather than in a footnote nobody reads.
  */
 export function ConnectView() {
   const { t } = useT();
@@ -29,13 +36,18 @@ export function ConnectView() {
     if (!ok) setStatus('invalid');
   }
 
+  const legal = t('connect.legal', { author: AUTHOR }).split(AUTHOR);
+
   return (
     <div className="connect">
       <div className="connect-card">
-        <h1>{t('connect.title')}</h1>
-        <p>{t('connect.intro')}</p>
+        <div className="connect-head">
+          <h1>{t('connect.appName')}</h1>
+          <span className="connect-version">{t('connect.version', { version: VERSION })}</span>
+        </div>
+        <p className="connect-intro">{t('connect.intro')}</p>
 
-        <label htmlFor="token">{t('connect.tokenLabel')}</label>
+        <label className="sr" htmlFor="token">{t('connect.tokenLabel')}</label>
         <input
           id="token"
           type="password"
@@ -50,34 +62,38 @@ export function ConnectView() {
         {status === 'invalid' && <p className="connect-error">{t('connect.invalid')}</p>}
         {status === 'malformed' && <p className="connect-error">{t('connect.malformed')}</p>}
 
-        <div className="connect-actions">
-          <button
-            className="btn primary"
-            disabled={status === 'checking'}
-            onClick={() => void submit()}
-          >
-            {status === 'checking' ? t('connect.checking') : t('connect.submit')}
-          </button>
-          <button
-            className="btn"
-            onClick={() =>
-              window.open('https://app.todoist.com/app/settings/integrations/developer', '_blank', 'noopener')
-            }
-          >
-            {t('connect.openSettings')}
-          </button>
-        </div>
+        <p className="connect-privacy">
+          <strong>{t('connect.privacyLead')}</strong>{' '}
+          {t('connect.privacyBody')}{' '}
+          <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer">
+            <Icon name="external" size="sm" />
+            {t('connect.github')}
+          </a>
+        </p>
 
-        <p className="connect-help">{t('connect.help')}</p>
+        <button
+          className="btn primary lg connect-submit"
+          disabled={status === 'checking'}
+          onClick={() => void submit()}
+        >
+          {status === 'checking' ? t('connect.checking') : t('connect.submit')}
+        </button>
 
-        <div className="connect-demo">
-          <button className="btn" onClick={startDemo}>
-            {t('connect.demo')}
-          </button>
-          <p className="connect-help">{t('connect.demoHint')}</p>
-        </div>
+        <button className="btn tint lg connect-demo" onClick={startDemo}>
+          <Icon name="bars" size="sm" />
+          {t('connect.demoInstead')}
+        </button>
 
-        <div style={{ marginTop: 'var(--s4)', display: 'flex', gap: 8 }}>
+        <a
+          className="connect-apikey"
+          href={TODOIST_DEVELOPER_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {t('connect.apiKey')}
+        </a>
+
+        <div className="connect-langs">
           {(['en', 'fr'] as const).map((value) => (
             <button
               key={value}
@@ -89,6 +105,12 @@ export function ConnectView() {
           ))}
         </div>
       </div>
+
+      {/* Outside the card, on the gradient: this is about the project, not
+          about signing in. */}
+      <p className="connect-legal">
+        {legal[0]}<strong>{AUTHOR}</strong>{legal[1]}
+      </p>
     </div>
   );
 }

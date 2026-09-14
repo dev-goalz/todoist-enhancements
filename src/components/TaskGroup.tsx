@@ -60,12 +60,20 @@ export function TaskGroup({
             aria-expanded={!collapsed}
             onClick={() => setCollapsed((v) => !v)}
           >
-            <Icon name={collapsed ? 'caret' : 'caret-up'} size="sm" />
             <span className="gname">{title}</span>
             {totalMinutes > 0 && <span className="gtime">{formatDuration(totalMinutes, locale)}</span>}
           </button>
           {actions && <span className="gactions">{actions}</span>}
           <span className="gcount">{items.length}</span>
+          {/* The disclosure caret ends the row, as it does in the sidebar. */}
+          <button
+            className="gdisclose"
+            aria-expanded={!collapsed}
+            aria-label={title}
+            onClick={() => setCollapsed((v) => !v)}
+          >
+            <Icon name={collapsed ? 'caret' : 'caret-up'} size="sm" />
+          </button>
         </div>
       )}
 

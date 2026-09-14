@@ -6,10 +6,11 @@ import { useData } from '@/hooks/useData';
 import { useStore } from '@/store/store';
 import { useConfirm } from './Confirm';
 import {
-  effectiveEstimate, formatDuration, parseDurationInput, withEstimate,
+  effectiveEstimate, formatDuration, withEstimate,
 } from '@/domain/estimates';
 import { deadlineDate, dueDate, formatRelativeDay, toApiDate } from '@/domain/dates';
 import { renderMarkdown } from '@/domain/markdown';
+import { EstimateField } from '../EstimateField';
 import { markerStyle } from '@/domain/colors';
 import { toDisplayPriority, toTodoistPriority, type DisplayPriority } from '@/domain/types';
 
@@ -41,7 +42,6 @@ export function TaskDetail({ taskId, onClose, onOpen }: TaskDetailProps) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [editingDescription, setEditingDescription] = useState(false);
-  const [estimate, setEstimate] = useState('');
   const [subtaskDraft, setSubtaskDraft] = useState('');
   const [addingSubtask, setAddingSubtask] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -75,8 +75,6 @@ export function TaskDetail({ taskId, onClose, onOpen }: TaskDetailProps) {
     setSubtaskDraft('');
     setMenuOpen(false);
     setTagPickerOpen(false);
-    const own = effectiveEstimate(item, childrenOf);
-    setEstimate(own.computed || own.minutes === null ? '' : String(own.minutes));
   }, [item?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -119,11 +117,6 @@ export function TaskDetail({ taskId, onClose, onOpen }: TaskDetailProps) {
   const commitDescription = () => {
     setEditingDescription(false);
     if (description !== item.description) void updateTask(item.id, { description });
-  };
-  const commitEstimate = () => {
-    const parsed = parseDurationInput(estimate);
-    if (parsed === null && estimate.trim() !== '') return;
-    void updateTask(item.id, { labels: withEstimate(item.labels, parsed) });
   };
 
   function addSubtask() {
@@ -361,7 +354,7 @@ export function TaskDetail({ taskId, onClose, onOpen }: TaskDetailProps) {
           </div>
 
           <div className="prop">
-            <span>{t('detail.date')}</span>
+            <span>{t('detail.startDate')}</span>
             <input
               className="propinput"
               type="date"
@@ -398,17 +391,17 @@ export function TaskDetail({ taskId, onClose, onOpen }: TaskDetailProps) {
 
           <div className="prop">
             <span>{t('detail.estimate')}</span>
-            <input
-              className="propinput"
-              value={estimate}
+            {/* The same field as everywhere else, so the unit is always beside
+                the number instead of being left to the reader to infer. */}
+            <EstimateField
+              minutes={computed ? null : minutes}
               placeholder={
                 computed && minutes !== null
                   ? `${formatDuration(minutes, locale)} · ${t('task.computedEstimate')}`
                   : t('task.estimatePlaceholder')
               }
-              onChange={(e) => setEstimate(e.target.value)}
-              onBlur={commitEstimate}
-              onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+              onCommit={(value) =>
+                void updateTask(item.id, { labels: withEstimate(item.labels, value) })}
             />
           </div>
 

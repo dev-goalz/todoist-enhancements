@@ -34,7 +34,6 @@ export function LabelsView() {
       <div className="phead">
         <div>
           <h1 className="ptitle">{t('nav.labels')}</h1>
-          <p className="psub">{t('labels.subtitle')}</p>
         </div>
       </div>
 

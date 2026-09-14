@@ -6,7 +6,10 @@ import type { LoadSummary } from '@/domain/load';
 
 interface PageHeaderProps {
   title: string;
+  /** Real content only — a project's description. Never a description of the view. */
   subtitle?: ReactNode;
+  /** Display and Insights: the controls for this page, on the title line. */
+  actions?: ReactNode;
   load: LoadSummary;
   /** Opens the list of tasks on this page that have no estimate. */
   onOpenUnestimated?: () => void;
@@ -18,18 +21,18 @@ interface PageHeaderProps {
  * something, which the caller decides by passing it or not.
  */
 export function PageHeader({
-  title, subtitle, load, onOpenUnestimated,
+  title, subtitle, actions, load, onOpenUnestimated,
 }: PageHeaderProps) {
   const { t, locale } = useT();
 
   return (
     <>
       <div className="phead">
-        <div>
+        <div className="phead-text">
           <h1 className="ptitle">{title}</h1>
           {subtitle && <p className="psub">{subtitle}</p>}
         </div>
-
+        {actions && <div className="pactions">{actions}</div>}
       </div>
 
       <div className="metrics">

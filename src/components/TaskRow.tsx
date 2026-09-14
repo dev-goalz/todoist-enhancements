@@ -7,6 +7,7 @@ import { toDisplayPriority, type Item } from '@/domain/types';
 import { effectiveEstimate, formatDuration } from '@/domain/estimates';
 import { deadlineDate, dueDate, formatRelativeDay, formatTime, hasTime, isOverdue, isToday, overdueBy } from '@/domain/dates';
 import { markerStyle } from '@/domain/colors';
+import { renderInlineMarkdown } from '@/domain/markdown';
 
 interface TaskRowProps {
   item: Item;
@@ -88,7 +89,13 @@ export function TaskRow({
         <span className="tmain">
           <span className="ttitle">{item.content}</span>
 
-          {item.description && <span className="tdesc">{item.description}</span>}
+          {item.description && (
+            /* The row shows the formatted line, not the Markdown syntax. */
+            <span
+              className="tdesc"
+              dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(item.description) }}
+            />
+          )}
 
           <span className="meta">
             {minutes !== null && (

@@ -13,6 +13,7 @@ export type DropTarget =
   | { kind: 'today' }
   | { kind: 'anytime' }
   | { kind: 'someday' }
+  | { kind: 'upcoming' }
   | { kind: 'day'; date: Date }
   | { kind: 'project'; projectId: string }
   | { kind: 'section'; sectionId: string | null; projectId: string }
@@ -60,6 +61,13 @@ export function dropMutation(item: Item, target: DropTarget): DropMutation | nul
     case 'someday':
       return { update: { due: null, labels: withoutWeek(item.labels) } };
 
+    case 'upcoming': {
+      // Upcoming starts tomorrow, so that is the one date this drop can mean.
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      return { update: { due: dueForDate(item, tomorrow), labels: withoutWeek(item.labels) } };
+    }
+
     case 'project':
       if (item.project_id === target.projectId) return null;
       return { move: { project_id: target.projectId } };
@@ -92,7 +100,9 @@ export function encodeTarget(target: DropTarget): string {
 }
 
 export function decodeTarget(id: string): DropTarget | null {
-  if (id === 'today' || id === 'anytime' || id === 'someday') return { kind: id };
+  if (id === 'today' || id === 'anytime' || id === 'someday' || id === 'upcoming') {
+    return { kind: id };
+  }
 
   const [kind, ...rest] = id.split(':');
   if (kind === 'day') {

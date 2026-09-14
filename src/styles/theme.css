@@ -408,10 +408,6 @@
 .gdesc .descview{padding:4px 6px;margin-left:-6px;font-size:var(--fs-12)}
 
 /* ---------- Demo mode ---------- */
-.connect-demo{
-  margin-top:var(--s5);padding-top:var(--s4);
-  border-top:1px solid var(--border);display:grid;gap:6px;justify-items:start;
-}
 .app.demo{grid-template-rows:auto minmax(0,1fr)}
 .demobanner{
   grid-column:1 / -1;display:flex;align-items:center;gap:10px;
@@ -592,6 +588,10 @@
   max-width:1160px;
 }
 
+/* A board or a month grid is not prose: it takes the whole workspace. */
+.page > .mode.wide,
+.page.wide > .mode.wide{max-width:1160px}
+
 /* ---------- Behind schedule and Quick read as callouts ---------- */
 .group.accent-late,
 .group.accent-quick{
@@ -653,8 +653,23 @@
   font-size:var(--fs-12);
 }
 .col .taskwrap .task ~ .task .ttitle{font-size:var(--fs-12);font-weight:400}
-.col .trow-end{grid-column:2;justify-self:end;margin-top:6px}
+/* The controls float in the card's top corner on hover. Given a row of their
+   own they reserved height on every card, which is what left some of them
+   looking bottom-heavy for no reason. */
+.col .taskwrap{position:relative}
+.col .trow-end{
+  position:absolute;top:6px;right:8px;z-index:1;
+  margin-top:0;justify-self:auto;
+  border-radius:var(--r-sm);background:var(--surface);
+  box-shadow:0 0 0 4px var(--surface);
+}
 .col .drag{display:none}
+
+/* A card has room for two lines of description; a list row has room for one. */
+.col .tdesc{
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+  white-space:normal;line-height:1.45;
+}
 
 /* An indented subtask row shrinks rather than sliding, so it never reaches
    past the right edge of the column. */
@@ -828,3 +843,49 @@
    width of a card, which reads as a table of colour rather than as data. */
 .chart-plot > .bar,
 .chart-plot.compare .slot > .bar{max-width:40px;margin-inline:auto}
+
+/* ==========================================================================
+   Data cards — the surface the dashboard and Insights are built from
+   ========================================================================== */
+
+/* A quiet white plane with a hairline and the faintest lift, generous
+   padding, and a label that states the measure rather than shouting it. */
+.card{
+  padding:20px 22px;
+  border-radius:16px;
+  border-color:var(--border);
+  box-shadow:0 1px 2px rgba(28,25,23,.04);
+}
+.card h3{font-size:var(--fs-13);font-weight:600;letter-spacing:-.01em;color:var(--text)}
+
+.stat{display:grid;gap:5px}
+.stat-label{
+  font-size:var(--fs-12);font-weight:500;color:var(--muted);
+  text-transform:none;letter-spacing:-.01em;
+}
+.stat-value{font-size:28px;font-weight:600;letter-spacing:-.03em;line-height:1.05}
+.stat-trailing{font-size:var(--fs-13);font-weight:500;color:var(--faint)}
+.stat-hint{font-size:var(--fs-12);color:var(--faint);line-height:1.45}
+
+/* The heading line of a chart card sits on the same baseline grid. */
+.chead-row{display:flex;align-items:flex-start;justify-content:space-between;gap:var(--s3)}
+.chead-row + *{margin-top:var(--s4)}
+.card .psub{margin-top:3px;font-size:var(--fs-12);color:var(--faint)}
+
+.focuscardv .hero{font-size:34px;letter-spacing:-.035em;font-weight:600}
+.focuscardv h3{color:var(--muted);font-weight:500;font-size:var(--fs-12)}
+
+/* The attention rows read as one grouped list, the way a settings group does. */
+.attn-list{display:grid;gap:1px;border-radius:12px;overflow:hidden;background:var(--border)}
+.attn{
+  display:grid;align-items:center;gap:10px;width:100%;
+  min-height:46px;padding:0 var(--s3);text-align:left;
+  background:var(--surface);font-size:var(--fs-13);color:var(--text);
+}
+.attn:hover{background:var(--subtle)}
+.attn-n{
+  min-width:26px;height:22px;padding:0 6px;display:grid;place-items:center;
+  border-radius:var(--r-full);background:var(--subtle);
+  color:var(--muted);font-size:var(--fs-12);font-weight:600;
+}
+.attn .ic{color:var(--faint)}

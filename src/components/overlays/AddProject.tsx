@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { Overlay } from './Overlay';
+import { Icon } from '../Icon';
 import { useT } from '@/hooks/useT';
 import { useStore } from '@/store/store';
-import { colorValue } from '@/domain/colors';
+import { colorValue, markerStyle } from '@/domain/colors';
 
 const CHOICES = [
   'berry_red', 'red', 'orange', 'yellow', 'olive_green', 'lime_green',
@@ -27,18 +28,29 @@ export function AddProject({ open, onClose }: { open: boolean; onClose: () => vo
     <Overlay open={open} onClose={onClose} label={t('project.create')} size="sm">
       <div className="sheet-head">
         <h2>{t('project.create')}</h2>
+        <button className="iconbtn" aria-label={t('common.close')} onClick={onClose}>
+          <Icon name="close" />
+        </button>
       </div>
+
       <div className="sheet-body">
+        {/* The marker the sidebar will show, updating as the two fields do. */}
+        <div className="projectpreview">
+          <span className="hash" style={markerStyle(color)}>#</span>
+          <span>{name.trim() || t('project.name')}</span>
+        </div>
+
         <label className="fieldlabel" htmlFor="project-name">{t('project.name')}</label>
         <input
           id="project-name"
           className="textfield"
+          autoFocus
           value={name}
           onChange={(e) => setName(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') void submit(); }}
         />
 
-        <span className="fieldlabel" style={{ marginTop: 'var(--s4)' }}>{t('project.colour')}</span>
+        <span className="fieldlabel">{t('project.colour')}</span>
         <div className="swatches">
           {CHOICES.map((choice) => (
             <button
@@ -51,13 +63,13 @@ export function AddProject({ open, onClose }: { open: boolean; onClose: () => vo
             />
           ))}
         </div>
+      </div>
 
-        <div className="connect-actions" style={{ justifyContent: 'flex-end' }}>
-          <button className="btn quiet" onClick={onClose}>{t('common.cancel')}</button>
-          <button className="btn primary" disabled={!name.trim()} onClick={() => void submit()}>
-            {t('project.createSubmit')}
-          </button>
-        </div>
+      <div className="sheet-foot">
+        <button className="btn quiet" onClick={onClose}>{t('common.cancel')}</button>
+        <button className="btn primary" disabled={!name.trim()} onClick={() => void submit()}>
+          {t('project.createSubmit')}
+        </button>
       </div>
     </Overlay>
   );

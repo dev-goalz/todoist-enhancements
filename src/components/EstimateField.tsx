@@ -58,11 +58,15 @@ export function EstimateField({
         onBlur={commit}
         onKeyDown={(e) => {
           if (e.key === 'Enter') {
+            // Validate, and nothing else: no dialog closing behind it, no row
+            // re-opening, no form submitting.
             e.preventDefault();
+            e.stopPropagation();
             commit();
             if (onAdvance) onAdvance(e.currentTarget);
           }
           if (e.key === 'Escape') {
+            e.stopPropagation();
             setDraft(minutes === null ? '' : String(minutes));
             onCancel?.();
           }

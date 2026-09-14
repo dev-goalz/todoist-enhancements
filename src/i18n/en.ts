@@ -37,7 +37,7 @@ export const en = {
   'connect.demoHint': 'Loads a made-up account so you can look around. Nothing is sent to Todoist.',
   'demo.banner': 'Demo data. Nothing here is connected to Todoist.',
   'demo.exit': 'Leave demo',
-  'nav.labels': 'Filters & tags',
+  'nav.labels': 'Tags',
   'nav.myProjects': 'My projects',
   'nav.addProject': 'Add project',
   'nav.addTag': 'Add tag',
@@ -148,6 +148,7 @@ export const en = {
   'task.deleteTitle': 'Delete this task?',
   'common.confirm': 'Confirm',
   'task.moveTo': 'Move to',
+  'task.moveToProject': 'Move to project',
   'task.moveToHint': 'Changes the date and the week label so the task lands in that view.',
   'task.movedTo': 'Moved to {destination}',
   'task.deleteConfirm': 'Delete "{name}"? Todoist keeps deleted tasks for seven days in its activity history.',
@@ -169,6 +170,7 @@ export const en = {
   'detail.project': 'Project',
   'detail.section': 'Section',
   'detail.date': 'Date',
+  'detail.startDate': 'Start date',
   'detail.deadline': 'Deadline',
   'detail.priority': 'Priority',
   'detail.labels': 'Tags',
@@ -283,6 +285,7 @@ export const en = {
   'dashboard.projectProgress': 'Project progress',
   'dashboard.deadlines': 'Deadlines ahead',
   'dashboard.noDeadlines': 'No deadlines in the next seven days.',
+  'dashboard.nextDeadline': 'Next: {name} · {when}',
 
   /* Settings */
   'settings.title': 'Settings',
@@ -400,6 +403,16 @@ export const en = {
   'settings.restore': 'Restore',
   'settings.sections': 'Sections',
   'settings.avatarHint': 'Your Todoist profile picture',
+
+  /* Connect — the Figma sign-in screen */
+  'connect.appName': 'Enhanced for Todoist',
+  'connect.version': 'version {version}',
+  'connect.privacyLead': 'Private by design.',
+  'connect.privacyBody': 'Your token is stored in this browser and sent only to Todoist to load your tasks. No backend, no data collection.',
+  'connect.github': 'Check the code on GitHub',
+  'connect.apiKey': 'Get your API key in Todoist',
+  'connect.demoInstead': 'Explore with demo data instead',
+  'connect.legal': 'Enhanced for Todoist is an independent project from {author}. It is not created by, affiliated with, or supported by Todoist. “Todoist” is a trademark of Doist Inc.',
 };
 
 export type TranslationKey = keyof typeof en;

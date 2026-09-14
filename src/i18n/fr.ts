@@ -39,7 +39,7 @@ export const fr: Record<TranslationKey, string> = {
   'connect.demoHint': 'Charge un compte fictif pour explorer l’outil. Rien n’est envoyé à Todoist.',
   'demo.banner': 'Données de démonstration. Rien ici n’est relié à Todoist.',
   'demo.exit': 'Quitter la démo',
-  'nav.labels': 'Filtres et étiquettes',
+  'nav.labels': 'Tags',
   'nav.myProjects': 'Mes projets',
   'nav.addProject': 'Ajouter un projet',
   'nav.addTag': 'Ajouter une étiquette',
@@ -110,7 +110,7 @@ export const fr: Record<TranslationKey, string> = {
   'group.project': 'Projet',
   'group.section': 'Section',
   'group.priority': 'Priorité',
-  'group.label': 'Étiquette',
+  'group.label': 'Tag',
   'group.estimate': 'Estimation',
 
   'sort.manual': 'Ordre manuel',
@@ -123,7 +123,7 @@ export const fr: Record<TranslationKey, string> = {
 
   'filter.workspaces': 'Espaces de travail',
   'filter.projects': 'Projets',
-  'filter.labels': 'Étiquettes',
+  'filter.labels': 'Tags',
   'filter.priorities': 'Priorité',
   'filter.estimated': 'Estimation',
   'filter.estimatedOnly': 'Estimées seulement',
@@ -150,6 +150,7 @@ export const fr: Record<TranslationKey, string> = {
   'task.deleteTitle': 'Supprimer cette tâche ?',
   'common.confirm': 'Confirmer',
   'task.moveTo': 'Déplacer vers',
+  'task.moveToProject': 'Déplacer vers un projet',
   'task.moveToHint': 'Ajuste la date et l’étiquette week pour que la tâche arrive dans cette vue.',
   'task.movedTo': 'Déplacée vers {destination}',
   'task.deleteConfirm': 'Supprimer « {name} » ? Todoist conserve les tâches supprimées sept jours dans son historique d’activité.',
@@ -171,9 +172,10 @@ export const fr: Record<TranslationKey, string> = {
   'detail.project': 'Projet',
   'detail.section': 'Section',
   'detail.date': 'Date',
+  'detail.startDate': 'Date de début',
   'detail.deadline': 'Échéance',
   'detail.priority': 'Priorité',
-  'detail.labels': 'Étiquettes',
+  'detail.labels': 'Tags',
   'detail.estimate': 'Estimation',
   'detail.subtasks': 'Sous-tâches',
   'detail.addSubtask': 'Ajouter une sous-tâche',
@@ -195,14 +197,14 @@ export const fr: Record<TranslationKey, string> = {
   'composer.priority': 'Priorité',
   'composer.project': 'Projet',
   'composer.duration': 'Estimation',
-  'composer.labels': 'Étiquettes',
+  'composer.labels': 'Tags',
 
   /* Search */
   'search.placeholder': 'Rechercher une tâche, un projet ou une étiquette…',
   'search.quickAccess': 'Accès rapide',
   'search.tasks': 'Tâches',
   'search.projects': 'Projets',
-  'search.labels': 'Étiquettes',
+  'search.labels': 'Tags',
   'search.noResults': 'Aucun résultat pour cette recherche.',
 
   /* Things to settle */
@@ -285,6 +287,7 @@ export const fr: Record<TranslationKey, string> = {
   'dashboard.projectProgress': 'Avancement des projets',
   'dashboard.deadlines': 'Échéances à venir',
   'dashboard.noDeadlines': 'Aucune échéance dans les sept prochains jours.',
+  'dashboard.nextDeadline': 'Prochaine : {name} · {when}',
 
   /* Settings */
   'settings.title': 'Réglages',
@@ -402,4 +405,14 @@ export const fr: Record<TranslationKey, string> = {
   'settings.restore': 'Rétablir',
   'settings.sections': 'Sections',
   'settings.avatarHint': 'Votre photo de profil Todoist',
+
+  /* Connexion — l’écran de la maquette */
+  'connect.appName': 'Enhanced for Todoist',
+  'connect.version': 'version {version}',
+  'connect.privacyLead': 'Privé par conception.',
+  'connect.privacyBody': 'Votre jeton est stocké dans ce navigateur et envoyé à Todoist seulement, pour charger vos tâches. Aucun serveur, aucune collecte.',
+  'connect.github': 'Voir le code sur GitHub',
+  'connect.apiKey': 'Obtenir votre clé API dans Todoist',
+  'connect.demoInstead': 'Explorer avec des données de démonstration',
+  'connect.legal': 'Enhanced for Todoist est un projet indépendant de {author}. Il n’est ni créé, ni affilié, ni soutenu par Todoist. « Todoist » est une marque de Doist Inc.',
 };

@@ -80,25 +80,26 @@ export function UpcomingView({ onOpen, onInsights, onUnestimated, onAddTaskTo }:
     .filter((column) => column.items.length > 0 || current.mode === 'board');
 
   return (
-    <div className="page wide">
+    <div className="page">
       <PageHeader
         title={t('nav.upcoming')}
-        subtitle={t('upcoming.subtitle')}
+        actions={
+          <>
+            <DisplayMenu
+              viewKey="upcoming"
+              modes={['list', 'board', 'calendar']}
+              groups={['day', 'week', 'month', 'project', 'priority', 'label', 'none']}
+            />
+            <button className="btn accent" onClick={onInsights}>
+              <Icon name="trend" />
+              {t('toolbar.insights')}
+            </button>
+          </>
+        }
         load={load}
         onOpenUnestimated={load.unestimatedCount > 0 ? onUnestimated : undefined}
       />
 
-      <div className="viewbar">
-        <DisplayMenu
-          viewKey="upcoming"
-          modes={['list', 'board', 'calendar']}
-          groups={['day', 'week', 'month', 'project', 'priority', 'label', 'none']}
-        />
-        <button className="btn accent" onClick={onInsights}>
-          <Icon name="trend" />
-          {t('toolbar.insights')}
-        </button>
-      </div>
 
       {current.mode === 'board' ? (
         <ModeSurface

@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 import { addDays, format, startOfDay } from 'date-fns';
 import { Icon } from '@/components/Icon';
-import { TaskRow } from '@/components/TaskRow';
 import {
   Bars, ChartCard, CompareBars, Donut, Ring, SplitBar, StatTile, seriesColor,
   type BarDatum, type CompareDatum, type SliceDatum,
@@ -18,18 +17,21 @@ import { summariseInsights } from '@/domain/insights';
 import { effectiveEstimate, formatDuration } from '@/domain/estimates';
 import { deadlineDate, formatRelativeDay } from '@/domain/dates';
 import { detectConflicts, detectIncomplete } from '@/domain/conflicts';
-import { markerStyle } from '@/domain/colors';
 
 interface DashboardViewProps {
-  onOpen: (id: string) => void;
   onIssues: () => void;
 }
 
 /**
  * One board answering three questions: what is today, what is in the way, and
- * how the week is trending. Numbers lead, charts support them.
+ * how the week is trending.
+ *
+ * Everything here is a number or a chart. The task list that used to sit in
+ * the middle of it belonged to a view, not to a dashboard: reading a summary
+ * and working a list are different jobs, and the sidebar already has the
+ * views for the second one.
  */
-export function DashboardView({ onOpen, onIssues }: DashboardViewProps) {
+export function DashboardView({ onIssues }: DashboardViewProps) {
   const { t, locale } = useT();
   const { snapshot, items, childrenOf } = useData();
   const prefs = useStore((s) => s.prefs);
@@ -142,17 +144,15 @@ export function DashboardView({ onOpen, onIssues }: DashboardViewProps) {
   return (
     <div className="page wide">
       <div className="phead">
-        <div>
+        <div className="phead-text">
           <h1 className="ptitle">{t('dashboard.title')}</h1>
-          <p className="psub">{t('week.subtitle')}</p>
         </div>
-      </div>
-
-      <div className="viewbar">
-        <button className="btn accent" onClick={() => navigate('insights')}>
-          <Icon name="trend" />
-          {t('insights.openFull')}
-        </button>
+        <div className="pactions">
+          <button className="btn accent" onClick={() => navigate('insights')}>
+            <Icon name="trend" />
+            {t('insights.openFull')}
+          </button>
+        </div>
       </div>
 
       <div className="bento">
@@ -200,24 +200,6 @@ export function DashboardView({ onOpen, onIssues }: DashboardViewProps) {
             value={summary.currentStreak}
             hint={t('insights.activeDays') + ' · ' + summary.activeDays}
           />
-        </section>
-
-        <section className="card w8">
-          <div className="chead-row">
-            <div>
-              <h3>{t('dashboard.today')}</h3>
-              <p className="psub">{t('dashboard.todayHint')}</p>
-            </div>
-            {todayLoad.percentage !== null && (
-              <span className={pillClass(todayLoad.level)}>{todayLoad.percentage}%</span>
-            )}
-          </div>
-          <div className="focuslist">
-            {todayItems.slice(0, 6).map((item) => (
-              <TaskRow key={item.id} item={item} childrenOf={childrenOf} onOpen={onOpen} />
-            ))}
-            {todayItems.length === 0 && <p className="chart-empty">{t('task.noTasks')}</p>}
-          </div>
         </section>
 
         <section className="card w4">
@@ -277,7 +259,7 @@ export function DashboardView({ onOpen, onIssues }: DashboardViewProps) {
           />
         </ChartCard>
 
-        <ChartCard title={t('dashboard.openByProject')} span={6}>
+        <ChartCard title={t('dashboard.openByProject')} span={8}>
           <Donut
             data={openByProject}
             limit={6}
@@ -300,29 +282,21 @@ export function DashboardView({ onOpen, onIssues }: DashboardViewProps) {
         </section>
 
         <section className="card w3">
-          <div className="chead-row">
-            <div><h3>{t('dashboard.deadlines')}</h3></div>
-          </div>
-          {deadlines.length === 0 ? (
-            <p className="chart-empty">{t('dashboard.noDeadlines')}</p>
-          ) : (
-            deadlines.map((item) => {
-              const d = deadlineDate(item)!;
-              const project = snapshot.projects[item.project_id];
-              return (
-                <button className="deadlinerow" key={item.id} onClick={() => onOpen(item.id)}>
-                  <span className="deadlinename">{item.content}</span>
-                  <span className="deadline">{formatRelativeDay(d, locale)}</span>
-                  {project && (
-                    <span className="logmeta" style={markerStyle(project.color, false)}>
-                      #{project.name}
-                    </span>
-                  )}
-                </button>
-              );
-            })
-          )}
+          <StatTile
+            label={t('dashboard.deadlines')}
+            value={deadlines.length}
+            tone={deadlines.length > 0 ? 'accent' : 'neutral'}
+            hint={
+              deadlines.length > 0
+                ? t('dashboard.nextDeadline', {
+                    name: deadlines[0].content,
+                    when: formatRelativeDay(deadlineDate(deadlines[0])!, locale),
+                  })
+                : t('dashboard.noDeadlines')
+            }
+          />
         </section>
+
       </div>
     </div>
   );

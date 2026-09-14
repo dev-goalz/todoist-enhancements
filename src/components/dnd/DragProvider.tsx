@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import {
-  DndContext, DragOverlay, PointerSensor, useSensor, useSensors,
+  DndContext, DragOverlay, PointerSensor, pointerWithin, useSensor, useSensors,
   type DragEndEvent, type DragStartEvent,
 } from '@dnd-kit/core';
 import { snapCenterToCursor } from '@dnd-kit/modifiers';
@@ -71,7 +71,17 @@ export function DragProvider({ children }: { children: ReactNode }) {
   const dragging = draggingId ? snapshot.items[draggingId] : null;
 
   return (
-    <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
+    /* Collisions are decided by where the cursor is, not by which droppable a
+       row overlaps most. A task row is as wide as the page, so by area it
+       always beat the narrow sidebar destinations: dropping onto Inbox,
+       Upcoming or Someday simply never registered. The overlay already snaps
+       to the cursor, so this is also what the drag looks like. */
+    <DndContext
+      sensors={sensors}
+      collisionDetection={pointerWithin}
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
+    >
       {children}
       {/* Without this the preview stays at the row's original position instead
           of following the pointer. */}

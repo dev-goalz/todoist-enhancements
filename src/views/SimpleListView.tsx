@@ -61,28 +61,28 @@ export function SimpleListView({
   );
 
   const title = kind === 'label' ? (labelName ?? '') : t(`nav.${kind}` as TranslationKey);
-  const subtitle = kind === 'label' ? undefined : t(`${kind}.subtitle` as TranslationKey);
 
   return (
     <div className="page">
       <PageHeader
         title={title}
-        subtitle={subtitle}
+        actions={
+          <>
+            <DisplayMenu
+              viewKey={viewKey}
+              modes={['list', 'board']}
+              groups={['none', 'project', 'priority', 'label', 'estimate']}
+            />
+            <button className="btn accent" onClick={onInsights}>
+              <Icon name="trend" />
+              {t('toolbar.insights')}
+            </button>
+          </>
+        }
         load={load}
         onOpenUnestimated={load.unestimatedCount > 0 ? onUnestimated : undefined}
       />
 
-      <div className="viewbar">
-        <DisplayMenu
-          viewKey={viewKey}
-          modes={['list', 'board']}
-          groups={['none', 'project', 'priority', 'label', 'estimate']}
-        />
-        <button className="btn accent" onClick={onInsights}>
-          <Icon name="trend" />
-          {t('toolbar.insights')}
-        </button>
-      </div>
 
       {kind === 'someday' && current.mode === 'list' && current.group === 'none' ? (
         <div className="mode">

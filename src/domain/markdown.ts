@@ -57,6 +57,30 @@ function inline(text: string): string {
   return out;
 }
 
+/**
+ * Renders one line of Markdown, inline rules only.
+ *
+ * A task row shows a single clamped line, so block structure — lists, code
+ * fences, headings — has nowhere to go. Their markers are stripped and the
+ * remaining lines joined, which is what a reader scanning the list wants:
+ * emphasis and links formatted, syntax gone.
+ */
+export function renderInlineMarkdown(source: string): string {
+  if (!source.trim()) return '';
+  const line = source
+    .replace(/\r\n/g, '\n')
+    .split('\n')
+    .map((raw) => raw.trim())
+    .filter((raw) => raw !== '' && !raw.startsWith('```'))
+    .map((raw) => raw
+      .replace(/^#{1,6}\s+/, '')
+      .replace(/^[-*+]\s+/, '')
+      .replace(/^\d+[.)]\s+/, '')
+      .replace(/^>\s?/, ''))
+    .join(' · ');
+  return inline(line);
+}
+
 /** Renders a description to HTML that is safe to insert. */
 export function renderMarkdown(source: string): string {
   if (!source.trim()) return '';

@@ -111,7 +111,7 @@ export function ProjectView({
     : (['list', 'calendar'] as const);
 
   return (
-    <div className="page wide">
+    <div className="page">
       <PageHeader
         title={project.name}
         subtitle={
@@ -121,21 +121,23 @@ export function ProjectView({
             onCommit={(next) => void updateProjectFields(projectId, { description: next })}
           />
         }
+        actions={
+          <>
+            <DisplayMenu
+              viewKey={viewKey}
+              modes={[...modes]}
+              groups={['none', 'scheduled', 'priority', 'label', 'estimate', 'day']}
+            />
+            <button className="btn accent" onClick={onInsights}>
+              <Icon name="trend" />
+              {t('toolbar.insights')}
+            </button>
+          </>
+        }
         load={load}
         onOpenUnestimated={load.unestimatedCount > 0 ? onUnestimated : undefined}
       />
 
-      <div className="viewbar">
-        <DisplayMenu
-          viewKey={viewKey}
-          modes={[...modes]}
-          groups={['none', 'scheduled', 'priority', 'label', 'estimate', 'day']}
-        />
-        <button className="btn accent" onClick={onInsights}>
-          <Icon name="trend" />
-          {t('toolbar.insights')}
-        </button>
-      </div>
 
       {current.mode === 'board' ? (
         <ModeSurface

@@ -33,11 +33,12 @@ export function Sidebar({
   const disconnect = useStore((s) => s.disconnect);
   const [menuOpen, setMenuOpen] = useState(false);
   const [openFolders, setOpenFolders] = useState<Record<string, boolean>>({});
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
 
   const roots = useMemo(() => rootItems(items), [items]);
+  const inboxId = snapshot.user?.inbox_project_id;
 
   const counts = useMemo(() => {
-    const inboxId = snapshot.user?.inbox_project_id;
     return {
       inbox: inboxId ? roots.filter((i) => i.project_id === inboxId).length : 0,
       week: weekItems(roots).length,
@@ -45,7 +46,7 @@ export function Sidebar({
       someday: somedayItems(roots).length,
       byProject: projectCounts(roots),
     };
-  }, [roots, snapshot.user?.inbox_project_id]);
+  }, [roots, inboxId]);
 
   /** Favourites are Todoist's own star, not a separate list this app keeps. */
   const favourites = useMemo(() => {
@@ -57,6 +58,9 @@ export function Sidebar({
       .sort((a, b) => a.child_order - b.child_order);
     return { labels, projects };
   }, [snapshot.labels, snapshot.projects]);
+
+  const toggleGroup = (key: string) =>
+    setOpenGroups((prev) => ({ ...prev, [key]: !(prev[key] ?? true) }));
 
   const workspaces = useMemo(() => projectTree(snapshot), [snapshot]);
   const user = snapshot.user;
@@ -131,9 +135,9 @@ export function Sidebar({
             aria-expanded={isOpen}
             onClick={() => setOpenFolders((prev) => ({ ...prev, [project.id]: !isOpen }))}
           >
-            <Icon name={isOpen ? 'caret-up' : 'caret'} size="sm" />
             <Icon name="project" />
             <span className="label">{project.name}</span>
+            <Icon name={isOpen ? 'caret-up' : 'caret'} size="sm" className="disclose" />
           </button>
           {isOpen && children.map((child) => projectNode(child, keyPrefix, depth + 1))}
         </div>
@@ -195,12 +199,12 @@ export function Sidebar({
         {menuOpen && (
           <div className="menu" style={{ display: 'block' }}>
             <button onClick={() => { setMenuOpen(false); navigate('dashboard'); }}>
-              <Icon name="dashboard" />
+              <Icon name="trend" />
               {t('nav.dashboard')}
             </button>
-            <button onClick={() => { setMenuOpen(false); navigate('insights'); }}>
-              <Icon name="trend" />
-              {t('nav.insights')}
+            <button onClick={() => { setMenuOpen(false); navigate('insights', 'logbook'); }}>
+              <Icon name="tasks" />
+              {t('insights.logbook')}
             </button>
             <button onClick={() => { setMenuOpen(false); navigate('settings'); }}>
               <Icon name="settings" />
@@ -227,35 +231,45 @@ export function Sidebar({
         </button>
 
         <nav aria-label={t('nav.projects')}>
-          {navItem('inbox', 'inbox', 'nav.inbox', counts.inbox)}
+          {navItem(
+            'inbox', 'inbox', 'nav.inbox', counts.inbox,
+            // Dropping on Inbox means filing there, which is a plain project move.
+            inboxId ? { kind: 'project', projectId: inboxId } : undefined,
+          )}
           {navItem('week', 'week', 'nav.week', counts.week)}
-          {navItem('upcoming', 'upcoming', 'nav.upcoming', counts.upcoming)}
+          {navItem('upcoming', 'upcoming', 'nav.upcoming', counts.upcoming, { kind: 'upcoming' })}
           {navItem('someday', 'someday', 'nav.someday', counts.someday, { kind: 'someday' })}
           {navItem('labels', 'flag', 'nav.labels', 0)}
         </nav>
 
         {(favourites.labels.length > 0 || favourites.projects.length > 0) && (
-          <section className="side-group">
-            <div className="side-head"><span>{t('nav.favourites')}</span></div>
+          <SideGroup
+            title={t('nav.favourites')}
+            open={openGroups.favourites ?? true}
+            onToggle={() => toggleGroup('favourites')}
+          >
             {favourites.projects.map((p) =>
               projectNode({ project: p, children: [] }, 'fav-'))}
             {favourites.labels.map((l) =>
               tagItem(l.name, l.color, roots.filter((i) => hasLabel(i, l.name)).length))}
-          </section>
+          </SideGroup>
         )}
 
-        {workspaces.map((workspace) => (
-          <section className="side-group" key={workspace.workspaceId ?? 'personal'}>
-            <div className="side-head">
-              {/* Workspaces read as plain headings, like "My projects" above. */}
-              <span>{workspace.name ?? t('nav.myProjects')}</span>
-              <button aria-label={t('nav.addProject')} title={t('nav.addProject')} onClick={onAddProject}>
-                <Icon name="plus" size="sm" />
-              </button>
-            </div>
-            {workspace.roots.map((node) => projectNode(node))}
-          </section>
-        ))}
+        {workspaces.map((workspace) => {
+          const key = workspace.workspaceId ?? 'personal';
+          return (
+            <SideGroup
+              key={key}
+              title={workspace.name ?? t('nav.myProjects')}
+              open={openGroups[key] ?? true}
+              onToggle={() => toggleGroup(key)}
+              onAdd={onAddProject}
+              addLabel={t('nav.addProject')}
+            >
+              {workspace.roots.map((node) => projectNode(node))}
+            </SideGroup>
+          );
+        })}
       </div>
 
       <div className="side-foot">
@@ -290,5 +304,45 @@ export function Sidebar({
         </div>
       </div>
     </aside>
+  );
+}
+
+/**
+ * A titled block of the sidebar.
+ *
+ * The heading discloses its contents from a caret on the right, matching the
+ * folders below it, and the add button only appears under the pointer so the
+ * resting sidebar stays quiet.
+ */
+function SideGroup({
+  title, open, onToggle, onAdd, addLabel, children,
+}: {
+  title: string;
+  open: boolean;
+  onToggle: () => void;
+  onAdd?: () => void;
+  addLabel?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="side-group">
+      <div className="side-head">
+        <button className="side-headbtn" aria-expanded={open} onClick={onToggle}>
+          <span>{title}</span>
+          <Icon name={open ? 'caret-up' : 'caret'} size="sm" className="disclose" />
+        </button>
+        {onAdd && (
+          <button
+            className="side-add"
+            aria-label={addLabel}
+            title={addLabel}
+            onClick={onAdd}
+          >
+            <Icon name="plus" size="sm" />
+          </button>
+        )}
+      </div>
+      {open && children}
+    </section>
   );
 }

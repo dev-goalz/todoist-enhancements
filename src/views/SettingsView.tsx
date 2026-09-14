@@ -55,7 +55,6 @@ export function SettingsView() {
       <div className="phead">
         <div>
           <h1 className="ptitle">{t('settings.title')}</h1>
-          <p className="psub">{t('settings.subtitle')}</p>
         </div>
       </div>
 

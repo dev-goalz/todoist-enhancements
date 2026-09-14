@@ -9,6 +9,7 @@ import {
 import { useT } from '@/hooks/useT';
 import { useData } from '@/hooks/useData';
 import { useCompleted, type Period } from '@/hooks/useCompleted';
+import { useRoute } from '@/hooks/useRoute';
 import { rootItems } from '@/store/selectors';
 import { summariseInsights } from '@/domain/insights';
 import { formatDuration, estimateOf } from '@/domain/estimates';
@@ -33,7 +34,10 @@ export function InsightsView() {
   const { t, locale } = useT();
   const { snapshot, items } = useData();
   const [period, setPeriod] = useState<Period>('week');
-  const [tab, setTab] = useState<Tab>('overview');
+  // The address bar can name the tab, so the sidebar can link straight to the
+  // logbook rather than landing on the overview and asking for a second click.
+  const route = useRoute();
+  const [tab, setTab] = useState<Tab>(route.id === 'logbook' ? 'logbook' : 'overview');
   const { data: completed, previous, loading } = useCompleted(period, true);
 
   const roots = useMemo(() => rootItems(items), [items]);
@@ -148,7 +152,6 @@ export function InsightsView() {
       <div className="phead">
         <div>
           <h1 className="ptitle">{t('insights.title')}</h1>
-          <p className="psub">{t('insights.focusExplainer')}</p>
         </div>
       </div>
 

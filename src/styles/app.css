@@ -168,10 +168,28 @@ ul{margin:0;padding:0;list-style:none}
 .navitem[aria-current="page"] .ic{color:var(--accent-dark)}
 
 .side-group{margin-top:22px}
-.side-head{padding:0 var(--s2) var(--s1);display:flex;align-items:center;justify-content:space-between;
-  color:var(--muted);font-size:var(--fs-11);font-weight:600;text-transform:none;letter-spacing:.02em}
-.side-head button{width:22px;height:22px;display:grid;place-items:center;border-radius:var(--r-xs);color:var(--muted)}
-.side-head button:hover{background:var(--hover)}
+.side-head{padding:0 var(--s3) var(--s1);display:flex;align-items:center;gap:var(--s1);
+  color:var(--muted);font-size:var(--fs-14);font-weight:600;letter-spacing:-.02em}
+/* The heading is the disclosure control, with its caret on the right so it
+   lines up with the folder carets below it. */
+.side-headbtn{
+  flex:1;min-width:0;display:flex;align-items:center;justify-content:space-between;gap:var(--s2);
+  color:inherit;font:inherit;text-align:left;
+}
+.side-headbtn > span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.side-add{
+  width:22px;height:22px;flex:0 0 auto;display:grid;place-items:center;
+  border-radius:var(--r-xs);color:var(--muted);
+  /* Revealed under the pointer; the resting sidebar stays quiet. */
+  opacity:0;transition:opacity .12s ease-out;
+}
+.side-head:hover .side-add,
+.side-head:focus-within .side-add{opacity:1}
+.side-add:hover{background:var(--hover);color:var(--text)}
+
+/* A caret that closes a block always sits at the end of its row. */
+.disclose{margin-left:auto;color:var(--faint)}
+.navitem .disclose{flex:0 0 auto}
 .dot{width:9px;height:9px;flex:0 0 auto;border-radius:var(--r-full);background:currentColor}
 .hash{width:20px;height:20px;flex:0 0 auto;display:grid;place-items:center;border-radius:var(--r-sm);font-size:var(--fs-13);font-weight:700}
 .hash.green{color:#4c8631;background:#edf6e9}
@@ -334,7 +352,12 @@ ul{margin:0;padding:0;list-style:none}
 .gdesc{flex:0 0 100%;width:100%;margin-top:6px;color:var(--muted);font-size:var(--fs-12);line-height:1.5;text-wrap:pretty}
 .gdesc span{display:block;max-width:72ch}
 .gdesc.empty{color:var(--faint);font-style:italic}
-.gtoggle{display:flex;align-items:center;gap:6px;flex:1;min-width:0;padding:4px 0;text-align:left}
+.gtoggle{display:flex;align-items:baseline;gap:8px;flex:1;min-width:0;padding:4px 0;text-align:left}
+.gdisclose{
+  width:22px;height:22px;flex:0 0 auto;display:grid;place-items:center;
+  border-radius:var(--r-xs);color:var(--faint);
+}
+.gdisclose:hover{background:var(--hover);color:var(--text)}
 .gtoggle .caret{width:14px;height:14px;color:var(--faint);transition:transform .15s ease}
 .group.collapsed .gtoggle .caret{transform:rotate(-90deg)}
 .group.collapsed > :not(.ghead){display:none}
@@ -349,9 +372,10 @@ ul{margin:0;padding:0;list-style:none}
 .gactions{display:flex;align-items:center;gap:6px;flex:0 0 auto}
 .gflag ~ .gcount{margin-left:10px}
 .ghead > .gcount{margin-left:auto}
+.ghead > .gdisclose{margin-left:2px}
 .gactions ~ .gcount{margin-left:0}
 
-.task{position:relative;width:100%;display:grid;grid-template-columns:18px minmax(0,1fr) auto 106px;gap:12px;
+.task{position:relative;width:100%;display:grid;grid-template-columns:18px minmax(0,1fr) auto;gap:12px;
   padding:14px 10px 14px 32px;margin-left:-26px;width:calc(100% + 26px);
   min-height:62px;border-radius:var(--r-md);text-align:left;cursor:pointer}
 .task:hover{background:rgba(28,25,23,.022)}
@@ -376,6 +400,9 @@ ul{margin:0;padding:0;list-style:none}
   font-size:var(--fs-14);line-height:1.4;text-wrap:pretty}
 .tdesc{display:block;margin-top:2px;color:var(--muted);font-size:var(--fs-12);line-height:1.4;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tdesc strong{font-weight:600;color:var(--muted)}
+.tdesc code{padding:0 3px;border-radius:var(--r-xs);background:var(--subtle);font-size:.92em}
+.tdesc a{color:inherit;text-decoration:underline}
 .meta{display:flex;width:100%;flex-wrap:wrap;align-items:center;gap:4px 10px;margin-top:6px;color:var(--muted);font-size:var(--fs-12)}
 .meta > span{display:inline-flex;align-items:center;gap:4px}
 .meta .ic{width:13px;height:13px}
@@ -407,7 +434,7 @@ ul{margin:0;padding:0;list-style:none}
 .trow-actions button:hover{color:var(--text);background:var(--hover)}
 
 .subtasks{margin-left:28px;padding-left:var(--s3);border-left:1px solid var(--border)}
-.subtasks .task{min-height:48px;padding-block:9px;margin-left:0;width:100%;padding-left:10px;grid-template-columns:18px minmax(0,1fr) auto 106px}
+.subtasks .task{min-height:48px;padding-block:9px;margin-left:0;width:100%;padding-left:10px;grid-template-columns:18px minmax(0,1fr) auto}
 .subtasks .drag{display:none}
 .subtasks .check{width:14px;height:14px;border-radius:var(--r-full);border-style:dashed}
 .addrow{width:100%;padding:9px 8px;display:flex;align-items:center;gap:6px;margin-top:2px;

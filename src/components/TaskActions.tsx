@@ -7,9 +7,9 @@ import { useConfirm } from './overlays/Confirm';
 import { withEstimate, effectiveEstimate } from '@/domain/estimates';
 import { EstimateField } from './EstimateField';
 import { toApiDate } from '@/domain/dates';
+import { markerStyle } from '@/domain/colors';
 import { dropMutation, type DropTarget } from '@/domain/dnd';
 import { updateItem, moveItem } from '@/api/commands';
-import { bucketOf } from '@/domain/views';
 import type { Item, Snapshot } from '@/domain/types';
 
 interface TaskActionsProps {
@@ -30,6 +30,7 @@ export function TaskActions({ item, childrenOf, onOpen }: TaskActionsProps) {
   const removeTask = useStore((s) => s.removeTask);
   const skipOccurrence = useStore((s) => s.skipOccurrence);
   const confirm = useConfirm();
+  const snapshot = useStore((s) => s.snapshot);
   const apply = useStore((s) => s.apply);
   const toast = useStore((s) => s.toast);
   const [menu, setMenu] = useState<'none' | 'schedule' | 'more' | 'estimate' | 'move'>('none');
@@ -50,7 +51,12 @@ export function TaskActions({ item, childrenOf, onOpen }: TaskActionsProps) {
   }, [menu]);
 
   const { minutes, computed } = effectiveEstimate(item, childrenOf);
-  const bucket = bucketOf(item);
+
+  /* Moving a task means moving it to another project. Where it sits in time is
+     the schedule menu's business, which is the button next to this one. */
+  const projects = Object.values(snapshot.projects)
+    .filter((p) => !p.is_deleted && !p.is_archived && !p.is_folder)
+    .sort((a, b) => a.child_order - b.child_order);
 
   /**
    * Sends the task to a view.
@@ -137,12 +143,12 @@ export function TaskActions({ item, childrenOf, onOpen }: TaskActionsProps) {
       </button>
 
       <button
-        aria-label={t('task.moveTo')}
-        title={t('task.moveTo')}
+        aria-label={t('task.moveToProject')}
+        title={t('task.moveToProject')}
         aria-expanded={menu === 'move'}
         onClick={() => setMenu(menu === 'move' ? 'none' : 'move')}
       >
-        <Icon name="arrow-right" size="sm" />
+        <Icon name="project" size="sm" />
       </button>
 
       <button
@@ -192,24 +198,22 @@ export function TaskActions({ item, childrenOf, onOpen }: TaskActionsProps) {
       )}
 
       {menu === 'move' && (
-        <div className="popover rowmenu" role="menu">
-          <h5>{t('task.moveTo')}</h5>
-          {bucket !== 'today' && bucket !== 'overdue' && (
-            <button className="opt" onClick={() => void moveTo({ kind: 'today' }, t('common.today'))}>
-              <span><Icon name="week" size="sm" /> {t('common.today')}</span>
+        <div className="popover rowmenu movemenu" role="menu">
+          <h5>{t('task.moveToProject')}</h5>
+          {projects.map((project) => (
+            <button
+              key={project.id}
+              className="opt"
+              aria-checked={project.id === item.project_id}
+              onClick={() =>
+                void moveTo({ kind: 'project', projectId: project.id }, project.name)}
+            >
+              <span>
+                <span className="hash" style={markerStyle(project.color)}>#</span>
+                {project.name}
+              </span>
             </button>
-          )}
-          {bucket !== 'anytime' && (
-            <button className="opt" onClick={() => void moveTo({ kind: 'anytime' }, t('group.anytime'))}>
-              <span><Icon name="calendar" size="sm" /> {t('group.anytime')}</span>
-            </button>
-          )}
-          {bucket !== 'someday' && (
-            <button className="opt" onClick={() => void moveTo({ kind: 'someday' }, t('nav.someday'))}>
-              <span><Icon name="someday" size="sm" /> {t('nav.someday')}</span>
-            </button>
-          )}
-          <p className="menuhint">{t('task.moveToHint')}</p>
+          ))}
         </div>
       )}
 

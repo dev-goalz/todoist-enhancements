@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Icon, type IconName } from './Icon';
+import { Select } from './Select';
 import { useT } from '@/hooks/useT';
 import { useStore } from '@/store/store';
 import { viewPrefs } from '@/store/prefs';
@@ -22,20 +23,6 @@ const MODE_ICON: Record<DisplayMode, IconName> = {
   board: 'board',
   calendar: 'calendar',
   focus: 'stack',
-};
-
-const GROUP_ICON: Record<GroupKey, IconName> = {
-  none: 'list',
-  scheduled: 'calendar',
-  day: 'calendar',
-  week: 'week',
-  month: 'calendar',
-  workspace: 'stack',
-  project: 'project',
-  section: 'group',
-  priority: 'flag',
-  label: 'flag',
-  estimate: 'clock',
 };
 
 /**
@@ -122,134 +109,117 @@ export function DisplayMenu({ viewKey, modes, groups }: DisplayMenuProps) {
                 key={mode}
                 aria-pressed={current.mode === mode}
                 title={t(`toolbar.${mode}` as TranslationKey)}
-                aria-label={t(`toolbar.${mode}` as TranslationKey)}
                 onClick={() => setViewPrefs(viewKey, { mode })}
               >
-                <Icon name={MODE_ICON[mode]} size="lg" />
+                <Icon name={MODE_ICON[mode]} size="sm" />
                 <small>{t(`toolbar.${mode}` as TranslationKey)}</small>
               </button>
             ))}
           </div>
 
-          <hr />
-          <h5>{t('toolbar.sort')}</h5>
-
-          <label className="selectrow">
-            <span>{t('toolbar.group')}</span>
-            <span className="selectwrap">
-              <Icon name={GROUP_ICON[current.group]} size="sm" />
-              <select
-                value={current.group}
-                onChange={(e) => setViewPrefs(viewKey, { group: e.target.value as GroupKey })}
-              >
-                {groups.map((group) => (
-                  <option key={group} value={group}>
-                    {t(`group.${group}` as TranslationKey)}
-                  </option>
-                ))}
-              </select>
-            </span>
-          </label>
-
-          <label className="selectrow">
-            <span>{t('toolbar.sortBy')}</span>
-            <span className="selectwrap">
-              <Icon name="sort" size="sm" />
-              <select
-                value={current.sort}
-                onChange={(e) => setViewPrefs(viewKey, { sort: e.target.value as SortKey })}
-              >
-                {sorts.map((sort) => (
-                  <option key={sort} value={sort}>
-                    {t(`sort.${sort}` as TranslationKey)}
-                  </option>
-                ))}
-              </select>
-            </span>
-          </label>
+          {/* Two questions, two selects, drawn the way every other select in
+              the app is drawn. */}
+          <div className="panelgrid">
+            <Select
+              label={t('toolbar.group')}
+              value={current.group}
+              onChange={(value) => setViewPrefs(viewKey, { group: value as GroupKey })}
+              options={groups.map((group) => ({
+                value: group,
+                label: t(`group.${group}` as TranslationKey),
+              }))}
+            />
+            <Select
+              label={t('toolbar.sortBy')}
+              value={current.sort}
+              onChange={(value) => setViewPrefs(viewKey, { sort: value as SortKey })}
+              options={sorts.map((sort) => ({
+                value: sort,
+                label: t(`sort.${sort}` as TranslationKey),
+              }))}
+            />
+          </div>
 
           <hr />
-          <h5>{t('toolbar.filter')}</h5>
 
-          <fieldset className="checkgroup">
-            <legend>{t('filter.priorities')}</legend>
+          {/* Filters are toggles you can see the state of at a glance, rather
+              than a column of checkboxes to read one by one. */}
+          <h5>{t('filter.priorities')}</h5>
+          <div className="chiprow">
             {([1, 2, 3, 4] as const).map((p) => (
-              <label className="checkrow" key={p}>
-                <input
-                  type="checkbox"
-                  checked={current.filters.priorities.includes(p)}
-                  onChange={() =>
-                    setFilters({ priorities: toggleIn(current.filters.priorities, p as DisplayPriority) })
-                  }
-                />
+              <button
+                key={p}
+                className="chip"
+                aria-pressed={current.filters.priorities.includes(p)}
+                onClick={() =>
+                  setFilters({ priorities: toggleIn(current.filters.priorities, p as DisplayPriority) })
+                }
+              >
                 <span className="flagdot" style={{ background: `var(--p${p})` }} />
-                <span>P{p}</span>
-              </label>
+                P{p}
+              </button>
             ))}
-          </fieldset>
+          </div>
 
           {tags.length > 0 && (
-            <fieldset className="checkgroup">
-              <legend>{t('filter.labels')}</legend>
-              <div className="checkscroll">
+            <>
+              <h5>{t('filter.labels')}</h5>
+              <div className="chiprow scroll">
                 {tags.map((label) => (
-                  <label className="checkrow" key={label.id}>
-                    <input
-                      type="checkbox"
-                      checked={current.filters.labels.includes(label.name)}
-                      onChange={() => setFilters({ labels: toggleIn(current.filters.labels, label.name) })}
-                    />
-                    <Icon name="flag" size="sm" className="taglabel" />
-                    <span style={markerStyle(label.color, false)}>{label.name}</span>
-                  </label>
+                  <button
+                    key={label.id}
+                    className="chip"
+                    aria-pressed={current.filters.labels.includes(label.name)}
+                    onClick={() => setFilters({ labels: toggleIn(current.filters.labels, label.name) })}
+                  >
+                    <span className="flagdot" style={{ background: markerStyle(label.color, false).color }} />
+                    {label.name}
+                  </button>
                 ))}
               </div>
-            </fieldset>
+            </>
           )}
 
-          <fieldset className="checkgroup">
-            <legend>{t('filter.estimated')}</legend>
-            <label className="checkrow">
-              <input
-                type="checkbox"
-                checked={current.filters.estimated === true}
-                onChange={() =>
-                  setFilters({ estimated: current.filters.estimated === true ? null : true })
-                }
-              />
-              <span>{t('filter.estimatedOnly')}</span>
-            </label>
-            <label className="checkrow">
-              <input
-                type="checkbox"
-                checked={current.filters.estimated === false}
-                onChange={() =>
-                  setFilters({ estimated: current.filters.estimated === false ? null : false })
-                }
-              />
-              <span>{t('filter.unestimatedOnly')}</span>
-            </label>
-          </fieldset>
+          <h5>{t('filter.estimated')}</h5>
+          <div className="segmented small">
+            {([null, true, false] as const).map((value) => (
+              <button
+                key={String(value)}
+                aria-pressed={current.filters.estimated === value}
+                onClick={() => setFilters({ estimated: value })}
+              >
+                <small>
+                  {value === null
+                    ? t('filter.any')
+                    : value
+                      ? t('filter.estimatedOnly')
+                      : t('filter.unestimatedOnly')}
+                </small>
+              </button>
+            ))}
+          </div>
 
-          <fieldset className="checkgroup">
-            <legend>{t('toolbar.options')}</legend>
-            <label className="checkrow">
-              <input
-                type="checkbox"
-                checked={current.filters.includeScheduled}
-                onChange={() => setFilters({ includeScheduled: !current.filters.includeScheduled })}
-              />
-              <span>{t('filter.includeScheduled')}</span>
-            </label>
-            <label className="checkrow">
-              <input
-                type="checkbox"
-                checked={current.filters.showSubtasks}
-                onChange={() => setFilters({ showSubtasks: !current.filters.showSubtasks })}
-              />
-              <span>{t('filter.showSubtasks')}</span>
-            </label>
-          </fieldset>
+          <hr />
+          <div className="panelrow">
+            <span>{t('filter.includeScheduled')}</span>
+            <button
+              className="switch"
+              role="switch"
+              aria-checked={current.filters.includeScheduled}
+              aria-label={t('filter.includeScheduled')}
+              onClick={() => setFilters({ includeScheduled: !current.filters.includeScheduled })}
+            />
+          </div>
+          <div className="panelrow">
+            <span>{t('filter.showSubtasks')}</span>
+            <button
+              className="switch"
+              role="switch"
+              aria-checked={current.filters.showSubtasks}
+              aria-label={t('filter.showSubtasks')}
+              onClick={() => setFilters({ showSubtasks: !current.filters.showSubtasks })}
+            />
+          </div>
         </div>
       )}
     </div>
