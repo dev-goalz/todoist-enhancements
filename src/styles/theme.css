@@ -670,3 +670,11 @@
   .group.accent-late,
   .group.accent-quick{margin-inline:0}
 }
+
+/* ---------- In-app confirmation ---------- */
+.confirmbox{padding:var(--s5);display:grid;gap:var(--s3)}
+.confirmbox h2{font-size:var(--fs-16);font-weight:700;line-height:1.3}
+.confirmbody{color:var(--muted);font-size:var(--fs-13);line-height:1.55}
+.confirmactions{display:flex;justify-content:flex-end;gap:var(--s2);margin-top:var(--s2)}
+.btn.danger{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.btn.danger:hover{background:var(--accent-dark);border-color:var(--accent-dark)}

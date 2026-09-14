@@ -7,6 +7,7 @@ import { Icon } from '@/components/Icon';
 import { useT } from '@/hooks/useT';
 import { useData } from '@/hooks/useData';
 import { useStore } from '@/store/store';
+import { useConfirm } from '@/components/overlays/Confirm';
 import { viewPrefs } from '@/store/prefs';
 import { applyFilters, rootItems, sortItems } from '@/store/selectors';
 import { groupWeek, weekItems } from '@/domain/views';
@@ -33,6 +34,7 @@ export function WeekView({ onOpen, onInsights, onUnestimated, onAddTaskTo }: Wee
   const prefs = useStore((s) => s.prefs);
   const updateTask = useStore((s) => s.updateTask);
   const toast = useStore((s) => s.toast);
+  const confirm = useConfirm();
   const current = viewPrefs(prefs, 'week');
 
   const scoped = useMemo(() => {
@@ -56,7 +58,12 @@ export function WeekView({ onOpen, onInsights, onUnestimated, onAddTaskTo }: Wee
     if (affected.length === 0) return;
     // Moving several tasks at once is worth confirming, and the wording says
     // exactly where they land.
-    if (!window.confirm(t('task.rescheduleAllConfirm', { count: affected.length }))) return;
+    const ok = await confirm({
+      title: t('group.rescheduleAll'),
+      body: t('task.rescheduleAllConfirm', { count: affected.length }),
+      confirmLabel: t('group.rescheduleAll'),
+    });
+    if (!ok) return;
 
     const today = toApiDate(new Date());
     for (const item of affected) {

@@ -10,6 +10,7 @@ import { Search } from './components/overlays/Search';
 import { InsightsPanel } from './components/overlays/InsightsPanel';
 import { AddProject } from './components/overlays/AddProject';
 import { Unestimated } from './components/overlays/Unestimated';
+import { ConfirmProvider } from './components/overlays/Confirm';
 import { WeekView } from './views/WeekView';
 import { UpcomingView } from './views/UpcomingView';
 import { SimpleListView } from './views/SimpleListView';
@@ -98,27 +99,29 @@ export function App() {
   return (
     <>
       <IconSprite />
-      <DragProvider>
-        <AppShell
-          route={route}
-          openTaskId={openTaskId}
-          setOpenTaskId={setOpenTaskId}
-          composerOpen={composerOpen}
-          setComposerOpen={setComposerOpen}
-          searchOpen={searchOpen}
-          setSearchOpen={setSearchOpen}
-          issuesOpen={issuesOpen}
-          setIssuesOpen={setIssuesOpen}
-          insightsOpen={insightsOpen}
-          setInsightsOpen={setInsightsOpen}
-          addProjectOpen={addProjectOpen}
-          setAddProjectOpen={setAddProjectOpen}
-          unestimatedOpen={unestimatedOpen}
-          setUnestimatedOpen={setUnestimatedOpen}
-          placement={placement}
-          setPlacement={setPlacement}
-        />
-      </DragProvider>
+      <ConfirmProvider>
+        <DragProvider>
+          <AppShell
+            route={route}
+            openTaskId={openTaskId}
+            setOpenTaskId={setOpenTaskId}
+            composerOpen={composerOpen}
+            setComposerOpen={setComposerOpen}
+            searchOpen={searchOpen}
+            setSearchOpen={setSearchOpen}
+            issuesOpen={issuesOpen}
+            setIssuesOpen={setIssuesOpen}
+            insightsOpen={insightsOpen}
+            setInsightsOpen={setInsightsOpen}
+            addProjectOpen={addProjectOpen}
+            setAddProjectOpen={setAddProjectOpen}
+            unestimatedOpen={unestimatedOpen}
+            setUnestimatedOpen={setUnestimatedOpen}
+            placement={placement}
+            setPlacement={setPlacement}
+          />
+        </DragProvider>
+      </ConfirmProvider>
 
       {toasts.length > 0 && (
         <div className="toasts">

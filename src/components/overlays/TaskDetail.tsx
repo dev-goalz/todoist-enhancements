@@ -4,6 +4,7 @@ import { Icon } from '../Icon';
 import { useT } from '@/hooks/useT';
 import { useData } from '@/hooks/useData';
 import { useStore } from '@/store/store';
+import { useConfirm } from './Confirm';
 import {
   effectiveEstimate, formatDuration, parseDurationInput, withEstimate,
 } from '@/domain/estimates';
@@ -33,6 +34,7 @@ export function TaskDetail({ taskId, onClose, onOpen }: TaskDetailProps) {
   const toggleTask = useStore((s) => s.toggleTask);
   const removeTask = useStore((s) => s.removeTask);
   const createTask = useStore((s) => s.createTask);
+  const confirm = useConfirm();
 
   const item = taskId ? snapshot.items[taskId] : null;
 
@@ -174,10 +176,16 @@ export function TaskDetail({ taskId, onClose, onOpen }: TaskDetailProps) {
                   className="opt danger"
                   onClick={() => {
                     setMenuOpen(false);
-                    if (window.confirm(t('task.deleteConfirm', { name: item.content }))) {
+                    void confirm({
+                      title: t('task.deleteTitle'),
+                      body: t('task.deleteConfirm', { name: item.content }),
+                      confirmLabel: t('task.delete'),
+                      destructive: true,
+                    }).then((ok) => {
+                      if (!ok) return;
                       void removeTask(item.id);
                       onClose();
-                    }
+                    });
                   }}
                 >
                   <span><Icon name="close" size="sm" /> {t('task.delete')}</span>

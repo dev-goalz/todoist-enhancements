@@ -3,10 +3,14 @@ import { addDays, nextMonday } from 'date-fns';
 import { Icon } from './Icon';
 import { useT } from '@/hooks/useT';
 import { useStore } from '@/store/store';
+import { useConfirm } from './overlays/Confirm';
 import { withEstimate, effectiveEstimate } from '@/domain/estimates';
 import { EstimateField } from './EstimateField';
 import { toApiDate } from '@/domain/dates';
-import type { Item } from '@/domain/types';
+import { dropMutation, type DropTarget } from '@/domain/dnd';
+import { updateItem, moveItem } from '@/api/commands';
+import { bucketOf } from '@/domain/views';
+import type { Item, Snapshot } from '@/domain/types';
 
 interface TaskActionsProps {
   item: Item;
@@ -25,7 +29,10 @@ export function TaskActions({ item, childrenOf, onOpen }: TaskActionsProps) {
   const updateTask = useStore((s) => s.updateTask);
   const removeTask = useStore((s) => s.removeTask);
   const skipOccurrence = useStore((s) => s.skipOccurrence);
-  const [menu, setMenu] = useState<'none' | 'schedule' | 'more' | 'estimate'>('none');
+  const confirm = useConfirm();
+  const apply = useStore((s) => s.apply);
+  const toast = useStore((s) => s.toast);
+  const [menu, setMenu] = useState<'none' | 'schedule' | 'more' | 'estimate' | 'move'>('none');
   const ref = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
@@ -43,6 +50,36 @@ export function TaskActions({ item, childrenOf, onOpen }: TaskActionsProps) {
   }, [menu]);
 
   const { minutes, computed } = effectiveEstimate(item, childrenOf);
+  const bucket = bucketOf(item);
+
+  /**
+   * Sends the task to a view.
+   *
+   * The destination decides the change, using the same table drag and drop
+   * uses, so dropping onto "anytime this week" and choosing it from this menu
+   * do exactly the same thing.
+   */
+  async function moveTo(target: DropTarget, destination: string) {
+    setMenu('none');
+    const mutation = dropMutation(item, target);
+    if (!mutation) return;
+
+    const before = { due: item.due, labels: item.labels };
+    const patch = (fields: Record<string, unknown>) => (snap: Snapshot): Snapshot => ({
+      ...snap,
+      items: { ...snap.items, [item.id]: { ...snap.items[item.id], ...fields } as Item },
+    });
+
+    if (mutation.update) {
+      await apply([updateItem(item.id, mutation.update)], patch(mutation.update));
+    } else if (mutation.move) {
+      await apply([moveItem(item.id, mutation.move)], patch(mutation.move));
+    }
+
+    toast(t('task.movedTo', { destination }), () => {
+      void apply([updateItem(item.id, before)], patch(before));
+    });
+  }
 
   function schedule(date: Date | null) {
     setMenu('none');
@@ -100,6 +137,15 @@ export function TaskActions({ item, childrenOf, onOpen }: TaskActionsProps) {
       </button>
 
       <button
+        aria-label={t('task.moveTo')}
+        title={t('task.moveTo')}
+        aria-expanded={menu === 'move'}
+        onClick={() => setMenu(menu === 'move' ? 'none' : 'move')}
+      >
+        <Icon name="arrow-right" size="sm" />
+      </button>
+
+      <button
         aria-label={t('task.moreActions')}
         title={t('task.moreActions')}
         aria-expanded={menu === 'more'}
@@ -145,6 +191,28 @@ export function TaskActions({ item, childrenOf, onOpen }: TaskActionsProps) {
         </div>
       )}
 
+      {menu === 'move' && (
+        <div className="popover rowmenu" role="menu">
+          <h5>{t('task.moveTo')}</h5>
+          {bucket !== 'today' && bucket !== 'overdue' && (
+            <button className="opt" onClick={() => void moveTo({ kind: 'today' }, t('common.today'))}>
+              <span><Icon name="week" size="sm" /> {t('common.today')}</span>
+            </button>
+          )}
+          {bucket !== 'anytime' && (
+            <button className="opt" onClick={() => void moveTo({ kind: 'anytime' }, t('group.anytime'))}>
+              <span><Icon name="calendar" size="sm" /> {t('group.anytime')}</span>
+            </button>
+          )}
+          {bucket !== 'someday' && (
+            <button className="opt" onClick={() => void moveTo({ kind: 'someday' }, t('nav.someday'))}>
+              <span><Icon name="someday" size="sm" /> {t('nav.someday')}</span>
+            </button>
+          )}
+          <p className="menuhint">{t('task.moveToHint')}</p>
+        </div>
+      )}
+
       {menu === 'more' && (
         <div className="popover rowmenu" role="menu">
           <button className="opt" onClick={() => { setMenu('none'); onOpen(item.id); }}>
@@ -164,10 +232,13 @@ export function TaskActions({ item, childrenOf, onOpen }: TaskActionsProps) {
             className="opt danger"
             onClick={() => {
               setMenu('none');
-              // Deleting is irreversible in this app, so it is always confirmed.
-              if (window.confirm(t('task.deleteConfirm', { name: item.content }))) {
-                void removeTask(item.id);
-              }
+              // Deleting is irreversible here, so it is always confirmed.
+              void confirm({
+                title: t('task.deleteTitle'),
+                body: t('task.deleteConfirm', { name: item.content }),
+                confirmLabel: t('task.delete'),
+                destructive: true,
+              }).then((ok) => { if (ok) void removeTask(item.id); });
             }}
           >
             <span><Icon name="close" size="sm" /> {t('task.delete')}</span>
