@@ -75,6 +75,10 @@ interface AppState {
   updateSectionFields: (id: string, args: Record<string, unknown>) => Promise<void>;
   /** Creates a section at `index` and hands back its id, so the caller can focus its name. */
   createSection: (projectId: string, index: number) => Promise<string>;
+  /** Moves a section, and the tasks in it, to a new position in its project. */
+  moveSection: (id: string, index: number) => Promise<void>;
+  /** Deletes a section. Todoist deletes the tasks inside it with it. */
+  removeSection: (id: string) => Promise<void>;
 
   /* Toasts */
   toast: (message: string, undo?: () => void) => void;
@@ -497,6 +501,49 @@ export const useStore = create<AppState>((set, get) => ({
     });
 
     return tempId;
+  },
+
+  async moveSection(id, index) {
+    const snapshot = get().snapshot;
+    const section = snapshot.sections[id];
+    if (!section) return;
+
+    const others = Object.values(snapshot.sections)
+      .filter((s) => s.project_id === section.project_id && s.id !== id
+        && !s.is_archived && !s.is_deleted)
+      .sort((a, b) => a.section_order - b.section_order);
+
+    // The order the list should end up in, then one command per section that
+    // actually moved — a whole-list rewrite would churn every row.
+    const ordered = [...others.slice(0, index), section, ...others.slice(index)];
+    const changed = ordered
+      .map((s, order) => ({ section: s, order }))
+      .filter(({ section: s, order }) => s.section_order !== order);
+    if (changed.length === 0) return;
+
+    await get().apply(
+      changed.map(({ section: s, order }) =>
+        command('section_update', { id: s.id, section_order: order })),
+      (snap) => {
+        const sections = { ...snap.sections };
+        for (const { section: s, order } of changed) {
+          sections[s.id] = { ...sections[s.id], section_order: order };
+        }
+        return { ...snap, sections };
+      },
+    );
+  },
+
+  async removeSection(id) {
+    await get().apply([command('section_delete', { id })], (snapshot) => {
+      const sections = { ...snapshot.sections };
+      delete sections[id];
+      // The tasks go with it, as they do in Todoist.
+      const items = Object.fromEntries(
+        Object.entries(snapshot.items).filter(([, item]) => item.section_id !== id),
+      );
+      return { ...snapshot, sections, items };
+    });
   },
 
   async updateSectionFields(id, args) {

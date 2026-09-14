@@ -419,4 +419,12 @@ export const fr: Record<TranslationKey, string> = {
   'section.add': 'Ajouter une section',
   'section.name': 'Nom de la section',
   'section.untitled': 'Section sans titre',
+
+  'section.move': 'Glisser pour réordonner la section',
+  'section.delete': 'Supprimer la section',
+  'section.deleteTitle': 'Supprimer cette section ?',
+  'section.deleteBody': 'Supprimer « {name} » supprime aussi les {count} tâches qu’elle contient. Todoist conserve les tâches supprimées sept jours dans son historique.',
+  'section.deleteBody_one': 'Supprimer « {name} » supprime aussi la tâche qu’elle contient. Todoist conserve les tâches supprimées sept jours dans son historique.',
+  'section.deleteBody_other': 'Supprimer « {name} » supprime aussi les {count} tâches qu’elle contient. Todoist conserve les tâches supprimées sept jours dans son historique.',
+  'section.deleteEmpty': 'Supprimer « {name} » ? Elle est vide.',
 };

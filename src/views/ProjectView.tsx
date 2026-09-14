@@ -5,6 +5,7 @@ import { TaskGroup } from '@/components/TaskGroup';
 import { ModeSurface } from '@/components/ModeSurface';
 import { EditableDescription } from '@/components/EditableDescription';
 import { AddSectionLine } from '@/components/AddSectionLine';
+import { useConfirm } from '@/components/overlays/Confirm';
 import { Icon } from '@/components/Icon';
 import { useT } from '@/hooks/useT';
 import { useData } from '@/hooks/useData';
@@ -38,6 +39,25 @@ export function ProjectView({
   const updateProjectFields = useStore((s) => s.updateProjectFields);
   const updateSectionFields = useStore((s) => s.updateSectionFields);
   const createSection = useStore((s) => s.createSection);
+  const removeSection = useStore((s) => s.removeSection);
+  const confirm = useConfirm();
+
+  /* Deleting a section takes its tasks with it, as it does in Todoist, so it
+     is always confirmed and the count is stated. */
+  const deleteSection = async (group: { id: string; title: string; items: unknown[] }) => {
+    const ok = await confirm({
+      title: t('section.deleteTitle'),
+      body: group.items.length === 0
+        ? t('section.deleteEmpty', { name: group.title || t('section.untitled') })
+        : t('section.deleteBody', {
+            name: group.title || t('section.untitled'),
+            count: group.items.length,
+          }),
+      confirmLabel: t('section.delete'),
+      destructive: true,
+    });
+    if (ok) await removeSection(group.id);
+  };
 
   const addSection = async (index: number) => {
     const id = await createSection(projectId, index);
@@ -178,6 +198,7 @@ export function ProjectView({
             {group.id !== 'none' && (
               <AddSectionLine
                 label={t('section.add')}
+                slotId={String(index)}
                 onAdd={() => void addSection(index)}
               />
             )}
@@ -189,6 +210,7 @@ export function ProjectView({
                   ? undefined
                   : (name) => void updateSectionFields(group.id, { name })
               }
+              onDelete={group.id === 'none' ? undefined : () => void deleteSection(group)}
               items={group.items}
               childrenOf={childrenOf}
               onOpen={onOpen}
@@ -206,7 +228,8 @@ export function ProjectView({
           ))}
           <AddSectionLine
             label={t('section.add')}
-            onAdd={() => void addSection(sectionGroups.length)}
+            slotId={String(sections.length)}
+            onAdd={() => void addSection(sections.length)}
           />
           {scoped.length === 0 && <p className="empty">{t('task.noTasks')}</p>}
         </div>

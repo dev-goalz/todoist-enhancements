@@ -18,7 +18,7 @@ export default defineConfig({
         name: 'Enhancements for Todoist',
         short_name: 'Enhancements',
         description: 'An alternative, local-first client for Todoist.',
-        theme_color: '#e44332',
+        theme_color: '#e44232',
         background_color: '#ffffff',
         display: 'standalone',
         start_url: './',

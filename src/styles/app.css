@@ -234,9 +234,9 @@ ul{margin:0;padding:0;list-style:none}
 .app.collapsed .expand-wrap{display:block}
 .expand-wrap .iconbtn{border:1px solid var(--border);background:var(--surface)}
 
-.phead{display:flex;align-items:flex-start;justify-content:space-between;gap:var(--s5);margin-bottom:var(--s4)}
+.phead{display:flex;align-items:flex-start;justify-content:space-between;gap:var(--s5);margin-bottom:var(--s2)}
 .ptitle{display:flex;align-items:center;gap:10px;font-size:var(--fs-26);font-weight:700;letter-spacing:-.025em;line-height:1.1;text-wrap:balance}
-.psub{margin-top:8px;max-width:68ch;color:var(--muted);font-size:var(--fs-13);line-height:1.55;text-wrap:pretty}
+.psub{margin-top:4px;max-width:68ch;color:var(--muted);font-size:var(--fs-13);line-height:1.55;text-wrap:pretty}
 .pactions{display:flex;align-items:center;gap:var(--s2);flex:0 0 auto}
 
 .btn{position:relative;min-height:34px;padding:0 11px;display:inline-flex;align-items:center;justify-content:center;gap:6px;

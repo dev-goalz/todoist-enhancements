@@ -417,6 +417,14 @@ export const en = {
   'section.add': 'Add section',
   'section.name': 'Section name',
   'section.untitled': 'Untitled section',
+
+  'section.move': 'Drag to reorder the section',
+  'section.delete': 'Delete section',
+  'section.deleteTitle': 'Delete this section?',
+  'section.deleteBody': 'Deleting “{name}” also deletes the {count} tasks in it. Todoist keeps deleted tasks for seven days in its activity history.',
+  'section.deleteBody_one': 'Deleting “{name}” also deletes the task in it. Todoist keeps deleted tasks for seven days in its activity history.',
+  'section.deleteBody_other': 'Deleting “{name}” also deletes the {count} tasks in it. Todoist keeps deleted tasks for seven days in its activity history.',
+  'section.deleteEmpty': 'Delete “{name}”? It is empty.',
 };
 
 export type TranslationKey = keyof typeof en;

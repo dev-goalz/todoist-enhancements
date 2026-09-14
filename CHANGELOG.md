@@ -2,6 +2,21 @@
 
 Every notable change to Enhanced for Todoist, newest first.
 
+## [0.7.0] — 2026-09-14
+
+### Added
+
+- **Sections can be reordered by dragging them**, tasks and all, into the seam
+  between two others — the same seam that creates one.
+- **Sections can be deleted**, with a confirmation that states how many tasks
+  go with them.
+
+### Changed
+
+- The app wears Todoist's own icon.
+- A project's title sits on top of its numbers: an empty description takes no
+  room until the header is hovered, which cut the gap from 52px to 22.
+
 ## [0.6.0] — 2026-09-14
 
 ### Removed

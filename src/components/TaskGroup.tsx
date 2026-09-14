@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
+import { useDraggable } from '@dnd-kit/core';
 import { Icon } from './Icon';
 import { DraggableTask } from './dnd/DraggableTask';
 import { Droppable } from './dnd/Droppable';
@@ -24,15 +25,16 @@ interface TaskGroupProps {
   accent?: 'late' | 'quick';
   /** When set, the whole group accepts tasks dropped onto it. */
   dropTarget?: DropTarget;
-  /** A real section can be renamed in place; a derived grouping cannot. */
+  /** A real section can be renamed, moved and deleted; a derived grouping cannot. */
   sectionId?: string;
   onRename?: (name: string) => void;
+  onDelete?: () => void;
 }
 
 export function TaskGroup({
   title, items, childrenOf, onOpen, tint, actions,
   showProject = true, defaultCollapsed = false, dropTarget, onAddTask, accent,
-  sectionId, onRename,
+  sectionId, onRename, onDelete,
 }: TaskGroupProps) {
   const { t, locale } = useT();
   const dragging = useStore((s) => s.draggingTaskId !== null);
@@ -59,6 +61,9 @@ export function TaskGroup({
       {(title || sectionId) && (
         <div className="gheadblock">
         <div className="ghead">
+          {/* A section is dragged by its own handle, so a click on the heading
+              still collapses it. */}
+          {sectionId && <SectionHandle id={sectionId} label={t('section.move')} />}
           <button
             className="gtoggle"
             aria-expanded={!collapsed}
@@ -79,6 +84,16 @@ export function TaskGroup({
           </button>
           {actions && <span className="gactions">{actions}</span>}
           <span className="gcount">{items.length}</span>
+          {onDelete && (
+            <button
+              className="gdelete"
+              aria-label={t('section.delete')}
+              title={t('section.delete')}
+              onClick={(e) => { e.stopPropagation(); onDelete(); }}
+            >
+              <Icon name="close" size="sm" />
+            </button>
+          )}
           {/* The disclosure caret ends the row, as it does in the sidebar. */}
           <button
             className="gdisclose"
@@ -155,5 +170,22 @@ function SectionName({
         if (e.key === 'Escape') { setDraft(value); e.currentTarget.blur(); }
       }}
     />
+  );
+}
+
+/** The grip a section is dragged by. */
+function SectionHandle({ id, label }: { id: string; label: string }) {
+  const { attributes, listeners, setNodeRef } = useDraggable({ id: `section:${id}` });
+  return (
+    <span
+      ref={setNodeRef}
+      className="sectiondrag"
+      title={label}
+      aria-label={label}
+      {...attributes}
+      {...listeners}
+    >
+      <Icon name="drag" size="sm" />
+    </span>
   );
 }

@@ -1008,13 +1008,18 @@
    ========================================================================== */
 /* Nothing at rest; under the pointer, a rule marking exactly where the new
    section will land. */
+.addsection-slot{margin:2px 0}
 .addsection{
   display:flex;align-items:center;gap:10px;width:100%;
-  height:20px;margin:2px 0;padding:0;
+  height:20px;padding:0;
   opacity:0;transition:opacity .12s ease-out;
 }
 .mode:hover .addsection:hover,
-.addsection:focus-visible{opacity:1}
+.addsection:focus-visible,
+/* While a section is being dragged, every slot shows where it could land. */
+.addsection-slot.over .addsection{opacity:1}
+.addsection-slot.over .addsection-rule{height:3px}
+.addsection-slot.over .addsection-label{visibility:hidden}
 .addsection-rule{flex:1;height:2px;border-radius:1px;background:var(--accent)}
 .addsection-label{
   flex:0 0 auto;color:var(--accent);
@@ -1126,10 +1131,17 @@
 .namepicker .hash{width:18px;height:18px;font-size:var(--fs-12)}
 
 /* An empty description is an offer, not a statement: it waits under the
-   pointer rather than telling every reader that there is nothing to read. */
-.descwrap.unset .descview{opacity:0;transition:opacity .12s ease-out}
+   pointer, and takes no room while it waits, so the title sits on top of the
+   numbers rather than a line of blank space. */
+.descwrap.unset{display:grid;grid-template-rows:0fr;transition:grid-template-rows .14s ease-out}
+.descwrap.unset .descview{
+  min-height:0;overflow:hidden;padding-block:0;
+  opacity:0;transition:opacity .12s ease-out;
+}
+.phead:hover .descwrap.unset,
+.descwrap.unset:focus-within{grid-template-rows:1fr}
 .phead:hover .descwrap.unset .descview,
-.descwrap.unset .descview:focus-visible{opacity:1}
+.descwrap.unset:focus-within .descview{opacity:1;padding-block:2px}
 
 /* Tag pickers float above their dialog instead of growing it. */
 .prop .tagpicker,
@@ -1137,3 +1149,22 @@
   position:absolute;z-index:70;top:auto;bottom:calc(100% + 6px);left:0;
   width:min(260px,100%);max-height:220px;overflow-y:auto;
 }
+
+/* A section's own grip and its delete, both quiet until the row is hovered. */
+.sectiondrag,
+.gdelete{
+  width:22px;height:22px;flex:0 0 auto;display:grid;place-items:center;
+  border-radius:var(--r-xs);color:var(--faint);
+  opacity:0;transition:opacity .12s ease-out;
+}
+.sectiondrag{margin-left:-24px;cursor:grab;position:absolute;left:0}
+.ghead{position:relative}
+.gheadblock:hover .sectiondrag,
+.gheadblock:hover .gdelete,
+.gheadblock:focus-within .sectiondrag,
+.gheadblock:focus-within .gdelete{opacity:1}
+.gdelete:hover{background:var(--accent-tint);color:var(--accent)}
+.sectiondrag:active{cursor:grabbing}
+
+/* The preview of a section in flight. */
+.dragoverlay.section{font-weight:700}

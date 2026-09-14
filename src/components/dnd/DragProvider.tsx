@@ -39,6 +39,7 @@ export function DragProvider({ children }: { children: ReactNode }) {
   const toast = useStore((s) => s.toast);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const setDragging = useStore((s) => s.setDragging);
+  const moveSection = useStore((s) => s.moveSection);
 
   // A short distance threshold keeps a plain click on a task from starting a drag.
   const sensors = useSensors(
@@ -46,16 +47,28 @@ export function DragProvider({ children }: { children: ReactNode }) {
   );
 
   function onDragStart(event: DragStartEvent) {
-    setDraggingId(String(event.active.id));
-    setDragging(String(event.active.id));
+    const id = String(event.active.id);
+    setDraggingId(id);
+    // Sections are not tasks, so the "a task is in flight" flag stays down.
+    setDragging(id.startsWith('section:') ? null : id);
   }
 
   async function onDragEnd(event: DragEndEvent) {
+    const activeId = String(event.active.id);
     setDraggingId(null);
     setDragging(null);
     if (!event.over) return;
 
-    const item = snapshot.items[String(event.active.id)];
+    /* A section is dragged whole, into a slot between two others. It is not a
+       task and none of the task rules apply to it. */
+    if (activeId.startsWith('section:')) {
+      const overId = String(event.over.id);
+      if (!overId.startsWith('slot:')) return;
+      await moveSection(activeId.slice('section:'.length), Number(overId.split(':')[2]));
+      return;
+    }
+
+    const item = snapshot.items[activeId];
     const target = decodeTarget(String(event.over.id));
     if (!item || !target) return;
 
@@ -86,7 +99,12 @@ export function DragProvider({ children }: { children: ReactNode }) {
     });
   }
 
-  const dragging = draggingId ? snapshot.items[draggingId] : null;
+  const dragging = draggingId && !draggingId.startsWith('section:')
+    ? snapshot.items[draggingId]
+    : null;
+  const draggingSection = draggingId?.startsWith('section:')
+    ? snapshot.sections[draggingId.slice('section:'.length)]
+    : null;
 
   return (
     /* Collisions are decided by where the cursor is, not by which droppable a
@@ -105,6 +123,9 @@ export function DragProvider({ children }: { children: ReactNode }) {
           instead of following the pointer. */}
       <DragOverlay dropAnimation={null} modifiers={[anchorLeftOfCursor]}>
         {dragging && <div className="dragoverlay">{dragging.content}</div>}
+        {draggingSection && (
+          <div className="dragoverlay section">{draggingSection.name || '—'}</div>
+        )}
       </DragOverlay>
     </DndContext>
   );
