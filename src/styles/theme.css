@@ -284,15 +284,13 @@
 /* Task titles sit a step above body weight without shouting. */
 .ttitle{font-weight:500}
 
-/* Heading, tasks and the add line share one left edge; the checkbox sits in
-   its own gutter so nothing hangs outside the column. */
-.page > .mode{padding-left:26px}
-.group > .ghead,
-.group > .gdesc,
-.group > .sectionadd{margin-left:-26px}
-.task{padding-left:0}
-.task > .check{margin-left:0}
-.drag{left:-48px}
+/* One left edge for everything in a list: the heading, the checkbox, the add
+   line. The prototype hung each row 26px to the left of its container; that is
+   undone here so a section's frame can wrap its rows without drifting. */
+.task{margin-left:0;width:100%;padding-left:0}
+.ghead,.gdesc,.sectionadd{padding-left:0}
+/* The drag handle is taken out of flow, so it costs the row no width. */
+.drag{position:absolute;left:-24px}
 
 /* Collapsed sections need room between them to read as separate blocks. */
 .group{margin-top:34px}
@@ -328,9 +326,9 @@
 .group:hover .sectionadd,
 .group:focus-within .sectionadd{opacity:1}
 
+/* On a narrow screen the handle has nowhere to hang, and touch has no hover. */
 @media (max-width:700px){
-  .page > .mode{padding-left:0}
-  .group > .ghead,.group > .gdesc,.group > .sectionadd{margin-left:0}
+  .drag{display:none}
 }
 
 /* The page metrics carry a glyph each, so the numbers are scannable. */
@@ -589,13 +587,14 @@
 .page.wide > .empty{
   max-width:1160px;
 }
-/* The list keeps its checkbox gutter inside that centred column. */
-.page > .mode{padding-left:26px;box-sizing:border-box}
 
 /* ---------- Behind schedule and Quick read as callouts ---------- */
 .group.accent-late,
 .group.accent-quick{
-  padding:var(--s4) var(--s4) var(--s2);
+  padding:var(--s4);
+  /* The bleed covers the border as well as the padding, so the text inside
+     lands on exactly the same left edge as an unframed section. */
+  margin-inline:calc((var(--s4) + 1px) * -1);
   border:1px solid;
   border-radius:var(--r-lg);
 }
@@ -612,15 +611,6 @@
 .group.accent-quick .ghead{border-bottom-color:transparent}
 .group.accent-late .task,
 .group.accent-quick .task{border-bottom-color:rgba(32,32,32,.07)}
-/* The callout supplies its own padding, so the negative gutter is cancelled. */
-.group.accent-late > .ghead,
-.group.accent-quick > .ghead,
-.group.accent-late > .gdesc,
-.group.accent-quick > .gdesc,
-.group.accent-late > .sectionadd,
-.group.accent-quick > .sectionadd{margin-left:0}
-.group.accent-late .task,
-.group.accent-quick .task{padding-left:0}
 
 /* ---------- Kanban ---------- */
 /* Columns scroll sideways instead of wrapping onto a second row. */
@@ -665,3 +655,18 @@
 .col .taskwrap .task ~ .task .ttitle{font-size:var(--fs-12);font-weight:400}
 .col .trow-end{grid-column:2;justify-self:end;margin-top:6px}
 .col .drag{display:none}
+
+/* An indented subtask row shrinks rather than sliding, so it never reaches
+   past the right edge of the column. */
+.task[data-depth]{
+  margin-left:calc(var(--depth) * 26px);
+  width:calc(100% - var(--depth) * 26px);
+}
+
+/* On a narrow screen the page gutter is too small to give away, so the callout
+   keeps its frame inside the content column instead of bleeding past it.
+   Declared here, after the rule it overrides. */
+@media (max-width:700px){
+  .group.accent-late,
+  .group.accent-quick{margin-inline:0}
+}

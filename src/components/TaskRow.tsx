@@ -48,7 +48,8 @@ export function TaskRow({
         className="task"
         role="button"
         tabIndex={0}
-        style={depth > 0 ? { marginLeft: `${depth * 26}px` } : undefined}
+        data-depth={depth > 0 ? depth : undefined}
+        style={depth > 0 ? ({ '--depth': depth } as React.CSSProperties) : undefined}
         onClick={() => onOpen(item.id)}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
