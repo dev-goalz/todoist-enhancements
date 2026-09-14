@@ -525,8 +525,13 @@
   .bento .w4{grid-column:span 6}
   .bento .w8{grid-column:span 12}
 }
-@media (max-width:700px){
-  .bento .w3,.bento .w4,.bento .w6,.bento .w8{grid-column:span 12}
+/* Below this width the bento is a single column, and every card takes the
+   whole row. `span 12` cannot say that once the template is one column — it
+   conjures eleven implicit columns instead and the cards share a row. */
+@media (max-width:720px){
+  /* Matched on two class names so it outweighs the `.bento .wN` spans above,
+     which would otherwise keep conjuring twelve implicit columns. */
+  .page .bento > *{grid-column:1 / -1}
 }
 
 /* Dashboard rows */
@@ -757,7 +762,8 @@
 
 /* ---------- "This period at a glance" ---------- */
 .card.summary{background:var(--accent-wash);border-color:transparent}
-.summary-head{display:flex;align-items:baseline;justify-content:space-between;gap:var(--s4)}
+.summary-head{display:flex;align-items:baseline;justify-content:space-between;
+  gap:var(--s2) var(--s4);flex-wrap:wrap}
 .summary-head strong{font-size:var(--fs-16);font-weight:700;color:var(--accent-dark)}
 .summary-stats{
   display:flex;flex-wrap:wrap;gap:var(--s3) var(--s6);margin-top:var(--s4);

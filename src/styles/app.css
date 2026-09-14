@@ -477,7 +477,10 @@ ul{margin:0;padding:0;list-style:none}
 /* ==========================================================================
    9. DASHBOARD + INSIGHTS — one chart palette for the whole product
    ========================================================================== */
-.bento{display:grid;grid-template-columns:repeat(12,1fr);gap:var(--s4);margin-top:var(--s5);align-items:start}
+/* minmax(0,1fr) rather than 1fr: a plain fr track takes the min-content width
+   of its widest child as a floor, so one wide chart pushed every card in the
+   column past the page gutter. */
+.bento{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--s4);margin-top:var(--s5);align-items:start}
 .card{padding:20px;border:1px solid var(--border);border-radius:var(--r-lg);background:var(--surface)}
 .card h3{font-size:var(--fs-13);font-weight:700;line-height:1.2;text-wrap:balance}
 .card .psub{margin-top:2px;font-size:var(--fs-12)}
@@ -770,8 +773,8 @@ kbd{padding:2px 5px;border:1px solid var(--border-strong);border-radius:var(--r-
     mask-image:linear-gradient(to right,#000 calc(100% - 22px),transparent)}
   .col{scroll-snap-align:start}
   .cal{grid-template-columns:repeat(7,minmax(84px,1fr));overflow-x:auto}
-  .bento{grid-template-columns:1fr}
-  .w4,.w6,.w8,.w12,.stackcol{grid-column:auto;grid-template-columns:1fr}
+  .bento{grid-template-columns:minmax(0,1fr)}
+  .stackcol{grid-column:auto;grid-template-columns:1fr}
   .settings{grid-template-columns:1fr;gap:var(--s4)}
   .setnav{grid-auto-flow:column;grid-auto-columns:max-content;overflow-x:auto;padding-bottom:var(--s2)}
   .prow{grid-template-columns:110px minmax(60px,1fr) 36px;gap:var(--s2)}
