@@ -1,6 +1,11 @@
 import { useMemo } from 'react';
+import { addDays, format, startOfDay } from 'date-fns';
 import { Icon } from '@/components/Icon';
 import { TaskRow } from '@/components/TaskRow';
+import {
+  Bars, ChartCard, RankedBars, Ring, StatTile, seriesColor,
+  type BarDatum, type RankedDatum,
+} from '@/components/charts';
 import { useT } from '@/hooks/useT';
 import { useData } from '@/hooks/useData';
 import { useStore } from '@/store/store';
@@ -13,23 +18,29 @@ import { summariseInsights } from '@/domain/insights';
 import { effectiveEstimate, formatDuration } from '@/domain/estimates';
 import { deadlineDate, formatRelativeDay } from '@/domain/dates';
 import { detectConflicts, detectIncomplete } from '@/domain/conflicts';
-import { addDays, startOfDay } from 'date-fns';
+import { markerStyle } from '@/domain/colors';
 
 interface DashboardViewProps {
   onOpen: (id: string) => void;
   onIssues: () => void;
 }
 
-/** One page answering: what is today, what is blocking, and how the week looks. */
+/**
+ * One board answering three questions: what is today, what is in the way, and
+ * how the week is trending. Numbers lead, charts support them.
+ */
 export function DashboardView({ onOpen, onIssues }: DashboardViewProps) {
   const { t, locale } = useT();
   const { snapshot, items, childrenOf } = useData();
   const prefs = useStore((s) => s.prefs);
-  const { data: completed } = useCompleted('week', true);
+  const { data: completed } = useCompleted('month', true);
 
   const roots = useMemo(() => rootItems(items), [items]);
   const week = useMemo(() => weekItems(roots), [roots]);
-  const groups = useMemo(() => groupWeek(week, new Date(), prefs.showQuickGroup), [week, prefs.showQuickGroup]);
+  const groups = useMemo(
+    () => groupWeek(week, new Date(), prefs.showQuickGroup),
+    [week, prefs.showQuickGroup],
+  );
 
   const todayItems = [...groups.overdue, ...groups.quick, ...groups.untimed, ...groups.timed];
   const todayCapacity = prefs.dailyCapacity[new Date().getDay()];
@@ -49,6 +60,49 @@ export function DashboardView({ onOpen, onIssues }: DashboardViewProps) {
   );
   const unestimated = useMemo(() => detectIncomplete(roots), [roots]);
 
+  const intl = locale === 'fr' ? 'fr-FR' : 'en-GB';
+
+  const momentum: BarDatum[] = useMemo(() => {
+    const todayKey = format(startOfDay(new Date()), 'yyyy-MM-dd');
+    return summary.byDay.slice(-21).map((day) => ({
+      key: day.date,
+      label: new Intl.DateTimeFormat(intl, { day: 'numeric' }).format(new Date(day.date)),
+      value: day.count,
+      current: day.date === todayKey,
+    }));
+  }, [summary.byDay, intl]);
+
+  /** Estimated minutes already committed to each of the next seven days. */
+  const weekAhead: BarDatum[] = useMemo(() => {
+    const today = startOfDay(new Date());
+    return Array.from({ length: 7 }, (_, offset) => {
+      const day = addDays(today, offset);
+      const key = format(day, 'yyyy-MM-dd');
+      const minutes = roots
+        .filter((i) => i.due && i.due.date.slice(0, 10) === key)
+        .reduce((acc, i) => acc + (effectiveEstimate(i, childrenOf).minutes ?? 0), 0);
+      return {
+        key,
+        label: new Intl.DateTimeFormat(intl, { weekday: 'short' }).format(day),
+        value: minutes,
+        current: offset === 0,
+      };
+    });
+  }, [roots, childrenOf, intl]);
+
+  const openByProject: RankedDatum[] = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const item of roots) counts.set(item.project_id, (counts.get(item.project_id) ?? 0) + 1);
+    return [...counts.entries()]
+      .map(([id, value]) => ({
+        key: id,
+        label: snapshot.projects[id]?.name ?? '—',
+        value,
+      }))
+      .sort((a, b) => b.value - a.value)
+      .map((row, index) => ({ ...row, color: seriesColor(index) }));
+  }, [roots, snapshot.projects]);
+
   const deadlines = useMemo(() => {
     const limit = startOfDay(addDays(new Date(), 7));
     return roots
@@ -56,36 +110,12 @@ export function DashboardView({ onOpen, onIssues }: DashboardViewProps) {
         const d = deadlineDate(i);
         return d !== null && d <= limit;
       })
-      .sort((a, b) => (deadlineDate(a)!.getTime() - deadlineDate(b)!.getTime()))
-      .slice(0, 6);
+      .sort((a, b) => deadlineDate(a)!.getTime() - deadlineDate(b)!.getTime())
+      .slice(0, 5);
   }, [roots]);
 
-  const projectProgress = useMemo(() => {
-    const counts = new Map<string, { open: number; done: number; name: string }>();
-    for (const item of roots) {
-      const name = snapshot.projects[item.project_id]?.name ?? '—';
-      const entry = counts.get(item.project_id) ?? { open: 0, done: 0, name };
-      entry.open += 1;
-      counts.set(item.project_id, entry);
-    }
-    for (const task of completed) {
-      const entry = counts.get(task.project_id);
-      if (entry) entry.done += 1;
-    }
-    return [...counts.entries()]
-      .map(([id, value]) => ({
-        id,
-        name: value.name,
-        percentage: value.open + value.done > 0
-          ? Math.round((value.done / (value.open + value.done)) * 100)
-          : 0,
-        open: value.open,
-      }))
-      .sort((a, b) => b.open - a.open)
-      .slice(0, 6);
-  }, [roots, completed, snapshot.projects]);
-
-  const maxDay = Math.max(1, ...summary.byDay.slice(-7).map((d) => d.count));
+  const pillClass = (level: string | null) =>
+    `loadpill ${level === 'ok' ? 'ok' : level === 'tight' ? 'warn' : 'over'}`;
 
   return (
     <div className="page wide">
@@ -94,148 +124,170 @@ export function DashboardView({ onOpen, onIssues }: DashboardViewProps) {
           <h1 className="ptitle">{t('dashboard.title')}</h1>
           <p className="psub">{t('week.subtitle')}</p>
         </div>
-        <div className="pactions">
-          <button className="btn" onClick={() => navigate('insights')}>
-            <Icon name="trend" />
-            {t('insights.openFull')}
-          </button>
-        </div>
+      </div>
+
+      <div className="viewbar">
+        <button className="btn accent" onClick={() => navigate('insights')}>
+          <Icon name="trend" />
+          {t('insights.openFull')}
+        </button>
       </div>
 
       <div className="bento">
+        <section className="card w3">
+          <StatTile
+            label={t('dashboard.today')}
+            value={todayLoad.taskCount}
+            trailing={formatDuration(todayLoad.estimatedMinutes, locale)}
+            hint={
+              todayLoad.percentage !== null
+                ? t('dashboard.ofCapacity', {
+                    percentage: todayLoad.percentage,
+                    capacity: formatDuration(todayCapacity, locale),
+                  })
+                : undefined
+            }
+          />
+        </section>
+
+        <section className="card w3">
+          <StatTile
+            label={t('group.overdue')}
+            value={groups.overdue.length}
+            tone={groups.overdue.length > 0 ? 'accent' : 'neutral'}
+            hint={t('insights.behindSchedule')}
+          />
+        </section>
+
+        <section className="card w3">
+          <StatTile
+            label={t('insights.focusScore')}
+            value={`${summary.focusScore}%`}
+            hint={t('insights.period.month')}
+          />
+        </section>
+
+        <section className="card w3">
+          <StatTile
+            label={t('insights.streak', { count: summary.currentStreak })}
+            value={summary.currentStreak}
+            hint={t('insights.activeDays') + ' · ' + summary.activeDays}
+          />
+        </section>
+
         <section className="card w8">
           <div className="chead-row">
             <div>
               <h3>{t('dashboard.today')}</h3>
-              <p className="psub">
-                {t('metrics.tasks', { count: todayLoad.taskCount })} ·{' '}
-                {formatDuration(todayLoad.estimatedMinutes, locale)} {t('metrics.estimatedWord')} ·{' '}
-                {formatDuration(todayCapacity, locale)}
-              </p>
+              <p className="psub">{t('dashboard.todayHint')}</p>
             </div>
             {todayLoad.percentage !== null && (
-              <span className={`loadpill ${todayLoad.level === 'ok' ? 'ok' : todayLoad.level === 'tight' ? 'warn' : 'over'}`}>
-                {todayLoad.percentage}%
-              </span>
+              <span className={pillClass(todayLoad.level)}>{todayLoad.percentage}%</span>
             )}
           </div>
           <div className="focuslist">
             {todayItems.slice(0, 6).map((item) => (
               <TaskRow key={item.id} item={item} childrenOf={childrenOf} onOpen={onOpen} />
             ))}
-            {todayItems.length === 0 && <p className="empty">{t('task.noTasks')}</p>}
+            {todayItems.length === 0 && <p className="chart-empty">{t('task.noTasks')}</p>}
           </div>
         </section>
 
         <section className="card w4">
           <div className="chead-row">
-            <div>
-              <h3>{t('dashboard.needsAttention')}</h3>
-              <p className="psub">{t('issues.conflictsIntro')}</p>
-            </div>
+            <div><h3>{t('dashboard.needsAttention')}</h3></div>
           </div>
           <div className="attn-list">
             <button className="attn" onClick={onIssues}>
               <span className="attn-n">{conflicts.length}</span>
               <span>{t('issues.tabConflicts')}</span>
+              <Icon name="arrow-right" size="sm" />
             </button>
             <button className="attn" onClick={onIssues}>
               <span className="attn-n">{unestimated.length}</span>
               <span>{t('issues.tabToComplete')}</span>
+              <Icon name="arrow-right" size="sm" />
             </button>
             <button className="attn" onClick={() => navigate('week')}>
               <span className="attn-n">{groups.overdue.length}</span>
               <span>{t('group.overdue')}</span>
+              <Icon name="arrow-right" size="sm" />
             </button>
           </div>
         </section>
 
-        <section className="card w6">
+        <ChartCard
+          title={t('dashboard.weekLoad')}
+          subtitle={t('dashboard.weekAheadHint')}
+          span={6}
+          trailing={
+            weekLoad.percentage !== null
+              ? <span className={pillClass(weekLoad.level)}>{weekLoad.percentage}%</span>
+              : undefined
+          }
+        >
+          <Bars
+            data={weekAhead}
+            height={130}
+            emptyLabel={t('task.noTasks')}
+            format={(value) => formatDuration(value, locale)}
+          />
+        </ChartCard>
+
+        <ChartCard
+          title={t('dashboard.momentum')}
+          subtitle={t('insights.completedTasks')}
+          span={6}
+          trailing={<span className="kpi-label">{summary.completedCount}</span>}
+        >
+          <Bars
+            data={momentum}
+            height={130}
+            labelEvery={3}
+            emptyLabel={t('insights.noHistory')}
+            format={(value) => t('metrics.tasks', { count: value })}
+          />
+        </ChartCard>
+
+        <ChartCard title={t('dashboard.openByProject')} span={6}>
+          <RankedBars
+            data={openByProject}
+            limit={6}
+            otherLabel={t('insights.otherProjects')}
+            emptyLabel={t('task.noTasks')}
+          />
+        </ChartCard>
+
+        <section className="card w3">
           <div className="chead-row">
-            <div>
-              <h3>{t('dashboard.weekLoad')}</h3>
-              <p className="psub">{t('metrics.loadTooltip')}</p>
-            </div>
-            {weekLoad.percentage !== null && (
-              <span className={`loadpill ${weekLoad.level === 'ok' ? 'ok' : weekLoad.level === 'tight' ? 'warn' : 'over'}`}>
-                {weekLoad.percentage}%
-              </span>
-            )}
+            <div><h3>{t('insights.coverage')}</h3></div>
           </div>
-          <div className="bar">
-            <i
-              className={weekLoad.level === 'tight' ? 'warn' : weekLoad.level === 'over' ? 'over' : ''}
-              style={{ width: `${Math.min(100, weekLoad.percentage ?? 0)}%` }}
-            />
-          </div>
-          <p className="psub" style={{ marginTop: 'var(--s2)' }}>
-            {formatDuration(weekLoad.estimatedMinutes, locale)} ·{' '}
-            {t('metrics.unestimated', { count: weekLoad.unestimatedCount })}
-          </p>
+          <Ring
+            percentage={summary.estimateCoverage}
+            label={t('insights.estimates')}
+            caption={t('metrics.unestimated', { count: unestimated.length })}
+          />
         </section>
 
-        <section className="card w6">
+        <section className="card w3">
           <div className="chead-row">
-            <div>
-              <h3>{t('dashboard.momentum')}</h3>
-              <p className="psub">{t('insights.weekActivity')}</p>
-            </div>
-            <span className="kpi-label">
-              {t('metrics.tasks', { count: summary.completedCount })}
-            </span>
-          </div>
-          <div className="bars">
-            {summary.byDay.slice(-7).map((day) => (
-              <i className="fill" key={day.date} style={{ height: `${Math.round((day.count / maxDay) * 100)}%` }} />
-            ))}
-          </div>
-          <div className="barlabels">
-            {summary.byDay.slice(-7).map((day) => (
-              <span key={day.date}>
-                {new Intl.DateTimeFormat(locale === 'fr' ? 'fr-FR' : 'en-GB', { weekday: 'short' })
-                  .format(new Date(day.date))}
-              </span>
-            ))}
-          </div>
-        </section>
-
-        <section className="card w6">
-          <div className="chead-row">
-            <div><h3>{t('dashboard.projectProgress')}</h3></div>
-          </div>
-          {projectProgress.map((project) => (
-            <button
-              className="prow"
-              key={project.id}
-              onClick={() => navigate('project', project.id)}
-            >
-              <span>{project.name}</span>
-              <span className="bar" style={{ flex: 1 }}>
-                <i style={{ width: `${project.percentage}%` }} />
-              </span>
-              <b>{project.percentage}%</b>
-            </button>
-          ))}
-        </section>
-
-        <section className="card w6">
-          <div className="chead-row">
-            <div>
-              <h3>{t('dashboard.deadlines')}</h3>
-              <p className="psub">{t('insights.period.week')}</p>
-            </div>
+            <div><h3>{t('dashboard.deadlines')}</h3></div>
           </div>
           {deadlines.length === 0 ? (
-            <p className="empty">{t('dashboard.noDeadlines')}</p>
+            <p className="chart-empty">{t('dashboard.noDeadlines')}</p>
           ) : (
             deadlines.map((item) => {
               const d = deadlineDate(item)!;
-              const { minutes } = effectiveEstimate(item, childrenOf);
+              const project = snapshot.projects[item.project_id];
               return (
-                <button className="prow" key={item.id} onClick={() => onOpen(item.id)}>
-                  <span>{item.content}</span>
+                <button className="deadlinerow" key={item.id} onClick={() => onOpen(item.id)}>
+                  <span className="deadlinename">{item.content}</span>
                   <span className="deadline">{formatRelativeDay(d, locale)}</span>
-                  {minutes !== null && <b>{formatDuration(minutes, locale)}</b>}
+                  {project && (
+                    <span className="logmeta" style={markerStyle(project.color, false)}>
+                      #{project.name}
+                    </span>
+                  )}
                 </button>
               );
             })

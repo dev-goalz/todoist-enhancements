@@ -20,6 +20,7 @@ interface SimpleListViewProps {
   onOpen: (id: string) => void;
   onInsights: () => void;
   onUnestimated: () => void;
+  onAddTaskTo: (placement: { projectId?: string; sectionId?: string; date?: string }) => void;
 }
 
 /**
@@ -30,7 +31,7 @@ interface SimpleListViewProps {
  * to measure itself against.
  */
 export function SimpleListView({
-  kind, labelName, onOpen, onInsights, onUnestimated,
+  kind, labelName, onOpen, onInsights, onUnestimated, onAddTaskTo,
 }: SimpleListViewProps) {
   const { t } = useT();
   const { snapshot, items, childrenOf } = useData();
@@ -69,12 +70,6 @@ export function SimpleListView({
         subtitle={subtitle}
         load={load}
         onOpenUnestimated={load.unestimatedCount > 0 ? onUnestimated : undefined}
-        actions={
-          <button className="btn" onClick={onInsights}>
-            <Icon name="trend" />
-            {t('toolbar.insights')}
-          </button>
-        }
       />
 
       <div className="viewbar">
@@ -83,6 +78,10 @@ export function SimpleListView({
           modes={['list', 'board']}
           groups={['none', 'project', 'priority', 'label', 'estimate']}
         />
+        <button className="btn accent" onClick={onInsights}>
+          <Icon name="trend" />
+          {t('toolbar.insights')}
+        </button>
       </div>
 
       {kind === 'someday' && current.mode === 'list' && current.group === 'none' ? (
@@ -92,6 +91,7 @@ export function SimpleListView({
             childrenOf={childrenOf}
             onOpen={onOpen}
             dropTarget={{ kind: 'someday' }}
+            onAddTask={() => onAddTaskTo({})}
           />
         </div>
       ) : (

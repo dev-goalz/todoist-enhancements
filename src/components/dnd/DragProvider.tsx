@@ -3,6 +3,7 @@ import {
   DndContext, DragOverlay, PointerSensor, useSensor, useSensors,
   type DragEndEvent, type DragStartEvent,
 } from '@dnd-kit/core';
+import { snapCenterToCursor } from '@dnd-kit/modifiers';
 import { useStore } from '@/store/store';
 import { decodeTarget, dropMutation } from '@/domain/dnd';
 import { updateItem, moveItem } from '@/api/commands';
@@ -72,7 +73,9 @@ export function DragProvider({ children }: { children: ReactNode }) {
   return (
     <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
       {children}
-      <DragOverlay dropAnimation={null}>
+      {/* Without this the preview stays at the row's original position instead
+          of following the pointer. */}
+      <DragOverlay dropAnimation={null} modifiers={[snapCenterToCursor]}>
         {dragging && <div className="dragoverlay">{dragging.content}</div>}
       </DragOverlay>
     </DndContext>

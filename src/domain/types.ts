@@ -70,12 +70,16 @@ export interface Project {
   inbox_project?: boolean;
   view_style?: string;
   workspace_id?: string | null;
+  /** Todoist folders are projects that hold others rather than tasks. */
+  is_folder?: boolean;
+  collapsed?: boolean;
 }
 
 export interface Section {
   id: string;
   project_id: string;
   name: string;
+  description?: string;
   section_order: number;
   is_archived: boolean;
   is_deleted: boolean;
@@ -141,6 +145,8 @@ export interface TodoistUser {
   lang?: string;
   image_id?: string | null;
   avatar_big?: string | null;
+  karma?: number | null;
+  karma_trend?: string | null;
 }
 
 /** A completed task as returned by the completed-tasks endpoints. */
@@ -220,7 +226,10 @@ export type ViewId =
 export type DisplayMode = 'list' | 'board' | 'focus' | 'calendar';
 
 export type GroupKey =
+  /** What the page groups by when the user has chosen nothing: sections in a
+   *  project, the fixed week layout in My week, flat elsewhere. */
   | 'none'
+  | 'scheduled'
   | 'day'
   | 'week'
   | 'month'

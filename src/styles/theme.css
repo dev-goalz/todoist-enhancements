@@ -236,3 +236,327 @@
 
 .btn.linklike{border:0;color:var(--accent);background:transparent;padding:0 4px}
 .btn.linklike:hover{text-decoration:underline;background:transparent}
+
+/* ==========================================================================
+   Sidebar refinements
+   ========================================================================== */
+.profile .identity strong{font-size:var(--fs-14);font-weight:700}
+.karma{display:grid;gap:3px;min-width:0}
+.karma small{color:var(--muted);font-size:var(--fs-11)}
+/* A thin gauge showing how far the current karma rank has been travelled. */
+.karmabar{display:block;height:3px;border-radius:var(--r-full);background:var(--border);overflow:hidden}
+.karmabar i{display:block;height:100%;border-radius:inherit;background:var(--accent)}
+
+.side-head{display:flex;align-items:center;justify-content:space-between;gap:var(--s2)}
+.side-head > span{
+  font-size:var(--fs-12);font-weight:600;color:var(--muted);
+  padding-left:8px;
+}
+.folderitem .label{font-weight:600}
+
+/* The sidebar footer: the add button, then status and icons on one baseline. */
+.side-foot{display:grid;gap:var(--s2);padding:var(--s3) var(--s2) var(--s3)}
+.side-foot .addbtn{
+  width:100%;min-height:36px;justify-content:center;
+  background:var(--accent);color:#fff;font-weight:600;border-radius:var(--r-sm);
+}
+.side-foot .addbtn:hover{background:var(--accent-dark)}
+.side-foot .addbtn .ic{color:#fff}
+.footrow{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:var(--s2);min-height:28px;
+}
+.footrow .syncstatus{padding:0 6px;min-width:0;flex:1 1 auto;text-align:left}
+.footicons{display:flex;align-items:center;gap:2px;flex:0 0 auto}
+
+/* The badge sits on the icon, not beside it, in every context. */
+.issuesbtn{position:relative;overflow:visible}
+.issuesbtn .badge{
+  position:absolute;top:-2px;right:-2px;min-width:15px;height:15px;padding:0 3px;
+  display:grid;place-items:center;border-radius:var(--r-full);
+  background:var(--accent);color:#fff;font-size:9px;font-weight:700;line-height:1;
+}
+
+/* ==========================================================================
+   List refinements
+   ========================================================================== */
+
+/* Task titles sit a step above body weight without shouting. */
+.ttitle{font-weight:500}
+
+/* Heading, tasks and the add line share one left edge; the checkbox sits in
+   its own gutter so nothing hangs outside the column. */
+.page > .mode{padding-left:26px}
+.group > .ghead,
+.group > .gdesc,
+.group > .sectionadd{margin-left:-26px}
+.task{padding-left:0}
+.task > .check{margin-left:0}
+.drag{left:-48px}
+
+/* Collapsed sections need room between them to read as separate blocks. */
+.group{margin-top:34px}
+.group.collapsed{margin-top:22px;margin-bottom:22px}
+
+/* Meaning lives in the heading, not in a coloured panel. */
+.group.accent-late .gname{color:var(--p1)}
+.group.accent-late .ghead{border-bottom-color:var(--p1)}
+.group.accent-quick .gname{color:var(--p3)}
+.group.accent-quick .ghead{border-bottom-color:var(--p3)}
+
+/* A heavier tick reads better at this size. */
+.check .ic{stroke-width:2.6}
+
+/* The recurring marker takes the colour of the date it belongs to. */
+.repeatdot{
+  width:18px;height:18px;display:inline-grid;place-items:center;
+  border-radius:var(--r-full);flex:0 0 auto;
+}
+.repeatdot .ic{width:11px;height:11px;stroke-width:2}
+.repeatdot.today{color:var(--p3);background:rgba(36,111,224,.14)}
+.repeatdot.late{color:var(--p1);background:rgba(209,69,59,.14)}
+.repeatdot.future{color:var(--muted);background:var(--subtle)}
+
+/* Row controls, with the subtask chevron at the end where it cannot break
+   the reading line. */
+.trow-end{display:flex;align-items:center;gap:2px;justify-self:end;align-self:center}
+.subcaret{width:26px;height:26px;margin:0;vertical-align:0;color:var(--muted)}
+.subcaret:hover{color:var(--text);background:var(--hover)}
+
+/* "Add task" appears at the end of a section on hover. */
+.sectionadd{opacity:0;transition:opacity .12s ease-out}
+.group:hover .sectionadd,
+.group:focus-within .sectionadd{opacity:1}
+
+@media (max-width:700px){
+  .page > .mode{padding-left:0}
+  .group > .ghead,.group > .gdesc,.group > .sectionadd{margin-left:0}
+}
+
+/* The page metrics carry a glyph each, so the numbers are scannable. */
+.metrics{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.metric{display:inline-flex;align-items:center;gap:5px}
+.metric .ic{color:var(--faint)}
+
+/* Display leads the controls line; Insights follows it in the accent colour. */
+.btn.accent{color:var(--accent-dark);border-color:var(--border-strong)}
+.btn.accent .ic{color:var(--accent)}
+.btn.accent:hover{background:var(--accent-soft);border-color:var(--accent)}
+
+/* ==========================================================================
+   Composer — one labelled control per thing a task can carry
+   ========================================================================== */
+.composerbox{padding:var(--s4);display:grid;gap:var(--s3)}
+.composer-name{
+  width:100%;box-sizing:border-box;border:0;background:transparent;
+  font:inherit;font-size:var(--fs-16);font-weight:600;color:var(--text);
+  padding:6px 0;
+}
+.composer-name:focus{outline:none}
+.composer-name::placeholder{color:var(--faint);font-weight:400}
+.composer-desc{
+  width:100%;box-sizing:border-box;min-height:64px;resize:vertical;
+  padding:8px 10px;border:1px solid var(--border);border-radius:var(--r-sm);
+  background:var(--surface);color:var(--text);font:inherit;font-size:var(--fs-13);
+  line-height:1.5;
+}
+.composer-desc:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:transparent}
+
+.composer-fields{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+  gap:var(--s3);padding-top:var(--s2);border-top:1px solid var(--border);
+}
+.cfield{display:grid;gap:4px;min-width:0}
+.cfield > span:first-child{font-size:var(--fs-11);font-weight:600;color:var(--faint)}
+.cfield input,.cfield select{
+  height:32px;box-sizing:border-box;padding:0 8px;width:100%;
+  border:1px solid var(--border-strong);border-radius:var(--r-sm);
+  background:var(--surface);color:var(--text);font:inherit;font-size:var(--fs-13);
+}
+.cfield input:focus,.cfield select:focus{outline:2px solid var(--accent);outline-offset:-1px}
+.cfield .estfield{width:100%}
+.cfield .estfield .estinput{flex:1 1 auto;width:auto;height:32px}
+
+.composer-tags{display:flex;align-items:center;gap:6px;flex-wrap:wrap;position:relative}
+.composer-tags .pill{
+  display:inline-flex;align-items:center;gap:5px;padding:3px 8px;
+  border:1px solid var(--border-strong);border-radius:var(--r-sm);font-size:var(--fs-12);
+}
+.composer-tags .pill:hover{border-color:var(--accent);color:var(--accent-dark)}
+.tagpicker{top:34px;left:0;min-width:220px;max-height:220px;overflow-y:auto;padding:var(--s2)}
+
+.composer-actions{display:flex;justify-content:flex-end;gap:var(--s2);padding-top:var(--s2)}
+
+/* The estimate always reads as a number followed by its unit. */
+.estfield{display:inline-flex;align-items:center;gap:6px}
+.estfield .estunit{color:var(--faint);font-size:var(--fs-12)}
+.estfield.invalid .estinput{border-color:var(--accent);color:var(--accent-dark)}
+
+/* A description folds to a few lines until the reader opens it. */
+.descwrap{display:grid;gap:2px;justify-items:start}
+.md.clamped{
+  display:-webkit-box;-webkit-box-orient:vertical;
+  -webkit-line-clamp:var(--clamp,2);line-clamp:var(--clamp,2);
+  overflow:hidden;
+}
+.seemore{
+  color:var(--accent-dark);font-size:var(--fs-12);font-weight:600;padding:2px 6px;
+  border-radius:var(--r-xs);
+}
+.seemore:hover{background:var(--accent-soft)}
+
+/* A section's own description sits under its heading. */
+.gdesc .descwrap{width:100%}
+.gdesc .descview{padding:4px 6px;margin-left:-6px;font-size:var(--fs-12)}
+
+/* ---------- Demo mode ---------- */
+.connect-demo{
+  margin-top:var(--s5);padding-top:var(--s4);
+  border-top:1px solid var(--border);display:grid;gap:6px;justify-items:start;
+}
+.app.demo{grid-template-rows:auto minmax(0,1fr)}
+.demobanner{
+  grid-column:1 / -1;display:flex;align-items:center;gap:10px;
+  padding:7px 16px;background:var(--warn-soft);color:var(--warn);
+  border-bottom:1px solid var(--warn-border);font-size:var(--fs-12);
+}
+.demobanner button{
+  margin-left:auto;color:var(--warn);font-weight:600;text-decoration:underline;
+}
+
+/* The subtask and comment blocks are separated from the title and description. */
+.detail-section.boxed{
+  margin-top:var(--s5);padding-top:var(--s4);
+  border-top:1px solid var(--border);
+}
+.prophead{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%}
+.propadd{
+  width:20px;height:20px;display:grid;place-items:center;border-radius:var(--r-xs);
+  color:var(--muted);
+}
+.propadd:hover{color:var(--accent);background:var(--accent-soft)}
+.prop{position:relative}
+.prop .tagpicker{top:100%;left:0;right:auto;min-width:200px;max-height:210px;overflow-y:auto}
+
+/* ==========================================================================
+   Charts — thin marks, recessive axes, a read-out under every plot
+   ========================================================================== */
+.chart{display:grid;gap:6px}
+.chart-plot{
+  display:flex;align-items:flex-end;gap:2px;   /* 2px surface gap between fills */
+  padding-top:4px;
+}
+.bar{
+  flex:1 1 0;min-width:3px;border-radius:4px 4px 0 0;   /* rounded data-end */
+  background:var(--series-1,#2a78d6);opacity:.85;
+  transition:opacity .12s ease-out;
+}
+.bar:hover,.bar.hovered,.bar:focus-visible{opacity:1}
+.bar.current{background:var(--accent)}
+.chart-axis{
+  display:flex;gap:2px;color:var(--faint);font-size:var(--fs-11);
+  font-variant-numeric:tabular-nums;
+}
+.chart-axis span{flex:1 1 0;text-align:center;overflow:hidden;white-space:nowrap}
+.chart-readout{
+  min-height:1.2em;color:var(--muted);font-size:var(--fs-12);
+  font-variant-numeric:tabular-nums;
+}
+.chart-empty{padding:var(--s5) 0;text-align:center;color:var(--faint);font-size:var(--fs-12)}
+
+.heatrow{display:flex;gap:2px;height:26px}
+.heatcell{flex:1 1 0;border-radius:3px;background:#2a78d6}
+.heataxis span{text-align:left}
+
+/* Ranked bars always print their value, which is the relief the lighter
+   palette slots require. */
+.ranked{display:grid;gap:7px}
+.rankedrow{
+  display:grid;grid-template-columns:minmax(70px,120px) minmax(40px,1fr) auto;
+  align-items:center;gap:10px;font-size:var(--fs-12);
+}
+.rankedlabel{
+  color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.rankedtrack{display:block;height:8px;border-radius:var(--r-full);background:var(--c-track)}
+.rankedtrack i{display:block;height:100%;border-radius:var(--r-full)}
+.rankedvalue{font-variant-numeric:tabular-nums;color:var(--text)}
+
+.stat{display:grid;gap:2px}
+.stat-label{font-size:var(--fs-11);font-weight:600;color:var(--faint);text-transform:uppercase;letter-spacing:.04em}
+.stat-value{
+  font-size:var(--fs-26);font-weight:700;letter-spacing:-.02em;
+  font-variant-numeric:tabular-nums;display:flex;align-items:baseline;gap:6px;
+}
+.stat.accent .stat-value{color:var(--accent-dark)}
+.stat-trailing{font-size:var(--fs-12);font-weight:500;color:var(--muted)}
+.stat-hint{font-size:var(--fs-12);color:var(--muted)}
+
+.ringstat{display:flex;align-items:center;gap:var(--s4)}
+.ring{background:conic-gradient(var(--ringcolor,#2a78d6) var(--ring,0%),var(--c-track) 0)}
+.ringtext{display:grid;gap:2px}
+
+/* The period picker above the boards. */
+.periodbar{display:flex;gap:6px;flex-wrap:wrap}
+.periodbar .btn[aria-pressed="true"]{
+  background:var(--accent-soft);color:var(--accent-dark);
+  border-color:var(--accent);font-weight:600;
+}
+
+/* Logbook days */
+.logday{margin-top:var(--s5)}
+.logday h4{
+  display:flex;align-items:baseline;gap:8px;padding-bottom:6px;
+  border-bottom:1px solid var(--border-strong);
+  font-size:var(--fs-13);font-weight:700;
+}
+.logday h4 span{color:var(--faint);font-weight:400;font-size:var(--fs-12)}
+.logrow{
+  display:grid;grid-template-columns:16px minmax(0,1fr) auto auto;
+  gap:10px;align-items:center;padding:8px 0;
+  border-bottom:1px solid var(--border);font-size:var(--fs-13);
+}
+.logrow .ic{color:var(--ok)}
+.logrow .logmeta{color:var(--faint);font-size:var(--fs-12)}
+
+/* Logbook controls sit on one row above the record. */
+.logbar{justify-content:flex-start;align-items:flex-end;gap:var(--s4);flex-wrap:wrap}
+.logbar .kpi-label{margin-left:auto}
+
+/* A finer bento so the stat tiles can sit four across. */
+.bento .w3{grid-column:span 3}
+@media (max-width:1100px){
+  .bento .w3{grid-column:span 6}
+  .bento .w4{grid-column:span 6}
+  .bento .w8{grid-column:span 12}
+}
+@media (max-width:700px){
+  .bento .w3,.bento .w4,.bento .w6,.bento .w8{grid-column:span 12}
+}
+
+/* Dashboard rows */
+.attn{grid-template-columns:32px minmax(0,1fr) 16px}
+.deadlinerow{
+  display:grid;gap:2px;width:100%;padding:8px 0;text-align:left;
+  border-bottom:1px solid var(--border);font-size:var(--fs-13);
+}
+.deadlinerow:last-child{border-bottom:0}
+.deadlinerow:hover .deadlinename{color:var(--accent-dark)}
+.deadlinename{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* Collapsing actually removes the column, and leaves one button to bring it back.
+   The sidebar is not rendered at all when collapsed, and the button that brings
+   it back is taken out of flow, so the grid must drop to a single track or the
+   workspace inherits the old sidebar column. */
+.app.collapsed{grid-template-columns:minmax(0,1fr)}
+.app.collapsed .expand-wrap{
+  position:fixed;top:10px;left:10px;z-index:40;display:block;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r-sm);box-shadow:var(--sh-sm);
+}
+.app.collapsed .workspace .page,
+.app.collapsed .workspace .page.wide{padding-left:64px}
+
+/* A project reference takes the colour the project carries, like the sidebar. */
+.meta .proj{color:var(--marker,var(--muted))}
+.logmeta{color:var(--marker,var(--faint))}

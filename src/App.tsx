@@ -47,6 +47,8 @@ export function App() {
   const [insightsOpen, setInsightsOpen] = useState(false);
   const [addProjectOpen, setAddProjectOpen] = useState(false);
   const [unestimatedOpen, setUnestimatedOpen] = useState(false);
+  /** Where a newly composed task should land, when it was added from a section. */
+  const [placement, setPlacement] = useState<ComposerPlacement>({});
 
   useEffect(() => { void init(); }, [init]);
   useEffect(() => { document.documentElement.lang = locale; }, [locale]);
@@ -113,6 +115,8 @@ export function App() {
           setAddProjectOpen={setAddProjectOpen}
           unestimatedOpen={unestimatedOpen}
           setUnestimatedOpen={setUnestimatedOpen}
+          placement={placement}
+          setPlacement={setPlacement}
         />
       </DragProvider>
 
@@ -150,17 +154,28 @@ interface ShellProps {
   setAddProjectOpen: (open: boolean) => void;
   unestimatedOpen: boolean;
   setUnestimatedOpen: (open: boolean) => void;
+  placement: ComposerPlacement;
+  setPlacement: (placement: ComposerPlacement) => void;
+}
+
+export interface ComposerPlacement {
+  projectId?: string;
+  sectionId?: string;
+  date?: string;
 }
 
 function AppShell({
   route, openTaskId, setOpenTaskId, composerOpen, setComposerOpen,
   searchOpen, setSearchOpen, issuesOpen, setIssuesOpen,
   insightsOpen, setInsightsOpen, addProjectOpen, setAddProjectOpen,
-  unestimatedOpen, setUnestimatedOpen,
+  unestimatedOpen, setUnestimatedOpen, placement, setPlacement,
 }: ShellProps) {
   const { t } = useT();
   const { snapshot, items, childrenOf } = useData();
   const conflictSettings = useStore((s) => s.prefs.conflicts);
+  const demo = useStore((s) => s.demo);
+  const sidebarCollapsed = useStore((s) => s.prefs.sidebarCollapsed);
+  const leaveDemo = useStore((s) => s.disconnect);
 
   const roots = useMemo(() => rootItems(items), [items]);
   const conflictCount = useMemo(
@@ -207,13 +222,32 @@ function AppShell({
   );
 
   const openTask = (id: string) => setOpenTaskId(id);
-  const addTask = () => setComposerOpen(true);
+  const addTask = () => {
+    setPlacement(route.view === 'project' && route.id ? { projectId: route.id } : {});
+    setComposerOpen(true);
+  };
+  const addTaskTo = (next: ComposerPlacement) => {
+    setPlacement(next);
+    setComposerOpen(true);
+  };
   const openInsights = () => setInsightsOpen(true);
   const openUnestimated = () => setUnestimatedOpen(true);
-  const viewProps = { onOpen: openTask, onInsights: openInsights, onUnestimated: openUnestimated };
+  const viewProps = {
+    onOpen: openTask,
+    onInsights: openInsights,
+    onUnestimated: openUnestimated,
+    onAddTaskTo: addTaskTo,
+  };
 
   return (
-    <div className="app">
+    <div className={`app${demo ? ' demo' : ''}${sidebarCollapsed ? ' collapsed' : ''}`}>
+      {demo && (
+        <div className="demobanner" role="status">
+          <Icon name="warning" size="sm" />
+          <span>{t('demo.banner')}</span>
+          <button onClick={() => void leaveDemo()}>{t('demo.exit')}</button>
+        </div>
+      )}
       <Sidebar
         route={route}
         onAddTask={addTask}
@@ -292,7 +326,9 @@ function AppShell({
       <Composer
         open={composerOpen}
         onClose={() => setComposerOpen(false)}
-        defaultProjectId={route.view === 'project' ? route.id : undefined}
+        defaultProjectId={placement.projectId}
+        defaultSectionId={placement.sectionId}
+        defaultDate={placement.date}
       />
       <TaskDetail
         taskId={openTaskId}

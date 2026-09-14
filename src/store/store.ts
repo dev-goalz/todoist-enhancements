@@ -13,6 +13,7 @@ import {
   type DisplayPriority, type Item, type Snapshot, type ViewPrefs,
 } from '@/domain/types';
 import { detectLocale, type Locale } from '@/i18n';
+import { buildDemoSnapshot } from '@/demo/demoData';
 import {
   defaultPreferences, hydratePreferences, viewPrefs as readViewPrefs,
   type Preferences,
@@ -42,10 +43,13 @@ interface AppState {
   toasts: Toast[];
   /** The task currently being dragged, so empty drop zones can reveal themselves. */
   draggingTaskId: string | null;
+  /** True while a made-up account is loaded; nothing is sent to Todoist. */
+  demo: boolean;
 
   /* Lifecycle */
   init: () => Promise<void>;
   connect: (token: string) => Promise<boolean>;
+  startDemo: () => void;
   disconnect: () => Promise<void>;
   refresh: (full?: boolean) => Promise<void>;
   startPolling: () => () => void;
@@ -67,6 +71,8 @@ interface AppState {
   setLabelFavourite: (id: string, favourite: boolean) => Promise<void>;
   skipOccurrence: (id: string) => Promise<void>;
   createProject: (name: string, color: string) => Promise<void>;
+  updateProjectFields: (id: string, args: Record<string, unknown>) => Promise<void>;
+  updateSectionFields: (id: string, args: Record<string, unknown>) => Promise<void>;
 
   /* Toasts */
   toast: (message: string, undo?: () => void) => void;
@@ -91,6 +97,7 @@ export const useStore = create<AppState>((set, get) => ({
   pendingCount: 0,
   toasts: [],
   draggingTaskId: null,
+  demo: false,
 
   async init() {
     const [storedPrefs, snapshot, queue] = await Promise.all([
@@ -130,11 +137,23 @@ export const useStore = create<AppState>((set, get) => ({
     }
   },
 
+  startDemo() {
+    set({
+      demo: true,
+      connected: true,
+      ready: true,
+      syncState: 'idle',
+      snapshot: buildDemoSnapshot(),
+      pendingCount: 0,
+    });
+  },
+
   async disconnect() {
     await auth.disconnect();
     await idb.clearAll();
     set({
       connected: false,
+      demo: false,
       snapshot: emptySnapshot(),
       prefs: defaultPreferences(get().prefs.locale),
       pendingCount: 0,
@@ -143,6 +162,7 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   async refresh(full = false) {
+    if (get().demo) return;
     if (!auth.isConnected()) return;
     if (get().syncState === 'syncing') return;
 
@@ -223,6 +243,13 @@ export const useStore = create<AppState>((set, get) => ({
   async apply(commands, optimistic) {
     const before = get().snapshot;
     const after = optimistic(before);
+
+    if (get().demo) {
+      // A demo account is a sandbox: changes show, and stop there.
+      set({ snapshot: after });
+      return;
+    }
+
     set({ snapshot: after });
     schedulePersist(after);
 
@@ -387,6 +414,22 @@ export const useStore = create<AppState>((set, get) => ({
         },
       }),
     );
+  },
+
+  async updateProjectFields(id, args) {
+    await get().apply([command('project_update', { id, ...args })], (snapshot) => {
+      const project = snapshot.projects[id];
+      if (!project) return snapshot;
+      return { ...snapshot, projects: { ...snapshot.projects, [id]: { ...project, ...args } } };
+    });
+  },
+
+  async updateSectionFields(id, args) {
+    await get().apply([command('section_update', { id, ...args })], (snapshot) => {
+      const section = snapshot.sections[id];
+      if (!section) return snapshot;
+      return { ...snapshot, sections: { ...snapshot.sections, [id]: { ...section, ...args } } };
+    });
   },
 
   toast(message, undo) {

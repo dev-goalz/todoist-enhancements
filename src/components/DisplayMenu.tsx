@@ -25,7 +25,8 @@ const MODE_ICON: Record<DisplayMode, IconName> = {
 };
 
 const GROUP_ICON: Record<GroupKey, IconName> = {
-  none: 'close',
+  none: 'list',
+  scheduled: 'calendar',
   day: 'calendar',
   week: 'week',
   month: 'calendar',

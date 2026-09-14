@@ -17,6 +17,7 @@ interface WeekViewProps {
   onOpen: (id: string) => void;
   onInsights: () => void;
   onUnestimated: () => void;
+  onAddTaskTo: (placement: { projectId?: string; sectionId?: string; date?: string }) => void;
 }
 
 /**
@@ -26,7 +27,7 @@ interface WeekViewProps {
  * untimed, then timed. Anytime this week follows, holding the flexible work
  * that carries the `week` label but no day.
  */
-export function WeekView({ onOpen, onInsights, onUnestimated }: WeekViewProps) {
+export function WeekView({ onOpen, onInsights, onUnestimated, onAddTaskTo }: WeekViewProps) {
   const { t } = useT();
   const { snapshot, items, childrenOf } = useData();
   const prefs = useStore((s) => s.prefs);
@@ -84,12 +85,6 @@ export function WeekView({ onOpen, onInsights, onUnestimated }: WeekViewProps) {
         subtitle={t('week.subtitle')}
         load={load}
         onOpenUnestimated={load.unestimatedCount > 0 ? onUnestimated : undefined}
-        actions={
-          <button className="btn" onClick={onInsights}>
-            <Icon name="trend" />
-            {t('toolbar.insights')}
-          </button>
-        }
       />
 
       <div className="viewbar">
@@ -98,6 +93,10 @@ export function WeekView({ onOpen, onInsights, onUnestimated }: WeekViewProps) {
           modes={['list', 'board']}
           groups={['none', 'project', 'priority', 'label', 'estimate']}
         />
+        <button className="btn accent" onClick={onInsights}>
+          <Icon name="trend" />
+          {t('toolbar.insights')}
+        </button>
       </div>
 
       {current.mode === 'list' && current.group === 'none' ? (
@@ -107,8 +106,9 @@ export function WeekView({ onOpen, onInsights, onUnestimated }: WeekViewProps) {
             items={sortedGroup(groups.overdue)}
             childrenOf={childrenOf}
             onOpen={onOpen}
-            tint="late"
+            accent="late"
             dropTarget={{ kind: 'today' }}
+            onAddTask={() => onAddTaskTo({ date: toApiDate(new Date()) })}
             actions={
               <button
                 className="btn sm linklike"
@@ -126,8 +126,9 @@ export function WeekView({ onOpen, onInsights, onUnestimated }: WeekViewProps) {
               items={sortedGroup(groups.quick)}
               childrenOf={childrenOf}
               onOpen={onOpen}
-              tint="quick"
+              accent="quick"
               dropTarget={{ kind: 'today' }}
+              onAddTask={() => onAddTaskTo({ date: toApiDate(new Date()) })}
             />
           )}
 
@@ -137,6 +138,7 @@ export function WeekView({ onOpen, onInsights, onUnestimated }: WeekViewProps) {
             childrenOf={childrenOf}
             onOpen={onOpen}
             dropTarget={{ kind: 'today' }}
+            onAddTask={() => onAddTaskTo({ date: toApiDate(new Date()) })}
           />
 
           <TaskGroup
@@ -144,6 +146,7 @@ export function WeekView({ onOpen, onInsights, onUnestimated }: WeekViewProps) {
             items={groups.timed}
             childrenOf={childrenOf}
             onOpen={onOpen}
+            onAddTask={() => onAddTaskTo({ date: toApiDate(new Date()) })}
           />
 
           <TaskGroup
@@ -153,6 +156,7 @@ export function WeekView({ onOpen, onInsights, onUnestimated }: WeekViewProps) {
             onOpen={onOpen}
             description={t('anytime.subtitle')}
             dropTarget={{ kind: 'anytime' }}
+            onAddTask={() => onAddTaskTo({})}
           />
 
           {scoped.length === 0 && <p className="empty">{t('task.noTasks')}</p>}

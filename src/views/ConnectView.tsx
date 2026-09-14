@@ -12,6 +12,7 @@ import { looksLikeToken } from '@/api/auth';
 export function ConnectView() {
   const { t } = useT();
   const connect = useStore((s) => s.connect);
+  const startDemo = useStore((s) => s.startDemo);
   const setLocale = useStore((s) => s.setLocale);
   const locale = useStore((s) => s.prefs.locale);
 
@@ -68,6 +69,13 @@ export function ConnectView() {
         </div>
 
         <p className="connect-help">{t('connect.help')}</p>
+
+        <div className="connect-demo">
+          <button className="btn" onClick={startDemo}>
+            {t('connect.demo')}
+          </button>
+          <p className="connect-help">{t('connect.demoHint')}</p>
+        </div>
 
         <div style={{ marginTop: 'var(--s4)', display: 'flex', gap: 8 }}>
           {(['en', 'fr'] as const).map((value) => (

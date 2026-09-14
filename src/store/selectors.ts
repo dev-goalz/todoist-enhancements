@@ -223,29 +223,59 @@ function bucketDateKey(date: Date, group: 'day' | 'week' | 'month'): string {
   return `${y}-${m}-${String(date.getDate()).padStart(2, '0')}`;
 }
 
-/** Projects ordered for the sidebar, grouped by the workspace they belong to. */
-export function projectsByWorkspace(snapshot: Snapshot): Array<{
+/** A project and whatever sits inside it, so folders can nest their contents. */
+export interface ProjectNode {
+  project: Project;
+  children: ProjectNode[];
+}
+
+export interface WorkspaceGroup {
   workspaceId: string | null;
   name: string | null;
-  projects: Project[];
-}> {
-  const groups = new Map<string, Project[]>();
+  roots: ProjectNode[];
+}
 
-  for (const project of Object.values(snapshot.projects)) {
-    if (project.is_archived || project.is_deleted || project.inbox_project) continue;
+/**
+ * The sidebar's project tree.
+ *
+ * Todoist nests projects inside folders and inside other projects, so the
+ * sidebar is built as a tree rather than a flat list, grouped by workspace.
+ */
+export function projectTree(snapshot: Snapshot): WorkspaceGroup[] {
+  const visible = Object.values(snapshot.projects).filter(
+    (p) => !p.is_archived && !p.is_deleted && !p.inbox_project,
+  );
+
+  const nodes = new Map<string, ProjectNode>(
+    visible.map((project) => [project.id, { project, children: [] }]),
+  );
+
+  const groups = new Map<string, ProjectNode[]>();
+
+  for (const project of visible) {
+    const node = nodes.get(project.id)!;
+    const parent = project.parent_id ? nodes.get(project.parent_id) : undefined;
+    if (parent) {
+      parent.children.push(node);
+      continue;
+    }
     const key = project.workspace_id ?? 'personal';
     const bucket = groups.get(key);
-    if (bucket) bucket.push(project);
-    else groups.set(key, [project]);
+    if (bucket) bucket.push(node);
+    else groups.set(key, [node]);
   }
 
+  const byOrder = (a: ProjectNode, b: ProjectNode) =>
+    a.project.child_order - b.project.child_order;
+  for (const node of nodes.values()) node.children.sort(byOrder);
+
   return [...groups.entries()]
-    .map(([key, projects]) => ({
+    .map(([key, roots]) => ({
       workspaceId: key === 'personal' ? null : key,
       name: key === 'personal' ? null : (snapshot.workspaces[key]?.name ?? null),
-      projects: projects.sort((a, b) => a.child_order - b.child_order),
+      roots: roots.sort(byOrder),
     }))
-    // The personal workspace always leads, matching Todoist's own ordering.
+    // The personal workspace leads, matching Todoist's own ordering.
     .sort((a, b) => (a.workspaceId === null ? -1 : b.workspaceId === null ? 1 : 0));
 }
 

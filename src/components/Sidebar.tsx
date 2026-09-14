@@ -4,11 +4,13 @@ import { useT } from '@/hooks/useT';
 import { useData } from '@/hooks/useData';
 import { useStore } from '@/store/store';
 import { navigate, type Route } from '@/hooks/useRoute';
-import { projectCounts, projectsByWorkspace, rootItems } from '@/store/selectors';
+import { projectCounts, projectTree, rootItems, type ProjectNode } from '@/store/selectors';
 import { hasLabel, somedayItems, upcomingItems, weekItems } from '@/domain/views';
 import { markerStyle, avatarUrl } from '@/domain/colors';
+import { firstName, karmaStanding } from '@/domain/karma';
 import type { ViewId } from '@/domain/types';
 import type { DropTarget } from '@/domain/dnd';
+import type { TranslationKey } from '@/i18n';
 import { SyncStatus } from './SyncStatus';
 import { Droppable } from './dnd/Droppable';
 
@@ -30,6 +32,7 @@ export function Sidebar({
   const setPrefs = useStore((s) => s.setPrefs);
   const disconnect = useStore((s) => s.disconnect);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [openFolders, setOpenFolders] = useState<Record<string, boolean>>({});
 
   const roots = useMemo(() => rootItems(items), [items]);
 
@@ -44,7 +47,7 @@ export function Sidebar({
     };
   }, [roots, snapshot.user?.inbox_project_id]);
 
-  /** Favourites come from Todoist itself: the star set on a label or a project. */
+  /** Favourites are Todoist's own star, not a separate list this app keeps. */
   const favourites = useMemo(() => {
     const labels = Object.values(snapshot.labels)
       .filter((l) => l.is_favorite && !l.name.startsWith('est-'))
@@ -55,9 +58,10 @@ export function Sidebar({
     return { labels, projects };
   }, [snapshot.labels, snapshot.projects]);
 
-  const workspaces = useMemo(() => projectsByWorkspace(snapshot), [snapshot]);
+  const workspaces = useMemo(() => projectTree(snapshot), [snapshot]);
   const user = snapshot.user;
   const avatar = avatarUrl(user);
+  const karma = karmaStanding(user?.karma);
   const initials = (user?.full_name ?? '?')
     .split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase();
 
@@ -67,6 +71,7 @@ export function Sidebar({
         <button
           className="iconbtn"
           aria-label={t('nav.showSidebar')}
+          title={t('nav.showSidebar')}
           onClick={() => setPrefs({ sidebarCollapsed: false })}
         >
           <Icon name="sidebar" />
@@ -78,7 +83,7 @@ export function Sidebar({
   const navItem = (
     view: ViewId,
     icon: IconName,
-    labelKey: Parameters<typeof t>[0],
+    labelKey: TranslationKey,
     count: number,
     dropTarget?: DropTarget,
   ) => {
@@ -98,42 +103,62 @@ export function Sidebar({
   };
 
   const tagItem = (name: string, color: string, count?: number) => (
-    <Droppable target={{ kind: 'label', label: name }} key={name}>
+    <Droppable target={{ kind: 'label', label: name }} key={`tag-${name}`}>
       {({ isOver }) => (
         <button
           className={`navitem${isOver ? ' dropping' : ''}`}
           aria-current={route.view === 'label' && route.id === name ? 'page' : undefined}
           onClick={() => navigate('label', name)}
         >
-          {/* One label glyph, tinted with the colour the tag carries in Todoist. */}
-          <Icon name="flag" className="taglabel" />
-          <span className="label" style={markerStyle(color, false)}>{name}</span>
+          <Icon name="flag" className="taglabel" style={markerStyle(color, false)} />
+          <span className="label">{name}</span>
           {count !== undefined && count > 0 && <span className="count">{count}</span>}
         </button>
       )}
     </Droppable>
   );
 
-  const projectItem = (
-    project: { id: string; name: string; color: string },
-    key?: string,
-  ) => (
-    <Droppable target={{ kind: 'project', projectId: project.id }} key={key ?? project.id}>
-      {({ isOver }) => (
-        <button
-          className={`navitem${isOver ? ' dropping' : ''}`}
-          aria-current={route.view === 'project' && route.id === project.id ? 'page' : undefined}
-          onClick={() => navigate('project', project.id)}
-        >
-          <span className="hash" style={markerStyle(project.color)}>#</span>
-          <span className="label">{project.name}</span>
-          {(counts.byProject.get(project.id) ?? 0) > 0 && (
-            <span className="count">{counts.byProject.get(project.id)}</span>
-          )}
-        </button>
-      )}
-    </Droppable>
-  );
+  /** A project row, or a folder that discloses the projects inside it. */
+  const projectNode = (node: ProjectNode, keyPrefix = '', depth = 0): JSX.Element => {
+    const { project, children } = node;
+
+    if (project.is_folder) {
+      const isOpen = openFolders[project.id] ?? true;
+      return (
+        <div key={`${keyPrefix}folder-${project.id}`}>
+          <button
+            className="navitem folderitem"
+            aria-expanded={isOpen}
+            onClick={() => setOpenFolders((prev) => ({ ...prev, [project.id]: !isOpen }))}
+          >
+            <Icon name={isOpen ? 'caret-up' : 'caret'} size="sm" />
+            <Icon name="project" />
+            <span className="label">{project.name}</span>
+          </button>
+          {isOpen && children.map((child) => projectNode(child, keyPrefix, depth + 1))}
+        </div>
+      );
+    }
+
+    return (
+      <Droppable target={{ kind: 'project', projectId: project.id }} key={`${keyPrefix}${project.id}`}>
+        {({ isOver }) => (
+          <button
+            className={`navitem${isOver ? ' dropping' : ''}`}
+            style={depth > 0 ? { paddingLeft: `${8 + depth * 16}px` } : undefined}
+            aria-current={route.view === 'project' && route.id === project.id ? 'page' : undefined}
+            onClick={() => navigate('project', project.id)}
+          >
+            <span className="hash" style={markerStyle(project.color)}>#</span>
+            <span className="label">{project.name}</span>
+            {(counts.byProject.get(project.id) ?? 0) > 0 && (
+              <span className="count">{counts.byProject.get(project.id)}</span>
+            )}
+          </button>
+        )}
+      </Droppable>
+    );
+  };
 
   return (
     <aside className="sidebar">
@@ -149,8 +174,20 @@ export function Sidebar({
               : initials}
           </span>
           <span className="identity">
-            <strong>{user?.full_name ?? '—'}</strong>
-            <small>{user?.email ?? ''}</small>
+            <strong>{firstName(user?.full_name)}</strong>
+            {karma ? (
+              <span className="karma" title={t('karma.progress', {
+                remaining: karma.remaining ?? 0,
+                next: karma.next ? t(`karma.${karma.next.key}` as TranslationKey) : '',
+              })}>
+                <small>{t(`karma.${karma.rank.key}` as TranslationKey)}</small>
+                <span className="karmabar" aria-hidden="true">
+                  <i style={{ width: `${karma.progress}%` }} />
+                </span>
+              </span>
+            ) : (
+              <small>{user?.email ?? ''}</small>
+            )}
           </span>
           <Icon name="caret" size="sm" />
         </button>
@@ -183,11 +220,6 @@ export function Sidebar({
       </div>
 
       <div className="side-scroll">
-        <button className="addbtn addbtn-top" onClick={onAddTask}>
-          <Icon name="plus" />
-          {t('nav.addTask')}
-        </button>
-
         <button className="searchbtn" onClick={onSearch}>
           <Icon name="search" />
           <span>{t('nav.search')}</span>
@@ -205,7 +237,8 @@ export function Sidebar({
         {(favourites.labels.length > 0 || favourites.projects.length > 0) && (
           <section className="side-group">
             <div className="side-head"><span>{t('nav.favourites')}</span></div>
-            {favourites.projects.map((p) => projectItem(p, `fav-${p.id}`))}
+            {favourites.projects.map((p) =>
+              projectNode({ project: p, children: [] }, 'fav-'))}
             {favourites.labels.map((l) =>
               tagItem(l.name, l.color, roots.filter((i) => hasLabel(i, l.name)).length))}
           </section>
@@ -214,41 +247,46 @@ export function Sidebar({
         {workspaces.map((workspace) => (
           <section className="side-group" key={workspace.workspaceId ?? 'personal'}>
             <div className="side-head">
-              <span className="ws">
-                {workspace.name && (
-                  <span className="wsavatar">{workspace.name.slice(0, 2).toUpperCase()}</span>
-                )}
-                {workspace.name ?? t('nav.myProjects')}
-              </span>
+              {/* Workspaces read as plain headings, like "My projects" above. */}
+              <span>{workspace.name ?? t('nav.myProjects')}</span>
               <button aria-label={t('nav.addProject')} title={t('nav.addProject')} onClick={onAddProject}>
                 <Icon name="plus" size="sm" />
               </button>
             </div>
-            {workspace.projects.map((project) => projectItem(project))}
+            {workspace.roots.map((node) => projectNode(node))}
           </section>
         ))}
       </div>
 
       <div className="side-foot">
-        <SyncStatus />
-        <div className="row">
-          <button
-            className="iconbtn issuesbtn"
-            aria-label={t('issues.title')}
-            title={t('issues.title')}
-            onClick={onIssues}
-          >
-            <Icon name="warning" />
-            {issuesCount > 0 && <span className="badge">{issuesCount > 99 ? '99+' : issuesCount}</span>}
-          </button>
-          <button
-            className="iconbtn"
-            aria-label={t('nav.collapseSidebar')}
-            title={t('nav.collapseSidebar')}
-            onClick={() => setPrefs({ sidebarCollapsed: true })}
-          >
-            <Icon name="sidebar" />
-          </button>
+        <button className="addbtn" onClick={onAddTask}>
+          <Icon name="plus" />
+          {t('nav.addTask')}
+        </button>
+        {/* Status and the issues badge share the last line, baseline aligned. */}
+        <div className="footrow">
+          <SyncStatus />
+          <div className="footicons">
+            <button
+              className="iconbtn issuesbtn"
+              aria-label={t('issues.title')}
+              title={t('issues.title')}
+              onClick={onIssues}
+            >
+              <Icon name="warning" />
+              {issuesCount > 0 && (
+                <span className="badge">{issuesCount > 99 ? '99+' : issuesCount}</span>
+              )}
+            </button>
+            <button
+              className="iconbtn"
+              aria-label={t('nav.collapseSidebar')}
+              title={t('nav.collapseSidebar')}
+              onClick={() => setPrefs({ sidebarCollapsed: true })}
+            >
+              <Icon name="sidebar" />
+            </button>
+          </div>
         </div>
       </div>
     </aside>

@@ -3,7 +3,8 @@ import { addDays, nextMonday } from 'date-fns';
 import { Icon } from './Icon';
 import { useT } from '@/hooks/useT';
 import { useStore } from '@/store/store';
-import { parseDurationInput, withEstimate, effectiveEstimate } from '@/domain/estimates';
+import { withEstimate, effectiveEstimate } from '@/domain/estimates';
+import { EstimateField } from './EstimateField';
 import { toApiDate } from '@/domain/dates';
 import type { Item } from '@/domain/types';
 
@@ -25,7 +26,6 @@ export function TaskActions({ item, childrenOf, onOpen }: TaskActionsProps) {
   const removeTask = useStore((s) => s.removeTask);
   const skipOccurrence = useStore((s) => s.skipOccurrence);
   const [menu, setMenu] = useState<'none' | 'schedule' | 'more' | 'estimate'>('none');
-  const [draft, setDraft] = useState('');
   const ref = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
@@ -59,39 +59,35 @@ export function TaskActions({ item, childrenOf, onOpen }: TaskActionsProps) {
     });
   }
 
-  function commitEstimate() {
-    setMenu('none');
-    const parsed = parseDurationInput(draft);
-    if (parsed === null && draft.trim() !== '') return;
-    void updateTask(item.id, { labels: withEstimate(item.labels, parsed) });
-  }
-
   return (
     <span className="trow-actions" ref={ref} onClick={(e) => e.stopPropagation()}>
       {menu === 'estimate' ? (
-        <input
-          className="estinput"
+        <EstimateField
           autoFocus
-          value={draft}
-          placeholder={t('task.estimatePlaceholder')}
-          onChange={(e) => setDraft(e.target.value)}
-          onBlur={commitEstimate}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') commitEstimate();
-            if (e.key === 'Escape') setMenu('none');
+          minutes={computed ? null : minutes}
+          onCancel={() => setMenu('none')}
+          onCommit={(value) => {
+            setMenu('none');
+            void updateTask(item.id, { labels: withEstimate(item.labels, value) });
           }}
         />
       ) : (
-        <button
-          aria-label={t('task.setEstimate')}
-          title={t('task.setEstimate')}
-          onClick={() => {
-            setDraft(minutes !== null && !computed ? String(minutes) : '');
-            setMenu('estimate');
-          }}
-        >
-          <Icon name="clock" size="sm" />
-        </button>
+        <>
+          <button
+            aria-label={t('detail.title')}
+            title={t('detail.title')}
+            onClick={() => onOpen(item.id)}
+          >
+            <Icon name="edit" size="sm" />
+          </button>
+          <button
+            aria-label={t('task.setEstimate')}
+            title={t('task.setEstimate')}
+            onClick={() => setMenu('estimate')}
+          >
+            <Icon name="clock" size="sm" />
+          </button>
+        </>
       )}
 
       <button

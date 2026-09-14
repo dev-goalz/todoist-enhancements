@@ -18,6 +18,7 @@ interface UpcomingViewProps {
   onOpen: (id: string) => void;
   onInsights: () => void;
   onUnestimated: () => void;
+  onAddTaskTo: (placement: { projectId?: string; sectionId?: string; date?: string }) => void;
 }
 
 /**
@@ -26,7 +27,7 @@ interface UpcomingViewProps {
  * The day columns double as drop targets: moving a task between them is how a
  * date gets changed without opening anything.
  */
-export function UpcomingView({ onOpen, onInsights, onUnestimated }: UpcomingViewProps) {
+export function UpcomingView({ onOpen, onInsights, onUnestimated, onAddTaskTo }: UpcomingViewProps) {
   const { t, locale } = useT();
   const { snapshot, items, childrenOf } = useData();
   const prefs = useStore((s) => s.prefs);
@@ -85,12 +86,6 @@ export function UpcomingView({ onOpen, onInsights, onUnestimated }: UpcomingView
         subtitle={t('upcoming.subtitle')}
         load={load}
         onOpenUnestimated={load.unestimatedCount > 0 ? onUnestimated : undefined}
-        actions={
-          <button className="btn" onClick={onInsights}>
-            <Icon name="trend" />
-            {t('toolbar.insights')}
-          </button>
-        }
       />
 
       <div className="viewbar">
@@ -99,6 +94,10 @@ export function UpcomingView({ onOpen, onInsights, onUnestimated }: UpcomingView
           modes={['list', 'board', 'calendar']}
           groups={['day', 'week', 'month', 'project', 'priority', 'label', 'none']}
         />
+        <button className="btn accent" onClick={onInsights}>
+          <Icon name="trend" />
+          {t('toolbar.insights')}
+        </button>
       </div>
 
       {current.mode === 'board' ? (
@@ -130,6 +129,7 @@ export function UpcomingView({ onOpen, onInsights, onUnestimated }: UpcomingView
               childrenOf={childrenOf}
               onOpen={onOpen}
               dropTarget={{ kind: 'day', date: new Date(`${column.id}T00:00:00`) }}
+              onAddTask={() => onAddTaskTo({ date: column.id })}
             />
           ))}
           {scoped.length === 0 && <p className="empty">{t('task.noTasks')}</p>}

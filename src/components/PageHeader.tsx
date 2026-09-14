@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { Icon } from './Icon';
 import { useT } from '@/hooks/useT';
 import { formatDuration } from '@/domain/estimates';
 import type { LoadSummary } from '@/domain/load';
@@ -7,7 +8,6 @@ interface PageHeaderProps {
   title: string;
   subtitle?: ReactNode;
   load: LoadSummary;
-  actions?: ReactNode;
   /** Opens the list of tasks on this page that have no estimate. */
   onOpenUnestimated?: () => void;
 }
@@ -18,7 +18,7 @@ interface PageHeaderProps {
  * something, which the caller decides by passing it or not.
  */
 export function PageHeader({
-  title, subtitle, load, actions, onOpenUnestimated,
+  title, subtitle, load, onOpenUnestimated,
 }: PageHeaderProps) {
   const { t, locale } = useT();
 
@@ -29,11 +29,12 @@ export function PageHeader({
           <h1 className="ptitle">{title}</h1>
           {subtitle && <p className="psub">{subtitle}</p>}
         </div>
-        {actions && <div className="pactions">{actions}</div>}
+
       </div>
 
       <div className="metrics">
         <span className="metric">
+          <Icon name="tasks" size="sm" />
           <b>{load.taskCount}</b> {t('metrics.taskWord', { count: load.taskCount })}
         </span>
 
@@ -41,6 +42,7 @@ export function PageHeader({
           <>
             <span className="sep">·</span>
             <span className="metric">
+              <Icon name="clock" size="sm" />
               <b>{formatDuration(load.estimatedMinutes, locale)}</b>{' '}
               {t('metrics.estimatedWord')}
             </span>

@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
 import { Overlay } from './Overlay';
 import { Icon } from '../Icon';
 import { useT } from '@/hooks/useT';
 import { useStore } from '@/store/store';
-import { parseDurationInput, withEstimate } from '@/domain/estimates';
+import { withEstimate } from '@/domain/estimates';
+import { EstimateField } from '../EstimateField';
 import { toDisplayPriority, type Item } from '@/domain/types';
 import { markerStyle } from '@/domain/colors';
 
@@ -26,29 +26,6 @@ export function Unestimated({ open, onClose, items, onOpen }: UnestimatedProps) 
   const { t } = useT();
   const snapshot = useStore((s) => s.snapshot);
   const updateTask = useStore((s) => s.updateTask);
-  const [drafts, setDrafts] = useState<Record<string, string>>({});
-
-  useEffect(() => {
-    if (open) setDrafts({});
-  }, [open]);
-
-  function commit(item: Item) {
-    const raw = drafts[item.id] ?? '';
-    if (!raw.trim()) return;
-    const minutes = parseDurationInput(raw);
-    if (minutes === null) return;
-    void updateTask(item.id, { labels: withEstimate(item.labels, minutes) });
-    setDrafts((prev) => {
-      const next = { ...prev };
-      delete next[item.id];
-      return next;
-    });
-  }
-
-  const invalid = (id: string) => {
-    const raw = drafts[id];
-    return !!raw && raw.trim() !== '' && parseDurationInput(raw) === null;
-  };
 
   return (
     <Overlay open={open} onClose={onClose} label={t('issues.toComplete')} size="sm">
@@ -85,32 +62,19 @@ export function Unestimated({ open, onClose, items, onOpen }: UnestimatedProps) 
                     )}
                   </button>
 
-                  <span className="estfield">
-                    <input
-                      className={`estinput${invalid(item.id) ? ' invalid' : ''}`}
-                      inputMode="numeric"
-                      placeholder={t('task.estimatePlaceholder')}
-                      aria-label={t('task.setEstimate')}
-                      value={drafts[item.id] ?? ''}
-                      onChange={(e) =>
-                        setDrafts((prev) => ({ ...prev, [item.id]: e.target.value }))
-                      }
-                      onBlur={() => commit(item)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          commit(item);
-                          // Move to the next field so the list can be filled in one pass.
-                          const fields = Array.from(
-                            e.currentTarget.closest('.estlist')?.querySelectorAll('input') ?? [],
-                          );
-                          const next = fields[fields.indexOf(e.currentTarget) + 1];
-                          next?.focus();
-                        }
-                      }}
-                    />
-                    <span className="estunit">{t('common.minutes')}</span>
-                  </span>
+                  <EstimateField
+                    minutes={null}
+                    onCommit={(value) => {
+                      if (value === null) return;
+                      void updateTask(item.id, { labels: withEstimate(item.labels, value) });
+                    }}
+                    onAdvance={(field) => {
+                      const fields = Array.from(
+                        field.closest('.estlist')?.querySelectorAll('input') ?? [],
+                      );
+                      fields[fields.indexOf(field) + 1]?.focus();
+                    }}
+                  />
                 </div>
               );
             })}

@@ -3,6 +3,7 @@ import { PageHeader } from '@/components/PageHeader';
 import { DisplayMenu } from '@/components/DisplayMenu';
 import { TaskGroup } from '@/components/TaskGroup';
 import { ModeSurface } from '@/components/ModeSurface';
+import { EditableDescription } from '@/components/EditableDescription';
 import { Icon } from '@/components/Icon';
 import { useT } from '@/hooks/useT';
 import { useData } from '@/hooks/useData';
@@ -16,19 +17,25 @@ interface ProjectViewProps {
   onOpen: (id: string) => void;
   onInsights: () => void;
   onUnestimated: () => void;
+  /** Adds a task straight into a section of this project. */
+  onAddTaskTo: (placement: { projectId: string; sectionId?: string }) => void;
 }
 
 /**
  * A project page.
  *
- * Two collapsible groups lead by default: what is already scheduled, and what
- * is available to pick up. Sections become board columns when the user
- * switches modes, which is the only place a Kanban actually means something.
+ * By default the page is laid out by the project's own sections, which is how
+ * the work is already organised in Todoist. Splitting it into scheduled and
+ * available work stays available as an explicit grouping.
  */
-export function ProjectView({ projectId, onOpen, onInsights, onUnestimated }: ProjectViewProps) {
+export function ProjectView({
+  projectId, onOpen, onInsights, onUnestimated, onAddTaskTo,
+}: ProjectViewProps) {
   const { t } = useT();
   const { snapshot, items, childrenOf } = useData();
   const prefs = useStore((s) => s.prefs);
+  const updateProjectFields = useStore((s) => s.updateProjectFields);
+  const updateSectionFields = useStore((s) => s.updateSectionFields);
   const viewKey = `project:${projectId}`;
   const current = viewPrefs(prefs, viewKey);
 
@@ -39,10 +46,7 @@ export function ProjectView({ projectId, onOpen, onInsights, onUnestimated }: Pr
     return applyFilters(roots, current.filters, snapshot, childrenOf);
   }, [items, projectId, current.filters, snapshot, childrenOf]);
 
-  const load = useMemo(
-    () => summariseLoad(scoped, childrenOf, null),
-    [scoped, childrenOf],
-  );
+  const load = useMemo(() => summariseLoad(scoped, childrenOf, null), [scoped, childrenOf]);
 
   const sections = useMemo(
     () =>
@@ -52,29 +56,40 @@ export function ProjectView({ projectId, onOpen, onInsights, onUnestimated }: Pr
     [snapshot.sections, projectId],
   );
 
-  const scheduled = sortItems(scoped.filter((i) => i.due !== null), current.sort, childrenOf);
-  const available = sortItems(scoped.filter((i) => i.due === null), current.sort, childrenOf);
+  const sorted = (list: typeof scoped) => sortItems(list, current.sort, childrenOf);
 
-  const boardColumns = useMemo(
+  const sectionGroups = useMemo(
     () => [
       ...sections.map((section) => ({
         id: section.id,
         title: section.name,
-        items: sortItems(
-          scoped.filter((i) => i.section_id === section.id),
-          current.sort,
-          childrenOf,
-        ),
-        dropTarget: { kind: 'section' as const, sectionId: section.id, projectId },
+        description: section.description ?? '',
+        items: sorted(scoped.filter((i) => i.section_id === section.id)),
       })),
       {
         id: 'none',
         title: t('group.noSection'),
-        items: sortItems(scoped.filter((i) => !i.section_id), current.sort, childrenOf),
-        dropTarget: { kind: 'section' as const, sectionId: null, projectId },
+        description: null as string | null,
+        items: sorted(scoped.filter((i) => !i.section_id)),
       },
     ],
-    [sections, scoped, current.sort, childrenOf, t, projectId],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [sections, scoped, current.sort, childrenOf, t],
+  );
+
+  const boardColumns = useMemo(
+    () =>
+      sectionGroups.map((group) => ({
+        id: group.id,
+        title: group.title,
+        items: group.items,
+        dropTarget: {
+          kind: 'section' as const,
+          sectionId: group.id === 'none' ? null : group.id,
+          projectId,
+        },
+      })),
+    [sectionGroups, projectId],
   );
 
   if (!project) {
@@ -90,23 +105,27 @@ export function ProjectView({ projectId, onOpen, onInsights, onUnestimated }: Pr
     <div className="page wide">
       <PageHeader
         title={project.name}
-        subtitle={project.description || undefined}
+        subtitle={
+          <EditableDescription
+            value={project.description ?? ''}
+            placeholder={t('project.editDescription')}
+            onCommit={(next) => void updateProjectFields(projectId, { description: next })}
+          />
+        }
         load={load}
         onOpenUnestimated={load.unestimatedCount > 0 ? onUnestimated : undefined}
-        actions={
-          <button className="btn" onClick={onInsights}>
-            <Icon name="trend" />
-            {t('toolbar.insights')}
-          </button>
-        }
       />
 
       <div className="viewbar">
         <DisplayMenu
           viewKey={viewKey}
           modes={[...modes]}
-          groups={['none', 'section', 'priority', 'label', 'estimate', 'day']}
+          groups={['none', 'scheduled', 'priority', 'label', 'estimate', 'day']}
         />
+        <button className="btn accent" onClick={onInsights}>
+          <Icon name="trend" />
+          {t('toolbar.insights')}
+        </button>
       </div>
 
       {current.mode === 'board' ? (
@@ -122,19 +141,53 @@ export function ProjectView({ projectId, onOpen, onInsights, onUnestimated }: Pr
         />
       ) : current.mode === 'list' && current.group === 'none' ? (
         <div className="mode">
+          {sectionGroups.map((group) => (
+            <TaskGroup
+              key={group.id}
+              title={group.title}
+              items={group.items}
+              childrenOf={childrenOf}
+              onOpen={onOpen}
+              showProject={false}
+              dropTarget={{
+                kind: 'section',
+                sectionId: group.id === 'none' ? null : group.id,
+                projectId,
+              }}
+              onAddTask={() =>
+                onAddTaskTo({ projectId, sectionId: group.id === 'none' ? undefined : group.id })
+              }
+              descriptionSlot={
+                group.id === 'none' ? null : (
+                  <EditableDescription
+                    value={group.description ?? ''}
+                    placeholder={t('section.addDescription')}
+                    clampLines={2}
+                    onCommit={(next) => void updateSectionFields(group.id, { description: next })}
+                  />
+                )
+              }
+            />
+          ))}
+          {scoped.length === 0 && <p className="empty">{t('task.noTasks')}</p>}
+        </div>
+      ) : current.mode === 'list' && current.group === 'scheduled' ? (
+        <div className="mode">
           <TaskGroup
-            title={t('group.scheduled')}
-            items={scheduled}
+            title={t('section.scheduled')}
+            items={sorted(scoped.filter((i) => i.due !== null))}
             childrenOf={childrenOf}
             onOpen={onOpen}
             showProject={false}
+            onAddTask={() => onAddTaskTo({ projectId })}
           />
           <TaskGroup
-            title={t('group.available')}
-            items={available}
+            title={t('section.available')}
+            items={sorted(scoped.filter((i) => i.due === null))}
             childrenOf={childrenOf}
             onOpen={onOpen}
             showProject={false}
+            onAddTask={() => onAddTaskTo({ projectId })}
           />
           {scoped.length === 0 && <p className="empty">{t('task.noTasks')}</p>}
         </div>

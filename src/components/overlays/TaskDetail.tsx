@@ -43,6 +43,7 @@ export function TaskDetail({ taskId, onClose, onOpen }: TaskDetailProps) {
   const [subtaskDraft, setSubtaskDraft] = useState('');
   const [addingSubtask, setAddingSubtask] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [tagPickerOpen, setTagPickerOpen] = useState(false);
   const descriptionRef = useRef<HTMLTextAreaElement>(null);
   const titleRef = useRef<HTMLTextAreaElement>(null);
 
@@ -71,6 +72,7 @@ export function TaskDetail({ taskId, onClose, onOpen }: TaskDetailProps) {
     setAddingSubtask(false);
     setSubtaskDraft('');
     setMenuOpen(false);
+    setTagPickerOpen(false);
     const own = effectiveEstimate(item, childrenOf);
     setEstimate(own.computed || own.minutes === null ? '' : String(own.minutes));
   }, [item?.id]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -104,6 +106,9 @@ export function TaskDetail({ taskId, onClose, onOpen }: TaskDetailProps) {
     .filter((n) => n.item_id === item.id)
     .sort((a, b) => a.posted_at.localeCompare(b.posted_at));
   const visibleLabels = item.labels.filter((l) => !l.toLowerCase().startsWith('est-'));
+  const allTags = Object.values(snapshot.labels)
+    .filter((l) => !l.is_deleted && !l.name.startsWith('est-'))
+    .sort((a, b) => a.item_order - b.item_order);
 
   const commitTitle = () => {
     const next = title.trim();
@@ -256,18 +261,18 @@ export function TaskDetail({ taskId, onClose, onOpen }: TaskDetailProps) {
             </div>
           </div>
 
-          <section className="detail-section">
-            {subtasks.length > 0 && (
-              <h3 className="sectionlabel">
-                {t('detail.subtasks')}
+          <section className="detail-section boxed">
+            <h3 className="sectionlabel">
+              {t('detail.subtasks')}
+              {subtasks.length > 0 && (
                 <span className="count">
                   {t('task.subtaskProgress', {
                     done: subtasks.filter((c) => c.checked).length,
                     total: subtasks.length,
                   })}
                 </span>
-              </h3>
-            )}
+              )}
+            </h3>
 
             {subtasks.map((child) => (
               <div className="subtaskrow" key={child.id}>
@@ -316,7 +321,7 @@ export function TaskDetail({ taskId, onClose, onOpen }: TaskDetailProps) {
             )}
           </section>
 
-          <section className="detail-section">
+          <section className="detail-section boxed">
             <h3 className="sectionlabel">{t('detail.comments')}</h3>
             {comments.length === 0 ? (
               <p className="psub">{t('detail.noComments')}</p>
@@ -417,7 +422,19 @@ export function TaskDetail({ taskId, onClose, onOpen }: TaskDetailProps) {
           </div>
 
           <div className="prop">
-            <span>{t('detail.labels')}</span>
+            <span className="prophead">
+              {t('detail.labels')}
+              <button
+                className="propadd"
+                aria-label={t('composer.labels')}
+                title={t('composer.labels')}
+                aria-expanded={tagPickerOpen}
+                onClick={() => setTagPickerOpen((v) => !v)}
+              >
+                <Icon name="plus" size="sm" />
+              </button>
+            </span>
+
             <div className="pills">
               {visibleLabels.length === 0 && <span className="psub">{t('common.none')}</span>}
               {visibleLabels.map((label) => {
@@ -426,18 +443,41 @@ export function TaskDetail({ taskId, onClose, onOpen }: TaskDetailProps) {
                   <button
                     key={label}
                     className="pill"
-                    title={t('labels.unfavourite')}
+                    title={t('detail.labels')}
                     onClick={() =>
                       void updateTask(item.id, { labels: item.labels.filter((l) => l !== label) })
                     }
                   >
-                    <Icon name="flag" size="sm" className="taglabel" />
-                    <span style={markerStyle(known?.color, false)}>{label}</span>
+                    <Icon name="flag" size="sm" className="taglabel" style={markerStyle(known?.color, false)} />
+                    <span>{label}</span>
                     <Icon name="close" size="sm" />
                   </button>
                 );
               })}
             </div>
+
+            {tagPickerOpen && (
+              <div className="popover tagpicker" role="dialog" aria-label={t('composer.labels')}>
+                {allTags.length === 0 && <p className="menuhint">{t('labels.none')}</p>}
+                {allTags.map((label) => (
+                  <label className="checkrow" key={label.id}>
+                    <input
+                      type="checkbox"
+                      checked={item.labels.includes(label.name)}
+                      onChange={() =>
+                        void updateTask(item.id, {
+                          labels: item.labels.includes(label.name)
+                            ? item.labels.filter((l) => l !== label.name)
+                            : [...item.labels, label.name],
+                        })
+                      }
+                    />
+                    <Icon name="flag" size="sm" className="taglabel" style={markerStyle(label.color, false)} />
+                    <span>{label.name}</span>
+                  </label>
+                ))}
+              </div>
+            )}
           </div>
 
           {item.due?.is_recurring && (

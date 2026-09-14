@@ -5,7 +5,8 @@ import { useT } from '@/hooks/useT';
 import { useStore } from '@/store/store';
 import { toDisplayPriority, type Item } from '@/domain/types';
 import { effectiveEstimate, formatDuration } from '@/domain/estimates';
-import { deadlineDate, dueDate, formatRelativeDay, formatTime, hasTime, isOverdue, overdueBy } from '@/domain/dates';
+import { deadlineDate, dueDate, formatRelativeDay, formatTime, hasTime, isOverdue, isToday, overdueBy } from '@/domain/dates';
+import { markerStyle } from '@/domain/colors';
 
 interface TaskRowProps {
   item: Item;
@@ -25,7 +26,7 @@ export function TaskRow({
   const hour12 = useStore((s) => s.prefs.hour12);
   const toggleTask = useStore((s) => s.toggleTask);
 
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(true);
 
   const children = childrenOf(item.id);
   const openChildren = children.filter((c) => !c.checked);
@@ -84,22 +85,7 @@ export function TaskRow({
         </span>
 
         <span className="tmain">
-          <span className="ttitle">
-            {openChildren.length > 0 && (
-              <button
-                className="iconbtn subcaret"
-                aria-expanded={expanded}
-                aria-label={t('detail.subtasks')}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setExpanded((v) => !v);
-                }}
-              >
-                <Icon name={expanded ? 'caret-up' : 'caret'} size="sm" />
-              </button>
-            )}
-            {item.content}
-          </span>
+          <span className="ttitle">{item.content}</span>
 
           {item.description && <span className="tdesc">{item.description}</span>}
 
@@ -121,7 +107,14 @@ export function TaskRow({
               </span>
             )}
 
-            {item.due?.is_recurring && <Icon name="repeat" />}
+            {item.due?.is_recurring && (
+              <span
+                className={`repeatdot ${late ? 'late' : isToday(item) ? 'today' : 'future'}`}
+                title={item.due.string}
+              >
+                <Icon name="repeat" size="sm" />
+              </span>
+            )}
 
             {deadline && (
               <span className="deadline">
@@ -135,7 +128,9 @@ export function TaskRow({
             ))}
 
             {showProject && project && !project.inbox_project && (
-              <span className="proj">#{project.name}</span>
+              <span className="proj" style={markerStyle(project.color, false)}>
+                #{project.name}
+              </span>
             )}
 
             {children.length > 0 && (
@@ -147,7 +142,23 @@ export function TaskRow({
           </span>
         </span>
 
-        <TaskActions item={item} childrenOf={childrenOf} onOpen={onOpen} />
+        <span className="trow-end">
+          {openChildren.length > 0 && (
+            <button
+              className="iconbtn subcaret"
+              aria-expanded={expanded}
+              aria-label={t('detail.subtasks')}
+              title={t('detail.subtasks')}
+              onClick={(e) => {
+                e.stopPropagation();
+                setExpanded((v) => !v);
+              }}
+            >
+              <Icon name={expanded ? 'caret-up' : 'caret'} size="sm" />
+            </button>
+          )}
+          <TaskActions item={item} childrenOf={childrenOf} onOpen={onOpen} />
+        </span>
       </div>
 
       {expanded &&
