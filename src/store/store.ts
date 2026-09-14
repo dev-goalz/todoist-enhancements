@@ -73,8 +73,8 @@ interface AppState {
   createProject: (name: string, color: string) => Promise<void>;
   updateProjectFields: (id: string, args: Record<string, unknown>) => Promise<void>;
   updateSectionFields: (id: string, args: Record<string, unknown>) => Promise<void>;
-  /** Creates a section and hands back its id, so the caller can focus its name. */
-  createSection: (projectId: string, order: number) => Promise<string>;
+  /** Creates a section at `index` and hands back its id, so the caller can focus its name. */
+  createSection: (projectId: string, index: number) => Promise<string>;
 
   /* Toasts */
   toast: (message: string, undo?: () => void) => void;
@@ -462,26 +462,40 @@ export const useStore = create<AppState>((set, get) => ({
     });
   },
 
-  async createSection(projectId, order) {
+  async createSection(projectId, index) {
     const tempId = newUuid();
-    await get().apply(
-      [{
+
+    /* The new section takes the clicked position, and everything from there
+       down moves one place. Giving it the same order as an existing section
+       and hoping the sort works it out is how it ended up at the bottom. */
+    const existing = Object.values(get().snapshot.sections)
+      .filter((s) => s.project_id === projectId && !s.is_archived && !s.is_deleted)
+      .sort((a, b) => a.section_order - b.section_order);
+
+    const shifted = existing.slice(index);
+    const commands = [
+      {
         type: 'section_add',
         uuid: newUuid(),
         temp_id: tempId,
-        args: { name: '', project_id: projectId, section_order: order },
-      }],
-      (snapshot) => ({
-        ...snapshot,
-        sections: {
-          ...snapshot.sections,
-          [tempId]: {
-            id: tempId, project_id: projectId, name: '', description: '',
-            section_order: order, is_archived: false, is_deleted: false,
-          },
-        },
-      }),
-    );
+        args: { name: '', project_id: projectId, section_order: index },
+      },
+      ...shifted.map((section, offset) =>
+        command('section_update', { id: section.id, section_order: index + offset + 1 })),
+    ];
+
+    await get().apply(commands, (snapshot) => {
+      const sections = { ...snapshot.sections };
+      shifted.forEach((section, offset) => {
+        sections[section.id] = { ...section, section_order: index + offset + 1 };
+      });
+      sections[tempId] = {
+        id: tempId, project_id: projectId, name: '',
+        section_order: index, is_archived: false, is_deleted: false,
+      };
+      return { ...snapshot, sections };
+    });
+
     return tempId;
   },
 

@@ -83,7 +83,6 @@ export function ProjectView({
       const grouped = sections.map((section) => ({
         id: section.id,
         title: section.name,
-        description: (section.description ?? '') as string | null,
         items: sorted(scoped.filter((i) => i.section_id === section.id)),
       }));
 
@@ -91,11 +90,11 @@ export function ProjectView({
       // With no sections at all there is nothing to distinguish, so the list
       // is shown plainly rather than under a "no section" heading.
       if (sections.length === 0) {
-        return [{ id: 'none', title: '', description: null as string | null, items: loose }];
+        return [{ id: 'none', title: '', items: loose }];
       }
       return [
         ...grouped,
-        { id: 'none', title: t('group.noSection'), description: null as string | null, items: loose },
+        { id: 'none', title: t('group.noSection'), items: loose },
       ];
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -201,16 +200,6 @@ export function ProjectView({
               }}
               onAddTask={() =>
                 onAddTaskTo({ projectId, sectionId: group.id === 'none' ? undefined : group.id })
-              }
-              descriptionSlot={
-                group.id === 'none' ? null : (
-                  <EditableDescription
-                    value={group.description ?? ''}
-                    placeholder={t('section.addDescription')}
-                    clampLines={2}
-                    onCommit={(next) => void updateSectionFields(group.id, { description: next })}
-                  />
-                )
               }
             />
             </Fragment>

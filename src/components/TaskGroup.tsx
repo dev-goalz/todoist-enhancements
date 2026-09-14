@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Icon } from './Icon';
 import { DraggableTask } from './dnd/DraggableTask';
 import { Droppable } from './dnd/Droppable';
@@ -15,7 +15,6 @@ interface TaskGroupProps {
   onOpen: (id: string) => void;
   /** Extra visual weight for Behind schedule and Quick. */
   tint?: 'late' | 'quick';
-  description?: string;
   actions?: ReactNode;
   showProject?: boolean;
   defaultCollapsed?: boolean;
@@ -23,8 +22,6 @@ interface TaskGroupProps {
   onAddTask?: () => void;
   /** An accent for the sections that carry meaning: late, and quick. */
   accent?: 'late' | 'quick';
-  /** An editable description rendered under the heading. */
-  descriptionSlot?: ReactNode;
   /** When set, the whole group accepts tasks dropped onto it. */
   dropTarget?: DropTarget;
   /** A real section can be renamed in place; a derived grouping cannot. */
@@ -33,9 +30,9 @@ interface TaskGroupProps {
 }
 
 export function TaskGroup({
-  title, items, childrenOf, onOpen, tint, description, actions,
+  title, items, childrenOf, onOpen, tint, actions,
   showProject = true, defaultCollapsed = false, dropTarget, onAddTask, accent,
-  descriptionSlot, sectionId, onRename,
+  sectionId, onRename,
 }: TaskGroupProps) {
   const { t, locale } = useT();
   const dragging = useStore((s) => s.draggingTaskId !== null);
@@ -68,21 +65,12 @@ export function TaskGroup({
             onClick={() => setCollapsed((v) => !v)}
           >
             {onRename && sectionId ? (
-              <input
-                className="gname gnamefield"
-                data-section-name={sectionId}
-                defaultValue={title}
+              <SectionName
+                id={sectionId}
+                value={title ?? ''}
                 placeholder={t('section.untitled')}
-                aria-label={t('section.name')}
-                onClick={(e) => e.stopPropagation()}
-                onBlur={(e) => {
-                  const next = e.target.value.trim();
-                  if (next !== title) onRename(next);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); }
-                  if (e.key === 'Escape') { e.currentTarget.value = title ?? ''; e.currentTarget.blur(); }
-                }}
+                label={t('section.name')}
+                onRename={onRename}
               />
             ) : (
               <span className="gname">{title}</span>
@@ -102,10 +90,6 @@ export function TaskGroup({
           </button>
         </div>
 
-        {/* A description belongs to its heading, so it sits inside the block
-            the rule closes rather than adrift underneath it. */}
-        {description && !collapsed && <p className="gdesc">{description}</p>}
-        {descriptionSlot && !collapsed && <div className="gdesc">{descriptionSlot}</div>}
         </div>
       )}
 
@@ -133,4 +117,43 @@ export function TaskGroup({
 
   if (!dropTarget) return body(false);
   return <Droppable target={dropTarget}>{({ isOver }) => body(isOver)}</Droppable>;
+}
+
+/**
+ * A section's name, typed where it is read.
+ *
+ * The field is sized from its own text rather than filling the row: a field
+ * that stretches pushes the duration and the count halfway across the page for
+ * no reason.
+ */
+function SectionName({
+  id, value, placeholder, label, onRename,
+}: {
+  id: string;
+  value: string;
+  placeholder: string;
+  label: string;
+  onRename: (name: string) => void;
+}) {
+  const [draft, setDraft] = useState(value);
+  useEffect(() => { setDraft(value); }, [value]);
+
+  return (
+    <input
+      className="gname gnamefield"
+      data-section-name={id}
+      value={draft}
+      placeholder={placeholder}
+      aria-label={label}
+      size={Math.max(placeholder.length, draft.length + 1)}
+      onChange={(e) => setDraft(e.target.value)}
+      onClick={(e) => e.stopPropagation()}
+      onBlur={() => { if (draft.trim() !== value) onRename(draft.trim()); }}
+      onKeyDown={(e) => {
+        e.stopPropagation();
+        if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); }
+        if (e.key === 'Escape') { setDraft(value); e.currentTarget.blur(); }
+      }}
+    />
+  );
 }

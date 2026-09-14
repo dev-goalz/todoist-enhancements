@@ -33,8 +33,6 @@ export const fr: Record<TranslationKey, string> = {
   'project.editDescription': 'Modifier la description',
   'project.seeMore': 'Voir plus',
   'project.seeLess': 'Voir moins',
-  'section.description': 'Description de la section',
-  'section.addDescription': 'Ajouter une description',
   'demo.banner': 'Données de démonstration. Rien ici n’est relié à Todoist.',
   'demo.exit': 'Quitter la démo',
   'nav.labels': 'Tags',

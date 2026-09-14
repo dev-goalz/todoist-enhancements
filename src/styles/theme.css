@@ -286,7 +286,7 @@
    line. The prototype hung each row 26px to the left of its container; that is
    undone here so a section's frame can wrap its rows without drifting. */
 .task{margin-left:0;width:100%;padding-left:0}
-.ghead,.gdesc,.sectionadd{padding-left:0}
+.ghead,.sectionadd{padding-left:0}
 /* The drag handle is taken out of flow, so it costs the row no width. */
 .drag{position:absolute;left:-24px}
 
@@ -406,9 +406,6 @@
 .seemore:hover{color:var(--muted);text-decoration:underline}
 
 /* A section's own description sits under its heading. */
-/* A section's description belongs to its heading, so it sits close under it. */
-.gdesc .descwrap{width:100%}
-.gdesc .descview{padding:2px 6px;margin-left:-6px;font-size:var(--fs-12)}
 
 /* ---------- Demo mode ---------- */
 .app.demo{grid-template-rows:auto minmax(0,1fr)}
@@ -1001,9 +998,7 @@
 .phead .psub .descview,
 .phead .psub .descfield{width:100%;max-width:72ch}
 
-/* A description is secondary text wherever it appears — under a section
-   heading, or under a project's title. */
-.gdesc .md,
+/* A project's description is secondary text under its title. */
 .phead .psub .md{color:var(--faint)}
 .phead .psub{color:var(--faint)}
 .phead .psub .descview{padding:2px 6px;margin-left:-6px}
@@ -1027,8 +1022,11 @@
 }
 
 /* A section's name is typed where it is read. */
+/* Sized from its own text by the `size` attribute, so the duration and the
+   count sit right after the name instead of across the page. */
 .gnamefield{
-  min-width:0;flex:0 1 auto;width:auto;
+  min-width:0;flex:0 0 auto;width:auto;max-width:100%;
+  field-sizing:content;
   border:1px solid transparent;border-radius:var(--r-sm);
   padding:2px 6px;margin-left:-6px;background:transparent;
   font:inherit;font-size:var(--fs-14);font-weight:700;color:var(--text);
@@ -1131,7 +1129,6 @@
    pointer rather than telling every reader that there is nothing to read. */
 .descwrap.unset .descview{opacity:0;transition:opacity .12s ease-out}
 .phead:hover .descwrap.unset .descview,
-.gheadblock:hover .descwrap.unset .descview,
 .descwrap.unset .descview:focus-visible{opacity:1}
 
 /* Tag pickers float above their dialog instead of growing it. */

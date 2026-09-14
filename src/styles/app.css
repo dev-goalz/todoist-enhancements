@@ -102,7 +102,7 @@ ul{margin:0;padding:0;list-style:none}
 .ic{width:16px;height:16px;flex:0 0 auto;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
 /* 2px beside semibold labels, 1.5px beside regular body text */
 .btn .ic,.tb .ic,.navitem .ic,.addbtn .ic,.ptitle .ic{stroke-width:1.95}
-.meta .ic,.est .ic,.metrics .ic,.upnext .ic,.gdesc .ic{stroke-width:1.55}
+.meta .ic,.est .ic,.metrics .ic,.upnext .ic{stroke-width:1.55}
 .ic-sm{width:14px;height:14px}
 .ic-lg{width:20px;height:20px}
 
@@ -362,14 +362,10 @@ ul{margin:0;padding:0;list-style:none}
 .gtoggle{align-self:stretch}
 /* a collapsed group has nothing under it, so the rule would float free */
 .group.collapsed .gheadblock{border-bottom:0;padding-bottom:0}
-.group.collapsed .gdesc{display:none}
 .gdate{color:var(--faint);font-size:var(--fs-12);font-weight:500;white-space:nowrap}
 .gflag{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:var(--r-full);
   color:var(--warn);background:var(--warn-soft);font-size:var(--fs-11);font-weight:600;white-space:nowrap}
 .gflag .ic{width:12px;height:12px;stroke-width:2}
-.gdesc{flex:0 0 100%;width:100%;margin-top:-4px;padding-bottom:6px;color:var(--faint);font-size:var(--fs-12);line-height:1.5;text-wrap:pretty}
-.gdesc span{display:block;max-width:72ch}
-.gdesc.empty{color:var(--faint);font-style:italic}
 .gtoggle{display:flex;align-items:center;gap:8px;flex:1;min-width:0;padding:10px 0;text-align:left}
 .gdisclose{
   width:22px;height:22px;flex:0 0 auto;display:grid;place-items:center;
@@ -810,7 +806,6 @@ kbd{padding:2px 5px;border:1px solid var(--border-strong);border-radius:var(--r-
   /* a section action gets its own line rather than squeezing out the duration */
   .ghead{flex-wrap:wrap}
   .ghead .gcount{margin-left:auto}
-  .ghead .gdesc{order:3}
   .ghead .gactions{order:4;width:100%;margin:8px 0 0;justify-content:flex-start}
 
   .board,.board.days{grid-template-columns:minmax(0,1fr)}

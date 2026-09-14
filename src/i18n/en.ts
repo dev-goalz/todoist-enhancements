@@ -31,8 +31,6 @@ export const en = {
   'project.editDescription': 'Edit description',
   'project.seeMore': 'See more',
   'project.seeLess': 'See less',
-  'section.description': 'Section description',
-  'section.addDescription': 'Add a description',
   'demo.banner': 'Demo data. Nothing here is connected to Todoist.',
   'demo.exit': 'Leave demo',
   'nav.labels': 'Tags',

@@ -2,6 +2,21 @@
 
 Every notable change to Enhanced for Todoist, newest first.
 
+## [0.6.0] — 2026-09-14
+
+### Removed
+
+- Section descriptions.
+
+### Fixed
+
+- A new section is created at the position you clicked, not at the bottom.
+  It was given the same order as an existing one and left to a stable sort,
+  which put it last; everything from the clicked position down now moves one
+  place instead.
+- A section's name field is sized from its own text rather than filling the
+  row, so the duration and the count sit right after the name.
+
 ## [0.5.0] — 2026-09-14
 
 ### Changed
