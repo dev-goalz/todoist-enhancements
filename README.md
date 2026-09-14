@@ -163,3 +163,8 @@ genuinely appreciated.
 ## Changelog
 
 [CHANGELOG.md](CHANGELOG.md) records what changed in each version.
+
+---
+
+<sub>The images above are placeholders. [docs/README.md](docs/README.md) lists
+what each one should show — replace the files at the same names.</sub>
