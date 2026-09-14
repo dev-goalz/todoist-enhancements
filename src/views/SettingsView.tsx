@@ -140,6 +140,14 @@ export function SettingsView() {
               />
             </Row>
 
+            <Row title={t('settings.naturalDates')} hint={t('settings.naturalDatesHint')}>
+              <Switch
+                checked={prefs.naturalDates}
+                onChange={() => setPrefs({ naturalDates: !prefs.naturalDates })}
+                label={t('settings.naturalDates')}
+              />
+            </Row>
+
             {/* Read from the account, so it is stated rather than offered. */}
             <Row title={t('settings.weekStart')} hint={t('settings.weekStartHint')}>
               <span className="setvalue">{dayNames[((user?.start_day ?? 1) + 6) % 7]}</span>

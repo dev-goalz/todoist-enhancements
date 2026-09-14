@@ -355,10 +355,43 @@ export const useStore = create<AppState>((set, get) => ({
       responsible_uid: null,
     };
 
-    await get().apply([addItem(args, tempId)], (snapshot) => ({
-      ...snapshot,
-      items: { ...snapshot.items, [tempId]: optimisticItem },
+    /* Subtasks go out in the same batch, pointing at the parent's temp id.
+       Todoist resolves a temp id used as an argument inside one call, so the
+       whole tree is created in a single round trip and can never half-exist. */
+    const subtasks = (args.subtasks as string[] | undefined) ?? [];
+    const { subtasks: _ignored, ...parentArgs } = args;
+
+    const children = subtasks.map((content) => ({
+      tempId: newUuid(),
+      args: {
+        content,
+        project_id: parentArgs.project_id,
+        parent_id: tempId,
+      },
     }));
+
+    const optimisticChildren: Record<string, Item> = {};
+    for (const child of children) {
+      optimisticChildren[child.tempId] = {
+        ...optimisticItem,
+        id: child.tempId,
+        parent_id: tempId,
+        content: String(child.args.content),
+        description: '',
+        priority: 1,
+        due: null,
+        deadline: null,
+        labels: [],
+      };
+    }
+
+    await get().apply(
+      [addItem(parentArgs, tempId), ...children.map((c) => addItem(c.args, c.tempId))],
+      (snapshot) => ({
+        ...snapshot,
+        items: { ...snapshot.items, [tempId]: optimisticItem, ...optimisticChildren },
+      }),
+    );
   },
 
   async moveTask(id, target) {

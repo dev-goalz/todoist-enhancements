@@ -1,7 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { format, startOfDay } from 'date-fns';
 import { Icon } from '@/components/Icon';
-import { Select } from '@/components/Select';
 import {
   Bars, ChartCard, CompareBars, Donut, RankedBars, SplitBar, StatTile, seriesColor,
   type BarDatum, type CompareDatum, type RankedDatum, type SliceDatum,
@@ -9,7 +8,7 @@ import {
 import { useT } from '@/hooks/useT';
 import { useData } from '@/hooks/useData';
 import { useCompleted, type Period } from '@/hooks/useCompleted';
-import { useRoute } from '@/hooks/useRoute';
+import { navigate, useRoute } from '@/hooks/useRoute';
 import { rootItems } from '@/store/selectors';
 import { summariseInsights } from '@/domain/insights';
 import { formatDuration, estimateOf } from '@/domain/estimates';
@@ -38,6 +37,12 @@ export function InsightsView() {
   // logbook rather than landing on the overview and asking for a second click.
   const route = useRoute();
   const [tab, setTab] = useState<Tab>(route.id === 'logbook' ? 'logbook' : 'overview');
+
+  /* The initialiser above only runs on mount, so arriving from the menu while
+     the page was already open left the tab where it was. */
+  useEffect(() => {
+    setTab(route.id === 'logbook' ? 'logbook' : 'overview');
+  }, [route.id]);
   const { data: completed, previous, loading } = useCompleted(period, true);
 
   const roots = useMemo(() => rootItems(items), [items]);
@@ -48,30 +53,41 @@ export function InsightsView() {
 
   const intl = locale === 'fr' ? 'fr-FR' : 'en-GB';
 
-  /* Each day of the period, with the matching day of the period before it
-     drawn as a dot. Both series share one axis; they are never two scales. */
-  const perDay: CompareDatum[] = useMemo(() => {
-    const todayKey = format(startOfDay(new Date()), 'yyyy-MM-dd');
-    const earlier = countByDay(previous);
-    const current = countByDay(completed);
+  /* How this period is worth cutting up.
+     A single day has no series of days in it; a year has too many to read. */
+  const grain = granularityOf(period);
 
-    const days = spanOfDays(period);
-    const shift = days;                        // the same slot, one period back
-    const today = startOfDay(new Date());
+  /* Each bucket of the period, with the matching bucket of the period before
+     it drawn as a dot. Both series share one axis; never two scales. */
+  const perBucket: CompareDatum[] = useMemo(() => {
+    if (grain === null) return [];
+    const now = startOfDay(new Date());
+    const nowKey = bucketKey(now, grain);
+    const count = (items: CompletedItem[]) => {
+      const map = new Map<string, number>();
+      for (const item of items) {
+        const key = bucketKey(new Date(item.completed_at), grain);
+        map.set(key, (map.get(key) ?? 0) + 1);
+      }
+      return map;
+    };
+    const current = count(completed);
+    const earlier = count(previous);
+    const span = spanOfDays(period);
+    const buckets = bucketsIn(period, grain);
 
-    return Array.from({ length: days }, (_, offset) => {
-      const day = new Date(today.getTime() - (days - 1 - offset) * 86_400_000);
-      const key = format(day, 'yyyy-MM-dd');
-      const before = format(new Date(day.getTime() - shift * 86_400_000), 'yyyy-MM-dd');
+    return Array.from({ length: buckets }, (_, offset) => {
+      const at = shiftBucket(now, grain, -(buckets - 1 - offset));
+      const before = new Date(at.getTime() - span * 86_400_000);
       return {
-        key,
-        label: new Intl.DateTimeFormat(intl, { day: 'numeric' }).format(day),
-        value: current.get(key) ?? 0,
-        previous: earlier.get(before) ?? 0,
-        current: key === todayKey,
+        key: bucketKey(at, grain),
+        label: bucketLabel(at, grain, intl),
+        value: current.get(bucketKey(at, grain)) ?? 0,
+        previous: earlier.get(bucketKey(before, grain)) ?? 0,
+        current: bucketKey(at, grain) === nowKey,
       };
     });
-  }, [completed, previous, period, intl]);
+  }, [completed, previous, period, grain, intl]);
 
   /* The current calendar week, starting on the day the Todoist account does,
      so the axis reads M T W T F S S rather than "the last seven days". */
@@ -174,7 +190,7 @@ export function InsightsView() {
             key={value}
             role="tab"
             aria-selected={tab === value}
-            onClick={() => setTab(value)}
+            onClick={() => navigate('insights', value === 'logbook' ? 'logbook' : undefined)}
           >
             {t(`insights.${value}` as TranslationKey)}
           </button>
@@ -211,26 +227,29 @@ export function InsightsView() {
             </div>
           </section>
 
-          <section className="card w4 focuscardv">
+          <section className={`card focuscardv ${period === 'week' || period === 'month' ? 'w4' : 'w6'}`}>
             <h3>{t('insights.focusScore')}</h3>
             <p className="hero">{summary.focusScore}%</p>
             <SplitBar data={byPriority} />
             <p className="psub">{t('insights.focusExplainer')}</p>
           </section>
 
-          <ChartCard
-            title={t('insights.weekActivity')}
-            subtitle={t('insights.completedTasks')}
-            span={8}
-            trailing={<span className="kpi-label">{summary.completedCount}</span>}
-          >
-            <Bars
-              data={weekActivity}
-              height={150}
-              emptyLabel={t('insights.noHistory')}
-              format={tasksLabel}
-            />
-          </ChartCard>
+          {/* Past a month the current week is a footnote, not a headline. */}
+          {(period === 'week' || period === 'month') && (
+            <ChartCard
+              title={t('insights.weekActivity')}
+              subtitle={t('insights.completedTasks')}
+              span={8}
+              trailing={<span className="kpi-label">{summary.completedCount}</span>}
+            >
+              <Bars
+                data={weekActivity}
+                height={150}
+                emptyLabel={t('insights.noHistory')}
+                format={tasksLabel}
+              />
+            </ChartCard>
+          )}
 
           <section className="card w3">
             <StatTile
@@ -274,21 +293,24 @@ export function InsightsView() {
             />
           </section>
 
-          <ChartCard
-            title={t('insights.perDay')}
-            subtitle={t('insights.perDayHint')}
-            span={12}
-          >
-            <CompareBars
-              data={perDay}
-              height={160}
-              labelEvery={perDay.length > 14 ? Math.ceil(perDay.length / 12) : 1}
-              emptyLabel={t('insights.noHistory')}
-              format={(value) => String(value)}
-              currentLabel={t('insights.thisPeriod')}
-              previousLabel={t('insights.previousPeriod')}
-            />
-          </ChartCard>
+          {/* A single day has no series of days inside it. */}
+          {grain !== null && (
+            <ChartCard
+              title={t(`insights.per_${grain}` as TranslationKey)}
+              subtitle={t('insights.perBucketHint')}
+              span={12}
+            >
+              <CompareBars
+                data={perBucket}
+                height={160}
+                labelEvery={perBucket.length > 14 ? Math.ceil(perBucket.length / 12) : 1}
+                emptyLabel={t('insights.noHistory')}
+                format={(value) => String(value)}
+                currentLabel={t('insights.thisPeriod')}
+                previousLabel={t('insights.previousPeriod')}
+              />
+            </ChartCard>
+          )}
 
           <ChartCard title={t('insights.byProject')} span={6}>
             <Donut
@@ -313,7 +335,7 @@ export function InsightsView() {
           <ChartCard
             title={t('insights.dayActivity')}
             subtitle={t('insights.dayActivityHint')}
-            span={6}
+            span={period === 'day' ? 12 : 6}
           >
             <Bars
               data={byHour}
@@ -342,13 +364,64 @@ export function InsightsView() {
 
 /* ------------------------------------------------------------------ */
 
-/** How many days one period covers, for the day-by-day comparison. */
+/** How many days one period covers. */
 function spanOfDays(period: Period): number {
   if (period === 'day') return 1;
   if (period === 'week') return 7;
   if (period === 'month') return 30;
   if (period === 'quarter') return 90;
   return 365;
+}
+
+type Grain = 'day' | 'week' | 'month';
+
+/**
+ * The unit the period is read in.
+ *
+ * Today has no series of days inside it, so it gets none; a quarter read day
+ * by day is ninety bars nobody can tell apart, and a year is three hundred
+ * and sixty-five.
+ */
+function granularityOf(period: Period): Grain | null {
+  if (period === 'day') return null;
+  if (period === 'week' || period === 'month') return 'day';
+  if (period === 'quarter') return 'week';
+  return 'month';
+}
+
+function bucketsIn(period: Period, grain: Grain): number {
+  if (grain === 'day') return spanOfDays(period);
+  if (grain === 'week') return 13;
+  return 12;
+}
+
+const startOfGrain = (at: Date, grain: Grain): Date => {
+  if (grain === 'month') return new Date(at.getFullYear(), at.getMonth(), 1);
+  if (grain === 'week') {
+    const monday = new Date(at);
+    monday.setDate(at.getDate() - ((at.getDay() + 6) % 7));
+    return startOfDay(monday);
+  }
+  return startOfDay(at);
+};
+
+const bucketKey = (at: Date, grain: Grain): string =>
+  format(startOfGrain(at, grain), grain === 'month' ? 'yyyy-MM' : 'yyyy-MM-dd');
+
+function shiftBucket(from: Date, grain: Grain, by: number): Date {
+  const at = startOfGrain(from, grain);
+  if (grain === 'month') return new Date(at.getFullYear(), at.getMonth() + by, 1);
+  return new Date(at.getTime() + by * (grain === 'week' ? 7 : 1) * 86_400_000);
+}
+
+function bucketLabel(at: Date, grain: Grain, intl: string): string {
+  if (grain === 'month') {
+    return new Intl.DateTimeFormat(intl, { month: 'short' }).format(at);
+  }
+  if (grain === 'week') {
+    return new Intl.DateTimeFormat(intl, { day: 'numeric', month: 'short' }).format(at);
+  }
+  return new Intl.DateTimeFormat(intl, { day: 'numeric' }).format(at);
 }
 
 function countByDay(items: CompletedItem[]): Map<string, number> {
@@ -366,20 +439,43 @@ function Logbook({ completed }: { completed: CompletedItem[] }) {
   const { t, locale } = useT();
   const { snapshot } = useData();
   const [group, setGroup] = useState<LogGroup>('day');
-  const [projectFilter, setProjectFilter] = useState('');
-  const [priorityFilter, setPriorityFilter] = useState('');
+  /* Several projects and several priorities at once: one of each was never
+     the question anybody asked of a record. Empty means "all". */
+  const [projectFilter, setProjectFilter] = useState<string[]>([]);
+  const [priorityFilter, setPriorityFilter] = useState<number[]>([]);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const filtersRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!filtersOpen) return;
+    const onDown = (e: MouseEvent) => {
+      if (filtersRef.current && !filtersRef.current.contains(e.target as Node)) {
+        setFiltersOpen(false);
+      }
+    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setFiltersOpen(false); };
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [filtersOpen]);
 
   const filtered = useMemo(
     () =>
       completed.filter((task) => {
-        if (projectFilter && task.project_id !== projectFilter) return false;
-        if (priorityFilter && String(toDisplayPriority((task.priority ?? 1))) !== priorityFilter) {
-          return false;
-        }
+        if (projectFilter.length > 0 && !projectFilter.includes(task.project_id)) return false;
+        if (priorityFilter.length > 0
+          && !priorityFilter.includes(toDisplayPriority(task.priority ?? 1))) return false;
         return true;
       }),
     [completed, projectFilter, priorityFilter],
   );
+
+  const activeFilters = projectFilter.length + priorityFilter.length;
+  const toggleIn = <T,>(list: T[], value: T): T[] =>
+    list.includes(value) ? list.filter((x) => x !== value) : [...list, value];
 
   const groups = useMemo(() => {
     const map = new Map<string, { title: string; rows: typeof filtered }>();
@@ -419,36 +515,79 @@ function Logbook({ completed }: { completed: CompletedItem[] }) {
   return (
     <>
       <div className="viewbar logbar">
-        <Select
-          label={t('toolbar.group')}
-          value={group}
-          onChange={(value) => setGroup(value as LogGroup)}
-          options={[
-            { value: 'day', label: t('group.day') },
-            { value: 'project', label: t('group.project') },
-            { value: 'priority', label: t('group.priority') },
-          ]}
-        />
+        <div className="displaywrap" ref={filtersRef}>
+          <button
+            className="btn"
+            aria-expanded={filtersOpen}
+            aria-haspopup="dialog"
+            onClick={() => setFiltersOpen((v) => !v)}
+          >
+            <Icon name="sliders" />
+            {t('logbook.filters')}
+            {activeFilters > 0 && <span className="displaycount">{activeFilters}</span>}
+          </button>
 
-        <Select
-          label={t('filter.projects')}
-          value={projectFilter}
-          onChange={setProjectFilter}
-          options={[
-            { value: '', label: t('common.all') },
-            ...projects.map((p) => ({ value: p.id, label: p.name })),
-          ]}
-        />
+          {filtersOpen && (
+            <div className="popover displaypanel anchor-left" role="dialog" aria-label={t('logbook.filters')}>
+              <div className="panelhead">
+                <h5>{t('toolbar.group')}</h5>
+                {activeFilters > 0 && (
+                  <button
+                    className="resetbtn"
+                    onClick={() => { setProjectFilter([]); setPriorityFilter([]); }}
+                  >
+                    {t('filter.clear')}
+                  </button>
+                )}
+              </div>
 
-        <Select
-          label={t('filter.priorities')}
-          value={priorityFilter}
-          onChange={setPriorityFilter}
-          options={[
-            { value: '', label: t('common.all') },
-            ...([1, 2, 3, 4] as const).map((p) => ({ value: String(p), label: `P${p}` })),
-          ]}
-        />
+              <div className="segmented">
+                {(['day', 'project', 'priority'] as const).map((value) => (
+                  <button
+                    key={value}
+                    aria-pressed={group === value}
+                    onClick={() => setGroup(value)}
+                  >
+                    <small>{t(`group.${value}` as TranslationKey)}</small>
+                  </button>
+                ))}
+              </div>
+
+              <h5>{t('filter.priorities')}</h5>
+              <div className="chiprow">
+                {([1, 2, 3, 4] as const).map((p) => (
+                  <button
+                    key={p}
+                    className="chip"
+                    aria-pressed={priorityFilter.includes(p)}
+                    onClick={() => setPriorityFilter((list) => toggleIn(list, p as number))}
+                  >
+                    <span className="flagdot" style={{ background: `var(--p${p})` }} />
+                    P{p}
+                  </button>
+                ))}
+              </div>
+
+              <h5>{t('filter.projects')}</h5>
+              <div className="chiprow scroll">
+                {projects.map((project) => (
+                  <button
+                    key={project.id}
+                    className="chip"
+                    aria-pressed={projectFilter.includes(project.id)}
+                    onClick={() => setProjectFilter((list) => toggleIn(list, project.id))}
+                  >
+                    <span
+                      className="flagdot"
+                      style={{ background: markerStyle(project.color, false).color }}
+                    />
+                    {project.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
 
         <span className="kpi-label">{t('metrics.tasks', { count: filtered.length })}</span>
       </div>

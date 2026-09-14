@@ -19,6 +19,13 @@ export interface Preferences {
   locale: Locale;
   /** Where the app opens when no destination is in the address bar. */
   homepage: HomeView;
+  /**
+   * Reads a date out of a task's name as you type it.
+   *
+   * Only the date: `#project`, `p1` and `@tag` are explicit syntax the user
+   * typed on purpose, and they keep working whatever this is set to.
+   */
+  naturalDates: boolean;
   hour12: boolean;
   dailyCapacity: DailyCapacity;
   weeklyCapacityOverride: number | null;
@@ -33,6 +40,7 @@ export interface Preferences {
 export const defaultPreferences = (locale: Locale): Preferences => ({
   locale,
   homepage: 'week',
+  naturalDates: true,
   hour12: false,
   dailyCapacity: defaultCapacity(),
   weeklyCapacityOverride: null,

@@ -449,7 +449,7 @@ export function TaskDetail({ taskId, onClose, onOpen }: TaskDetailProps) {
                       void updateTask(item.id, { labels: item.labels.filter((l) => l !== label) })
                     }
                   >
-                    <Icon name="flag" size="sm" className="taglabel" style={markerStyle(known?.color, false)} />
+                    <Icon name="tag" size="sm" className="taglabel" style={markerStyle(known?.color, false)} />
                     <span>{label}</span>
                     <Icon name="close" size="sm" />
                   </button>
@@ -473,7 +473,7 @@ export function TaskDetail({ taskId, onClose, onOpen }: TaskDetailProps) {
                         })
                       }
                     />
-                    <Icon name="flag" size="sm" className="taglabel" style={markerStyle(label.color, false)} />
+                    <Icon name="tag" size="sm" className="taglabel" style={markerStyle(label.color, false)} />
                     <span>{label.name}</span>
                   </label>
                 ))}

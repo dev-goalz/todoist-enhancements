@@ -162,7 +162,6 @@ export function WeekView({ onOpen, onInsights, onUnestimated, onAddTaskTo }: Wee
             items={sortedGroup(groups.anytime)}
             childrenOf={childrenOf}
             onOpen={onOpen}
-            description={t('anytime.subtitle')}
             dropTarget={{ kind: 'anytime' }}
             onAddTask={() => onAddTaskTo({})}
           />

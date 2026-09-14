@@ -3,11 +3,29 @@ import {
   DndContext, DragOverlay, PointerSensor, pointerWithin, useSensor, useSensors,
   type DragEndEvent, type DragStartEvent,
 } from '@dnd-kit/core';
-import { snapCenterToCursor } from '@dnd-kit/modifiers';
+import type { Modifier } from '@dnd-kit/core';
 import { useStore } from '@/store/store';
 import { decodeTarget, dropMutation } from '@/domain/dnd';
 import { updateItem, moveItem } from '@/api/commands';
 import type { Item } from '@/domain/types';
+
+/**
+ * Puts the preview under the pointer by its left edge rather than its centre.
+ *
+ * Centred, the card covers the cursor and you cannot see what you are aiming
+ * at; anchored left, the pointer leads and the destination stays readable.
+ */
+const anchorLeftOfCursor: Modifier = ({
+  activatorEvent, activeNodeRect, draggingNodeRect, transform,
+}) => {
+  if (!draggingNodeRect || !activeNodeRect || !activatorEvent) return transform;
+  const { clientX, clientY } = activatorEvent as PointerEvent;
+  return {
+    ...transform,
+    x: transform.x + clientX - activeNodeRect.left - 12,
+    y: transform.y + clientY - activeNodeRect.top - draggingNodeRect.height / 2,
+  };
+};
 
 /**
  * Drag and drop across the whole app.
@@ -83,9 +101,9 @@ export function DragProvider({ children }: { children: ReactNode }) {
       onDragEnd={onDragEnd}
     >
       {children}
-      {/* Without this the preview stays at the row's original position instead
-          of following the pointer. */}
-      <DragOverlay dropAnimation={null} modifiers={[snapCenterToCursor]}>
+      {/* Without a modifier the preview stays at the row's original position
+          instead of following the pointer. */}
+      <DragOverlay dropAnimation={null} modifiers={[anchorLeftOfCursor]}>
         {dragging && <div className="dragoverlay">{dragging.content}</div>}
       </DragOverlay>
     </DndContext>

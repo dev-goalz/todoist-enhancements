@@ -173,9 +173,14 @@ ul{margin:0;padding:0;list-style:none}
 /* The heading is the disclosure control, with its caret on the right so it
    lines up with the folder carets below it. */
 .side-headbtn{
-  flex:1;min-width:0;display:flex;align-items:center;justify-content:space-between;gap:var(--s2);
+  flex:1;min-width:0;display:flex;align-items:center;gap:var(--s2);
   color:inherit;font:inherit;text-align:left;
 }
+.side-disclose{
+  width:22px;height:22px;flex:0 0 auto;display:grid;place-items:center;
+  border-radius:var(--r-xs);color:var(--faint);
+}
+.side-disclose:hover{background:var(--hover);color:var(--text)}
 .side-headbtn > span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .side-add{
   width:22px;height:22px;flex:0 0 auto;display:grid;place-items:center;
@@ -341,9 +346,10 @@ ul{margin:0;padding:0;list-style:none}
 .group.tinted-late{padding:var(--s4) var(--s4) var(--s3);background:#fdf8f6}
 .group.tinted-quick{padding:var(--s4) var(--s4) var(--s3);background:#f6f8fb}
 
-.ghead{min-height:38px;display:flex;align-items:center;flex-wrap:wrap;gap:var(--s2);padding:0 4px 8px;border-bottom:1px solid var(--border)}
+.gheadblock{padding-bottom:8px;border-bottom:1px solid var(--border)}
+.ghead{min-height:38px;display:flex;align-items:center;flex-wrap:wrap;gap:var(--s2);padding:0 4px}
 /* a collapsed group has nothing under it, so the rule would float free */
-.group.collapsed .ghead{border-bottom:0;padding-bottom:0}
+.group.collapsed .gheadblock{border-bottom:0;padding-bottom:0}
 .group.collapsed .gdesc{display:none}
 .gdate{color:var(--faint);font-size:var(--fs-12);font-weight:500;white-space:nowrap}
 .gflag{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:var(--r-full);
@@ -360,7 +366,7 @@ ul{margin:0;padding:0;list-style:none}
 .gdisclose:hover{background:var(--hover);color:var(--text)}
 .gtoggle .caret{width:14px;height:14px;color:var(--faint);transition:transform .15s ease}
 .group.collapsed .gtoggle .caret{transform:rotate(-90deg)}
-.group.collapsed > :not(.ghead){display:none}
+.group.collapsed > :not(.gheadblock){display:none}
 .gname{font-size:var(--fs-14);font-weight:700;letter-spacing:-.01em}
 /* project sections are structural, not just headings — make them read as such */
 [data-view="project"] .gname{color:var(--accent-dark)}
@@ -447,7 +453,7 @@ ul{margin:0;padding:0;list-style:none}
    ========================================================================== */
 .board{display:grid;gap:var(--s4);margin-top:var(--s5);align-items:start;
   grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
-.board.days{grid-template-columns:repeat(4,minmax(210px,1fr));overflow-x:auto;padding-bottom:var(--s2)}
+
 .col{min-width:0;display:flex;flex-direction:column;padding:var(--s4);border:1px solid var(--border);
   border-radius:var(--r-lg);background:var(--subtle)}
 .col.today{border-color:#f0cdc6;background:#fdf7f5}
@@ -736,7 +742,6 @@ kbd{padding:2px 5px;border:1px solid var(--border-strong);border-radius:var(--r-
   .w8,.w6{grid-column:span 12}
   .stackcol{grid-column:span 12;grid-template-columns:1fr 1fr}
   .w4{grid-column:span 6}
-  .board.days{grid-template-columns:repeat(2,minmax(210px,1fr))}
   .detail-body{grid-template-columns:1fr}
   .detail-side{border-left:0;border-top:1px solid var(--border)}
   :root{--sidebar-w:236px}
@@ -796,9 +801,7 @@ kbd{padding:2px 5px;border:1px solid var(--border-strong);border-radius:var(--r-
   .ghead .gdesc{order:3}
   .ghead .gactions{order:4;width:100%;margin:8px 0 0;justify-content:flex-start}
 
-  .board,.board.days{grid-template-columns:minmax(270px,84vw);overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:10px;
-    mask-image:linear-gradient(to right,#000 calc(100% - 22px),transparent)}
-  .col{scroll-snap-align:start}
+  .board,.board.days{grid-template-columns:minmax(0,1fr)}
   .cal{grid-template-columns:repeat(7,minmax(84px,1fr));overflow-x:auto}
   .bento{grid-template-columns:minmax(0,1fr)}
   .stackcol{grid-column:auto;grid-template-columns:1fr}

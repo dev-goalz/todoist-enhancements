@@ -172,7 +172,7 @@ export function DisplayMenu({ viewKey, modes, groups }: DisplayMenuProps) {
                     aria-pressed={current.filters.labels.includes(label.name)}
                     onClick={() => setFilters({ labels: toggleIn(current.filters.labels, label.name) })}
                   >
-                    <span className="flagdot" style={{ background: markerStyle(label.color, false).color }} />
+                    <Icon name="tag" size="sm" style={markerStyle(label.color, false)} />
                     {label.name}
                   </button>
                 ))}
@@ -192,8 +192,8 @@ export function DisplayMenu({ viewKey, modes, groups }: DisplayMenuProps) {
                   {value === null
                     ? t('filter.any')
                     : value
-                      ? t('filter.estimatedOnly')
-                      : t('filter.unestimatedOnly')}
+                      ? t('filter.isEstimated')
+                      : t('filter.isUnestimated')}
                 </small>
               </button>
             ))}

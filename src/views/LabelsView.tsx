@@ -53,7 +53,7 @@ export function LabelsView() {
                     onClick={() => navigate('label', label.name)}
                   >
                     <span className="ttitle" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <Icon name="flag" className="taglabel" />
+                      <Icon name="tag" className="taglabel" />
                       <span style={markerStyle(label.color, false)}>{label.name}</span>
                     </span>
                     <span className="meta">
@@ -68,7 +68,7 @@ export function LabelsView() {
                       onClick={() => void updateLabelFavourite(label.id, !label.is_favorite)}
                       style={label.is_favorite ? { color: 'var(--p2)' } : undefined}
                     >
-                      <Icon name="flag" size="sm" />
+                      <Icon name="tag" size="sm" />
                     </button>
                   </span>
                 </div>

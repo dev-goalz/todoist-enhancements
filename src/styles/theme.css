@@ -57,11 +57,8 @@
   background:transparent;
 }
 
-.ghead{
-  min-height:34px;
-  padding:0 0 6px;
-  border-bottom:1px solid var(--border-strong);
-}
+.gheadblock{padding-bottom:6px;border-bottom:1px solid var(--border-strong)}
+.ghead{min-height:34px;padding:0;border-bottom:0}
 .gname{font-size:var(--fs-14);font-weight:700;color:var(--text)}
 .gtime,.gcount{color:var(--faint);font-weight:400}
 
@@ -298,9 +295,9 @@
 
 /* Meaning lives in the heading, not in a coloured panel. */
 .group.accent-late .gname{color:var(--p1)}
-.group.accent-late .ghead{border-bottom-color:var(--p1)}
+.group.accent-late .gheadblock{border-bottom-color:var(--p1)}
 .group.accent-quick .gname{color:var(--p3)}
-.group.accent-quick .ghead{border-bottom-color:var(--p3)}
+.group.accent-quick .gheadblock{border-bottom-color:var(--p3)}
 
 /* A heavier tick reads better at this size. */
 .check .ic{stroke-width:2.6}
@@ -337,9 +334,11 @@
 .metric .ic{color:var(--faint)}
 
 /* Display leads the controls line; Insights follows it in the accent colour. */
-.btn.accent{color:var(--accent);border-color:var(--accent);background:var(--accent-tint)}
+/* Insights is a destination, not a state. A filled red button reads as
+   "you are here", so it stays white and lets its glyph carry the accent. */
+.btn.accent{color:var(--text);border-color:var(--border-strong);background:var(--surface)}
 .btn.accent .ic{color:var(--accent)}
-.btn.accent:hover{background:#ffe4e2;border-color:var(--accent)}
+.btn.accent:hover{background:var(--subtle);border-color:var(--accent)}
 
 /* ==========================================================================
    Composer — one labelled control per thing a task can carry
@@ -607,24 +606,26 @@
 /* A count sitting on a wash needs its own chip, or it disappears. */
 .group.accent-late .gcount{color:var(--accent-dark);background:var(--accent-badge)}
 /* Inside a callout the heading no longer needs its own rule to stand out. */
-.group.accent-late .ghead,
-.group.accent-quick .ghead{border-bottom-color:transparent}
+.group.accent-late .gheadblock,
+.group.accent-quick .gheadblock{border-bottom-color:transparent}
 .group.accent-late .task,
 .group.accent-quick .task{border-bottom-color:rgba(32,32,32,.07)}
 
 /* ---------- Kanban ---------- */
-/* Columns scroll sideways instead of wrapping onto a second row. */
+/* Columns wrap onto a second row rather than running off the right edge.
+   Sideways scrolling meant that grouping by anything with more than three or
+   four values — project, tag — put most of the board out of sight and cut the
+   visible columns in half. */
 .board{
   display:grid;
-  grid-auto-flow:column;
-  grid-auto-columns:minmax(272px,1fr);
-  grid-template-columns:none;
+  grid-auto-flow:row;
+  grid-template-columns:repeat(auto-fill,minmax(248px,1fr));
+  grid-auto-columns:auto;
   gap:var(--s4);
-  overflow-x:auto;
+  overflow-x:visible;
   padding-bottom:var(--s3);
   align-items:start;
 }
-.board.days{grid-auto-columns:minmax(232px,1fr)}
 .col{max-height:none}
 
 /* A parent and its subtasks are one card, not several. */
@@ -801,14 +802,20 @@
 .focuscardv .psub{margin-top:0}
 
 /* ---------- Logbook ---------- */
-.logday h4{justify-content:flex-start}
+/* Day headings carry the same weight as a section heading in any other view;
+   only the rows beneath them are the logbook's own. */
+.logday h4{
+  justify-content:flex-start;align-items:baseline;gap:8px;
+  font-size:var(--fs-14);font-weight:700;letter-spacing:-.01em;
+  padding-bottom:8px;
+}
 .logday h4 .gcount{margin-left:auto}
 .logrow{border-bottom-color:var(--border)}
 .logrow:last-child{border-bottom:0}
 .logname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 /* The tick takes the priority of the task it closed, which is the one piece of
    context the record was missing. */
-.logtick{width:16px;height:16px;display:grid;place-items:center;border-radius:var(--r-full)}
+.logtick{width:16px;height:16px;display:grid;place-items:center;border-radius:var(--r-sm)}
 .logtick .ic{width:12px;height:12px;stroke-width:2.6}
 .logtick.p1{color:var(--p1);background:rgba(209,69,59,.12)}
 .logtick.p2{color:var(--p2);background:rgba(235,137,9,.12)}
@@ -855,7 +862,14 @@
   border-radius:16px;
   border-color:var(--border);
   box-shadow:0 1px 2px rgba(28,25,23,.04);
+  /* Cards sharing a row share a height; a short tile next to a tall chart
+     looked like a mistake rather than a choice. */
+  display:flex;flex-direction:column;
 }
+.bento{align-items:stretch}
+.card > .chart,
+.card > .donut,
+.card > .ranked{margin-top:auto}
 .card h3{font-size:var(--fs-13);font-weight:600;letter-spacing:-.01em;color:var(--text)}
 
 .stat{display:grid;gap:5px}
@@ -889,3 +903,100 @@
   color:var(--muted);font-size:var(--fs-12);font-weight:600;
 }
 .attn .ic{color:var(--faint)}
+
+/* ==========================================================================
+   Composer — what the name carries, and the subtasks that go with it
+   ========================================================================== */
+
+/* A read-back of everything the parser took out of the name, so the task
+   never gains a date the user did not realise they had typed. */
+.composer-read{display:flex;flex-wrap:wrap;gap:6px}
+.readchip{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:3px 9px;border-radius:var(--r-full);
+  background:var(--subtle);color:var(--muted);
+  font-size:var(--fs-12);font-weight:600;
+}
+.readchip .ic{width:12px;height:12px;color:var(--faint)}
+.readchip.date{background:var(--accent-tint);color:var(--accent-dark)}
+.readchip.date .ic{color:var(--accent)}
+
+.composer-subs{display:grid;gap:2px;padding-top:var(--s2);border-top:1px solid var(--border)}
+.composer-subs .fieldlabel{margin:0 0 4px}
+.composer-sub{
+  display:grid;grid-template-columns:16px minmax(0,1fr) auto;align-items:center;
+  gap:10px;min-height:32px;font-size:var(--fs-13);
+}
+.composer-sub .check{width:14px;height:14px;border-radius:var(--r-full);border-style:dashed}
+.composer-sub input{
+  border:0;background:transparent;font:inherit;font-size:var(--fs-13);
+  color:var(--text);padding:4px 0;
+}
+.composer-sub input:focus{outline:none}
+.composer-sub input::placeholder{color:var(--faint)}
+.composer-sub .iconbtn{width:24px;height:24px;opacity:0}
+.composer-sub:hover .iconbtn,
+.composer-sub:focus-within .iconbtn{opacity:1}
+
+/* The tag picker floats above the sheet instead of growing it, so choosing a
+   tag never scrolls the fields out from under the pointer. */
+.composerbox{position:relative}
+.composer-tags .tagpicker{
+  position:absolute;z-index:70;top:auto;bottom:calc(100% + 6px);left:0;
+  width:min(280px,100%);max-height:240px;overflow-y:auto;
+}
+
+/* ---------- Upcoming: a fixed number of day columns, paged ---------- */
+.pager{display:inline-flex;align-items:center;gap:2px}
+.pagerlabel{
+  min-width:44px;text-align:center;color:var(--muted);
+  font-size:var(--fs-12);font-variant-numeric:tabular-nums;
+}
+.pager .iconbtn:disabled{opacity:.35;cursor:default}
+.pager .iconbtn:disabled:hover{background:transparent;color:var(--muted)}
+
+/* Paged, the board never scrolls sideways: the columns simply fit. */
+.board.days{
+  grid-auto-flow:row;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  grid-auto-columns:auto;
+  overflow-x:visible;
+}
+@media (max-width:900px){
+  .board.days{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:620px){
+  .board.days{grid-template-columns:minmax(0,1fr)}
+}
+
+/* The add button states its shortcut, the way the search field does. */
+.addbtn kbd{
+  padding:2px 7px;border-radius:var(--r-xs);
+  background:rgba(255,255,255,.22);color:#fff;
+  font:inherit;font-size:var(--fs-11);font-weight:600;
+}
+
+/* ---------- Search: a palette you drive from the keyboard ---------- */
+.sresults [role="option"][aria-selected="true"]{background:var(--accent-soft)}
+.sresults [role="option"][aria-selected="true"] strong{color:var(--accent-dark)}
+.searchfoot{
+  display:flex;gap:var(--s4);padding:10px var(--s4);
+  border-top:1px solid var(--border);
+  color:var(--faint);font-size:var(--fs-11);
+}
+.searchfoot span{display:inline-flex;align-items:center;gap:5px}
+.searchfoot kbd{
+  min-width:18px;padding:1px 5px;display:inline-grid;place-items:center;
+  border:1px solid var(--border-strong);border-radius:var(--r-xs);
+  background:var(--subtle);font:inherit;font-size:10px;
+}
+
+/* ---------- Page header ---------- */
+/* The title column takes the room the actions leave, so a project's
+   description reads as prose instead of a narrow ribbon beside the buttons. */
+.phead-text{flex:1 1 auto;min-width:0}
+.phead .psub{max-width:none}
+/* A project description is editable, so it needs the full measure to type in. */
+.phead .psub .descwrap,
+.phead .psub .descview,
+.phead .psub .descfield{width:100%;max-width:72ch}

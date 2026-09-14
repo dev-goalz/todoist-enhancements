@@ -49,7 +49,6 @@ export const fr: Record<TranslationKey, string> = {
   'project.colour': 'Couleur',
   'project.createSubmit': 'Ajouter le projet',
 
-  'anytime.subtitle': 'Les tâches à réaliser cette semaine sans jour précis.',
 
   /* Groups */
   'group.overdue': 'En retard',
@@ -118,8 +117,8 @@ export const fr: Record<TranslationKey, string> = {
   'filter.labels': 'Tags',
   'filter.priorities': 'Priorité',
   'filter.estimated': 'Estimation',
-  'filter.estimatedOnly': 'Estimées seulement',
-  'filter.unestimatedOnly': 'Non estimées seulement',
+  'filter.isEstimated': 'Estimées',
+  'filter.isUnestimated': 'Non estimées',
   'filter.any': 'Peu importe',
   'filter.includeScheduled': 'Inclure les tâches planifiées',
   'filter.showSubtasks': 'Afficher les sous-tâches',
@@ -239,7 +238,7 @@ export const fr: Record<TranslationKey, string> = {
   'insights.coverage': 'Couverture des estimations',
   'insights.remaining': 'Temps restant',
   'insights.distribution': 'Répartition',
-  'insights.overview': 'Vue d’ensemble',
+  'insights.overview': 'Tableau de bord',
   'insights.logbook': 'Journal',
   'insights.activity': 'Activité',
   'insights.projects': 'Projets',
@@ -402,4 +401,20 @@ export const fr: Record<TranslationKey, string> = {
   'connect.apiKey': 'Obtenir votre clé API dans Todoist',
   'connect.demoInstead': 'Explorer avec des données de démonstration',
   'connect.legal': 'Enhanced for Todoist est un projet indépendant de {author}. Il n’est ni créé, ni affilié, ni soutenu par Todoist. « Todoist » est une marque de Doist Inc.',
+
+  'insights.per_day': 'Achevées par jour',
+  'insights.per_week': 'Achevées par semaine',
+  'insights.per_month': 'Achevées par mois',
+  'insights.perBucketHint': 'Comparé à la même durée, une période plus tôt',
+
+  'composer.subtaskPlaceholder': 'Ajouter une sous-tâche, puis Entrée',
+  'composer.reads': 'Lu dans le nom',
+  'settings.naturalDates': 'Lire les dates dans le nom de la tâche',
+  'settings.naturalDatesHint': 'Transforme « appeler Marc demain à 9h » en tâche datée. #projet, p1 et @tag s’appliquent toujours.',
+
+  'upcoming.earlier': 'Jours précédents',
+  'upcoming.later': 'Jours suivants',
+
+  'search.hintMove': 'pour naviguer',
+  'search.hintOpen': 'pour ouvrir',
 };

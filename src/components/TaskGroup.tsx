@@ -54,6 +54,7 @@ export function TaskGroup({
   const body = (isOver: boolean) => (
     <section className={`${className}${isOver ? ' dropping' : ''}`}>
       {title && (
+        <div className="gheadblock">
         <div className="ghead">
           <button
             className="gtoggle"
@@ -75,10 +76,13 @@ export function TaskGroup({
             <Icon name={collapsed ? 'caret' : 'caret-up'} size="sm" />
           </button>
         </div>
-      )}
 
-      {description && !collapsed && <p className="gdesc">{description}</p>}
-      {descriptionSlot && !collapsed && <div className="gdesc">{descriptionSlot}</div>}
+        {/* A description belongs to its heading, so it sits inside the block
+            the rule closes rather than adrift underneath it. */}
+        {description && !collapsed && <p className="gdesc">{description}</p>}
+        {descriptionSlot && !collapsed && <div className="gdesc">{descriptionSlot}</div>}
+        </div>
+      )}
 
       {!collapsed &&
         items.map((item) => (

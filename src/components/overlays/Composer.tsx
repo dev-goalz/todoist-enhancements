@@ -7,6 +7,7 @@ import { useStore } from '@/store/store';
 import { estimateLabel } from '@/domain/estimates';
 import { markerStyle } from '@/domain/colors';
 import { toTodoistPriority, type DisplayPriority, type Snapshot } from '@/domain/types';
+import { readNaturalDate, stripReading } from '@/domain/nlp';
 
 interface ComposerProps {
   open: boolean;
@@ -32,6 +33,7 @@ export function Composer({
   const { t } = useT();
   const snapshot = useStore((s) => s.snapshot);
   const createTask = useStore((s) => s.createTask);
+  const naturalDates = useStore((s) => s.prefs.naturalDates);
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -43,6 +45,8 @@ export function Composer({
   const [labels, setLabels] = useState<string[]>([]);
   const [minutes, setMinutes] = useState<number | null>(null);
   const [tagsOpen, setTagsOpen] = useState(false);
+  const [subtasks, setSubtasks] = useState<string[]>([]);
+  const [subtaskDraft, setSubtaskDraft] = useState('');
 
   useEffect(() => {
     if (!open) return;
@@ -52,6 +56,8 @@ export function Composer({
     setLabels([]);
     setMinutes(null);
     setTagsOpen(false);
+    setSubtasks([]);
+    setSubtaskDraft('');
     setProjectId(defaultProjectId ?? '');
     setSectionId(defaultSectionId ?? '');
     setDate(defaultDate ?? '');
@@ -70,8 +76,9 @@ export function Composer({
     .filter((l) => !l.is_deleted && !l.name.startsWith('est-'))
     .sort((a, b) => a.item_order - b.item_order);
 
+  const parsed = parseShorthand(name, snapshot, naturalDates);
+
   async function submit() {
-    const parsed = parseShorthand(name, snapshot);
     const content = parsed.content;
     if (!content) return;
 
@@ -79,6 +86,11 @@ export function Composer({
     if (minutes !== null) allLabels.push(estimateLabel(minutes));
 
     const targetProject = parsed.projectId ?? projectId ?? snapshot.user?.inbox_project_id;
+    // What was typed into the name wins over the picker only when the picker
+    // was left alone, so an explicit choice is never quietly overwritten.
+    const dueDate = date || parsed.date;
+    const pending = subtaskDraft.trim();
+    const allSubtasks = pending ? [...subtasks, pending] : subtasks;
 
     await createTask({
       content,
@@ -87,8 +99,11 @@ export function Composer({
       section_id: sectionId || undefined,
       priority: toTodoistPriority(parsed.priority ?? priority),
       labels: allLabels,
-      due: date ? { date, timezone: null, string: date, lang: 'en', is_recurring: false } : undefined,
+      due: dueDate
+        ? { date: dueDate, timezone: null, string: dueDate, lang: 'en', is_recurring: false }
+        : undefined,
       deadline: deadline ? { date: deadline, lang: 'en' } : undefined,
+      subtasks: allSubtasks,
     });
 
     onClose();
@@ -110,6 +125,35 @@ export function Composer({
             }
           }}
         />
+
+        {(parsed.dateText || parsed.projectId || parsed.priority || parsed.labels.length > 0) && (
+          <p className="composer-read">
+            {parsed.dateText && (
+              <span className="readchip date">
+                <Icon name="calendar" size="sm" />
+                {parsed.dateText}
+              </span>
+            )}
+            {parsed.projectId && (
+              <span className="readchip">
+                <Icon name="project" size="sm" />
+                {snapshot.projects[parsed.projectId]?.name}
+              </span>
+            )}
+            {parsed.priority && (
+              <span className="readchip">
+                <span className="flagdot" style={{ background: `var(--p${parsed.priority})` }} />
+                P{parsed.priority}
+              </span>
+            )}
+            {parsed.labels.map((label) => (
+              <span className="readchip" key={label}>
+                <Icon name="tag" size="sm" />
+                {label}
+              </span>
+            ))}
+          </p>
+        )}
 
         <textarea
           className="composer-desc"
@@ -179,7 +223,7 @@ export function Composer({
             aria-expanded={tagsOpen}
             onClick={() => setTagsOpen((v) => !v)}
           >
-            <Icon name="flag" size="sm" />
+            <Icon name="tag" size="sm" />
             {t('composer.labels')}
             {labels.length > 0 && <span className="displaycount">{labels.length}</span>}
           </button>
@@ -192,7 +236,7 @@ export function Composer({
                 className="pill"
                 onClick={() => setLabels((prev) => prev.filter((l) => l !== label))}
               >
-                <Icon name="flag" size="sm" className="taglabel" style={markerStyle(known?.color, false)} />
+                <Icon name="tag" size="sm" className="taglabel" style={markerStyle(known?.color, false)} />
                 {label}
                 <Icon name="close" size="sm" />
               </button>
@@ -215,12 +259,47 @@ export function Composer({
                       )
                     }
                   />
-                  <Icon name="flag" size="sm" className="taglabel" style={markerStyle(label.color, false)} />
+                  <Icon name="tag" size="sm" className="taglabel" style={markerStyle(label.color, false)} />
                   <span>{label.name}</span>
                 </label>
               ))}
             </div>
           )}
+        </div>
+
+        <div className="composer-subs">
+          <span className="fieldlabel">{t('detail.subtasks')}</span>
+          {subtasks.map((content, index) => (
+            <div className="composer-sub" key={`${content}-${index}`}>
+              <span className="check p4" aria-hidden="true" />
+              <span>{content}</span>
+              <button
+                className="iconbtn"
+                aria-label={t('common.cancel')}
+                onClick={() => setSubtasks((prev) => prev.filter((_, i) => i !== index))}
+              >
+                <Icon name="close" size="sm" />
+              </button>
+            </div>
+          ))}
+          <div className="composer-sub adding">
+            <span className="check p4" aria-hidden="true" />
+            <input
+              value={subtaskDraft}
+              placeholder={t('composer.subtaskPlaceholder')}
+              aria-label={t('detail.addSubtask')}
+              onChange={(e) => setSubtaskDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key !== 'Enter') return;
+                e.preventDefault();
+                e.stopPropagation();
+                const value = subtaskDraft.trim();
+                if (!value) return;
+                setSubtasks((prev) => [...prev, value]);
+                setSubtaskDraft('');
+              }}
+            />
+          </div>
         </div>
 
         <div className="composer-actions">
@@ -239,14 +318,25 @@ interface ParsedInput {
   projectId: string | null;
   priority: DisplayPriority | null;
   labels: string[];
+  /** A date read out of the prose, when that pass is switched on. */
+  date: string | null;
+  dateText: string | null;
 }
 
-/** Reads `#project`, `p1`..`p4` and `@tag` out of the name, as a shortcut. */
-function parseShorthand(raw: string, snapshot: Snapshot): ParsedInput {
+/**
+ * Reads what the name is carrying.
+ *
+ * `#project`, `p1`..`p4` and `@tag` are syntax: the user typed them on
+ * purpose, so they are always honoured. The date is a guess made from prose,
+ * so it is the only part `naturalDates` can switch off.
+ */
+function parseShorthand(raw: string, snapshot: Snapshot, naturalDates: boolean): ParsedInput {
   let content = raw.trim();
   let projectId: string | null = null;
   let priority: DisplayPriority | null = null;
   const labels: string[] = [];
+  let date: string | null = null;
+  let dateText: string | null = null;
 
   const projectMatch = content.match(/#([\p{L}\p{N}_-]+)/u);
   if (projectMatch) {
@@ -269,5 +359,17 @@ function parseShorthand(raw: string, snapshot: Snapshot): ParsedInput {
   for (const match of content.matchAll(/@([\p{L}\p{N}_-]+)/gu)) labels.push(match[1]);
   content = content.replace(/@([\p{L}\p{N}_-]+)/gu, '').trim();
 
-  return { content: content.replace(/\s{2,}/g, ' ').trim(), projectId, priority, labels };
+  if (naturalDates) {
+    const reading = readNaturalDate(content);
+    if (reading) {
+      date = reading.date;
+      dateText = reading.matched.trim();
+      content = stripReading(content, reading);
+    }
+  }
+
+  return {
+    content: content.replace(/\s{2,}/g, ' ').trim(),
+    projectId, priority, labels, date, dateText,
+  };
 }

@@ -47,7 +47,6 @@ export const en = {
   'project.colour': 'Colour',
   'project.createSubmit': 'Add project',
 
-  'anytime.subtitle': 'Tasks to do this week, on no particular day.',
 
   /* Groups */
   'group.overdue': 'Behind schedule',
@@ -116,8 +115,8 @@ export const en = {
   'filter.labels': 'Tags',
   'filter.priorities': 'Priority',
   'filter.estimated': 'Estimate',
-  'filter.estimatedOnly': 'Estimated only',
-  'filter.unestimatedOnly': 'Unestimated only',
+  'filter.isEstimated': 'Estimated',
+  'filter.isUnestimated': 'Unestimated',
   'filter.any': 'Any',
   'filter.includeScheduled': 'Include scheduled tasks',
   'filter.showSubtasks': 'Show subtasks',
@@ -237,7 +236,7 @@ export const en = {
   'insights.coverage': 'Estimate coverage',
   'insights.remaining': 'Time remaining',
   'insights.distribution': 'Distribution',
-  'insights.overview': 'Overview',
+  'insights.overview': 'Dashboard',
   'insights.logbook': 'Logbook',
   'insights.activity': 'Activity',
   'insights.projects': 'Projects',
@@ -400,6 +399,22 @@ export const en = {
   'connect.apiKey': 'Get your API key in Todoist',
   'connect.demoInstead': 'Explore with demo data instead',
   'connect.legal': 'Enhanced for Todoist is an independent project from {author}. It is not created by, affiliated with, or supported by Todoist. “Todoist” is a trademark of Doist Inc.',
+
+  'insights.per_day': 'Completed per day',
+  'insights.per_week': 'Completed per week',
+  'insights.per_month': 'Completed per month',
+  'insights.perBucketHint': 'Against the same stretch one period earlier',
+
+  'composer.subtaskPlaceholder': 'Add a subtask, then press Enter',
+  'composer.reads': 'Read from the name',
+  'settings.naturalDates': 'Read dates from the task name',
+  'settings.naturalDatesHint': 'Turns “call Marc tomorrow at 9h” into a dated task. #project, p1 and @tag always apply.',
+
+  'upcoming.earlier': 'Earlier days',
+  'upcoming.later': 'Later days',
+
+  'search.hintMove': 'to move',
+  'search.hintOpen': 'to open',
 };
 
 export type TranslationKey = keyof typeof en;

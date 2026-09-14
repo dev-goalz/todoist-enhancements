@@ -256,6 +256,9 @@
   top:38px;right:0;left:auto;width:320px;max-height:70vh;overflow-y:auto;
   padding:var(--s4);
 }
+/* A trigger at the left of its row opens its panel to the right, or the panel
+   hangs off the page. */
+.displaypanel.anchor-left{left:0;right:auto}
 .panelhead{
   display:flex;align-items:center;justify-content:space-between;
   gap:var(--s3);margin-bottom:var(--s3);
@@ -428,3 +431,16 @@
   display:flex;align-items:center;justify-content:flex-end;gap:var(--s2);
   padding:var(--s3) var(--s4);border-top:1px solid var(--border);
 }
+
+/* A row of choices inside a picker. The display panel stopped using these
+   when it moved to chips; the tag picker still does. */
+.checkrow{
+  display:flex;align-items:center;gap:8px;min-height:32px;padding:0 4px;
+  border-radius:var(--r-sm);font-size:var(--fs-13);cursor:pointer;
+}
+.checkrow:hover{background:var(--hover)}
+.checkrow input[type="checkbox"]{
+  width:15px;height:15px;flex:0 0 auto;margin:0;accent-color:var(--accent);
+}
+.checkrow .ic{flex:0 0 auto}
+.checkrow span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

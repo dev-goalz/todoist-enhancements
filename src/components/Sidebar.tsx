@@ -114,7 +114,7 @@ export function Sidebar({
           aria-current={route.view === 'label' && route.id === name ? 'page' : undefined}
           onClick={() => navigate('label', name)}
         >
-          <Icon name="flag" className="taglabel" style={markerStyle(color, false)} />
+          <Icon name="tag" className="taglabel" style={markerStyle(color, false)} />
           <span className="label">{name}</span>
           {count !== undefined && count > 0 && <span className="count">{count}</span>}
         </button>
@@ -239,7 +239,7 @@ export function Sidebar({
           {navItem('week', 'week', 'nav.week', counts.week)}
           {navItem('upcoming', 'upcoming', 'nav.upcoming', counts.upcoming, { kind: 'upcoming' })}
           {navItem('someday', 'someday', 'nav.someday', counts.someday, { kind: 'someday' })}
-          {navItem('labels', 'flag', 'nav.labels', 0)}
+          {navItem('labels', 'tag', 'nav.labels', 0)}
         </nav>
 
         {(favourites.labels.length > 0 || favourites.projects.length > 0) && (
@@ -275,7 +275,9 @@ export function Sidebar({
       <div className="side-foot">
         <button className="addbtn" onClick={onAddTask}>
           {t('nav.addTask')}
-          <Icon name="plus" />
+          {/* The shortcut existed and nothing said so, which is the same as it
+              not existing. */}
+          <kbd>Q</kbd>
         </button>
         {/* Status and the issues badge share the last line, baseline aligned. */}
         <div className="footrow">
@@ -329,7 +331,6 @@ function SideGroup({
       <div className="side-head">
         <button className="side-headbtn" aria-expanded={open} onClick={onToggle}>
           <span>{title}</span>
-          <Icon name={open ? 'caret-up' : 'caret'} size="sm" className="disclose" />
         </button>
         {onAdd && (
           <button
@@ -341,6 +342,16 @@ function SideGroup({
             <Icon name="plus" size="sm" />
           </button>
         )}
+        {/* The caret ends the row, where every other disclosure in the app
+            puts it; the add button sits just inside it. */}
+        <button
+          className="side-disclose"
+          aria-expanded={open}
+          aria-label={title}
+          onClick={onToggle}
+        >
+          <Icon name={open ? 'caret-up' : 'caret'} size="sm" />
+        </button>
       </div>
       {open && children}
     </section>
