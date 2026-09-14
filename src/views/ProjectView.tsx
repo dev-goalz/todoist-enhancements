@@ -41,12 +41,20 @@ export function ProjectView({
 
   const addSection = async (index: number) => {
     const id = await createSection(projectId, index);
-    // The row does not exist until React has rendered it.
-    requestAnimationFrame(() => {
+
+    /* The field does not exist until React has rendered the new section, and
+       one frame is not always enough — the store updates, then the view
+       re-renders. Poll briefly rather than guess a delay. */
+    let tries = 0;
+    const focus = () => {
       const field = document.querySelector<HTMLInputElement>(`[data-section-name="${id}"]`);
       field?.focus();
       field?.select();
-    });
+      // The click that created the section also re-renders the list around it,
+      // which hands focus back to the body; keep asking until it sticks.
+      if (document.activeElement !== field && tries++ < 30) setTimeout(focus, 30);
+    };
+    setTimeout(focus, 30);
   };
   const viewKey = `project:${projectId}`;
   const current = viewPrefs(prefs, viewKey);
@@ -166,10 +174,14 @@ export function ProjectView({
         <div className="mode">
           {sectionGroups.map((group, index) => (
             <Fragment key={group.id}>
-            <AddSectionLine
-              label={t('section.add')}
-              onAdd={() => void addSection(index)}
-            />
+            {/* The seam before a real section. "No section" is not one, so it
+                gets no seam of its own and the strips never double up. */}
+            {group.id !== 'none' && (
+              <AddSectionLine
+                label={t('section.add')}
+                onAdd={() => void addSection(index)}
+              />
+            )}
             <TaskGroup
               title={group.title}
               sectionId={group.id === 'none' ? undefined : group.id}

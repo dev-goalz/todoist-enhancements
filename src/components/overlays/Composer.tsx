@@ -212,7 +212,12 @@ export function Composer({
           })}
 
           {tagsOpen && (
-            <div className="popover tagpicker" role="dialog" aria-label={t('composer.labels')}>
+            <div
+              className="popover tagpicker"
+              role="dialog"
+              aria-label={t('composer.labels')}
+              ref={(node) => node?.scrollIntoView({ block: 'nearest' })}
+            >
               {tags.length === 0 && <p className="menuhint">{t('labels.none')}</p>}
               {tags.map((label) => (
                 <label className="checkrow" key={label.id}>

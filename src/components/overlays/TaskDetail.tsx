@@ -458,7 +458,14 @@ export function TaskDetail({ taskId, onClose, onOpen }: TaskDetailProps) {
             </div>
 
             {tagPickerOpen && (
-              <div className="popover tagpicker" role="dialog" aria-label={t('composer.labels')}>
+              <div
+                className="popover tagpicker"
+                role="dialog"
+                aria-label={t('composer.labels')}
+                /* The tags property sits at the foot of a scrolling panel, so
+                   the list it opens can land below the fold. Bring it up. */
+                ref={(node) => node?.scrollIntoView({ block: 'nearest' })}
+              >
                 {allTags.length === 0 && <p className="menuhint">{t('labels.none')}</p>}
                 {allTags.map((label) => (
                   <label className="checkrow" key={label.id}>

@@ -367,7 +367,7 @@ ul{margin:0;padding:0;list-style:none}
 .gflag{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:var(--r-full);
   color:var(--warn);background:var(--warn-soft);font-size:var(--fs-11);font-weight:600;white-space:nowrap}
 .gflag .ic{width:12px;height:12px;stroke-width:2}
-.gdesc{flex:0 0 100%;width:100%;margin-top:0;padding-bottom:6px;color:var(--faint);font-size:var(--fs-12);line-height:1.5;text-wrap:pretty}
+.gdesc{flex:0 0 100%;width:100%;margin-top:-4px;padding-bottom:6px;color:var(--faint);font-size:var(--fs-12);line-height:1.5;text-wrap:pretty}
 .gdesc span{display:block;max-width:72ch}
 .gdesc.empty{color:var(--faint);font-style:italic}
 .gtoggle{display:flex;align-items:center;gap:8px;flex:1;min-width:0;padding:10px 0;text-align:left}
@@ -385,7 +385,7 @@ ul{margin:0;padding:0;list-style:none}
 .gcount{min-width:22px;height:20px;padding:0 6px;display:grid;place-items:center;border-radius:var(--r-full);
   color:var(--muted);background:var(--subtle);font-size:var(--fs-11);font-weight:600;font-variant-numeric:tabular-nums}
 .gtime{color:var(--muted);font-size:var(--fs-13);font-weight:500;white-space:nowrap;font-variant-numeric:tabular-nums}
-.gtime::before{content:"·";margin-right:7px;color:var(--border-strong)}
+.gtime::before{content:"·";margin-right:5px;color:var(--border-strong)}
 .gactions,.gflag{margin-left:auto}
 .gactions{display:flex;align-items:center;gap:6px;flex:0 0 auto}
 .gflag ~ .gcount{margin-left:10px}

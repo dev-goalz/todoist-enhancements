@@ -1,9 +1,28 @@
 # Changelog
 
-Every notable change to Enhancements for Todoist, newest first.
+Every notable change to Enhanced for Todoist, newest first.
 
-The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
-and the project follows [semantic versioning](https://semver.org/spec/v2.0.0.html).
+## [0.5.0] — 2026-09-14
+
+### Changed
+
+- The app wears Todoist's own mark.
+- The README leads with the goal, then the features, with placeholders for
+  screenshots; it links to the ways to help and to Buy me a coffee.
+- A section heading's name, duration and count sit closer together, and its
+  description is part of the same block.
+- An empty description is offered under the pointer rather than stated at rest.
+
+### Fixed
+
+- Adding a section did nothing visible: an empty section was filtered out as
+  noise and its heading was only drawn once it had a name, so the thing you
+  had just created could be neither seen nor named. A real section now always
+  renders, always carries its name field, and the field takes focus.
+- Only one add-section seam appears between two sections.
+- The white tick in the logbook was being repainted green by a broader rule.
+- The tag pickers in the composer and the task panel opened below the fold of
+  their own panel.
 
 ## [0.4.0] — 2026-09-14
 

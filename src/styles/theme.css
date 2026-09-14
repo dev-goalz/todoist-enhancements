@@ -60,6 +60,7 @@
 .gheadblock{padding-bottom:0;border-bottom:1px solid var(--border-strong)}
 .ghead{min-height:34px;padding:0;border-bottom:0}
 .gname{font-size:var(--fs-14);font-weight:700;color:var(--text)}
+.gtoggle{gap:6px}
 .gtime,.gcount{color:var(--faint);font-weight:400}
 
 /* ---------- Task rows ---------- */
@@ -510,6 +511,8 @@
   border-bottom:1px solid var(--border);font-size:var(--fs-13);
 }
 .logrow .ic{color:var(--ok)}
+/* Inside a filled tick the glyph is white, whatever the row's default is. */
+.logrow .logtick .ic{color:#fff}
 /* A project keeps its own colour here as it does everywhere else; this rule
    used to win over the marker and flatten them all to grey. */
 .logrow .logmeta{color:var(--marker,var(--faint));font-size:var(--fs-12)}
@@ -1123,3 +1126,17 @@
 }
 .namepicker button[aria-selected="true"]{background:var(--accent-soft);color:var(--accent-dark)}
 .namepicker .hash{width:18px;height:18px;font-size:var(--fs-12)}
+
+/* An empty description is an offer, not a statement: it waits under the
+   pointer rather than telling every reader that there is nothing to read. */
+.descwrap.unset .descview{opacity:0;transition:opacity .12s ease-out}
+.phead:hover .descwrap.unset .descview,
+.gheadblock:hover .descwrap.unset .descview,
+.descwrap.unset .descview:focus-visible{opacity:1}
+
+/* Tag pickers float above their dialog instead of growing it. */
+.prop .tagpicker,
+.detail-props .tagpicker{
+  position:absolute;z-index:70;top:auto;bottom:calc(100% + 6px);left:0;
+  width:min(260px,100%);max-height:220px;overflow-y:auto;
+}

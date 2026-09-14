@@ -41,9 +41,10 @@ export function TaskGroup({
   const dragging = useStore((s) => s.draggingTaskId !== null);
   const [collapsed, setCollapsed] = useState(defaultCollapsed);
 
-  // An empty section is noise. It reappears only while a task is in flight,
-  // so it can still be used as a destination.
-  if (items.length === 0 && !(dropTarget && dragging)) return null;
+  // An empty derived grouping is noise. A real section is not: it is somewhere
+  // you chose to make, and a section you just created has to be visible before
+  // it can be named or filled.
+  if (items.length === 0 && !sectionId && !(dropTarget && dragging)) return null;
 
   const totalMinutes = items.reduce(
     (acc, item) => acc + (effectiveEstimate(item, childrenOf).minutes ?? 0),
@@ -56,7 +57,9 @@ export function TaskGroup({
 
   const body = (isOver: boolean) => (
     <section className={`${className}${isOver ? ' dropping' : ''}`}>
-      {title && (
+      {/* A section just created has no name yet, and it is the heading that
+          carries the field you name it in. */}
+      {(title || sectionId) && (
         <div className="gheadblock">
         <div className="ghead">
           <button

@@ -75,7 +75,7 @@ export function EditableDescription({
   }
 
   return (
-    <div className={`descwrap${className ? ` ${className}` : ''}`}>
+    <div className={`descwrap${value ? '' : ' unset'}${className ? ` ${className}` : ''}`}>
       <button
         className={`descview${value ? '' : ' placeholder'}`}
         onClick={() => setEditing(true)}
