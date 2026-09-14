@@ -65,7 +65,7 @@ export function LabelsView() {
                   title={label.is_favorite ? t('labels.unfavourite') : t('labels.favourite')}
                   onClick={() => void updateLabelFavourite(label.id, !label.is_favorite)}
                 >
-                  <Icon name="flag" size="sm" />
+                  <Icon name="star" />
                 </button>
               </div>
             );

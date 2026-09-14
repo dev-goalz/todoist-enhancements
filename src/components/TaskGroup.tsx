@@ -136,7 +136,9 @@ export function TaskGroup({
      themselves as hovered at once. The title separates them. */
   return (
     <Droppable target={dropTarget} scope={`group:${sectionId ?? title ?? ''}`}>
-      {({ isOver }) => body(isOver)}
+      {/* A section being reordered passes over the groups too, and only the
+          seams between them are its destinations. */}
+      {({ isOver }) => body(isOver && dragging)}
     </Droppable>
   );
 }

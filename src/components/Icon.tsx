@@ -7,7 +7,7 @@ export type IconName =
   | 'dashboard' | 'deadline' | 'drag' | 'edit' | 'export' | 'external'
   | 'filter' | 'flag' | 'group' | 'inbox' | 'list' | 'logout' | 'more'
   | 'plus' | 'project' | 'repeat' | 'search' | 'settings' | 'sidebar'
-  | 'sliders' | 'someday' | 'sort' | 'stack' | 'subtask' | 'tag' | 'tasks'
+  | 'sliders' | 'someday' | 'sort' | 'stack' | 'star' | 'subtask' | 'tag' | 'tasks'
   | 'trend' | 'upcoming' | 'warning' | 'week';
 
 interface IconProps {

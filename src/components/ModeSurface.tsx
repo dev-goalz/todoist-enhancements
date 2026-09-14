@@ -6,6 +6,8 @@ import { useStore } from '@/store/store';
 import type { DisplayMode, GroupKey, Item, SortKey } from '@/domain/types';
 import { groupItems, sortItems } from '@/store/selectors';
 import { formatRelativeDay } from '@/domain/dates';
+import { formatDuration } from '@/domain/estimates';
+import { summariseLoad } from '@/domain/load';
 import { Droppable } from './dnd/Droppable';
 import type { DropTarget } from '@/domain/dnd';
 import type { TranslationKey } from '@/i18n';
@@ -19,7 +21,14 @@ interface ModeSurfaceProps {
   onOpen: (id: string) => void;
   showProject?: boolean;
   /** Board columns come from sections when a project supplies them. */
-  boardColumns?: Array<{ id: string; title: string; items: Item[]; dropTarget?: DropTarget }>;
+  boardColumns?: Array<{
+    id: string;
+    title: string;
+    items: Item[];
+    dropTarget?: DropTarget;
+    /** A day column knows its capacity, and shows its load against it. */
+    capacityMinutes?: number | null;
+  }>;
 }
 
 /**
@@ -79,7 +88,7 @@ function ListSurface(props: ModeSurfaceProps) {
 }
 
 function BoardSurface(props: ModeSurfaceProps) {
-  const { t } = useT();
+  const { t, locale } = useT();
   const groups = useGrouped(props);
   // Columns derived from a grouping are not drop destinations: dropping onto
   // "priority" or "tag" has no single unambiguous meaning.
@@ -90,10 +99,20 @@ function BoardSurface(props: ModeSurfaceProps) {
   if (columns.length === 0) return <p className="empty">{t('task.noTasks')}</p>;
 
   return (
-    /* Columns need more room than a reading measure allows. */
-    <div className="mode wide">
+    /* The same measure as the list: columns share the page's width and edges. */
+    <div className="mode">
       <div className={`board${props.group === 'day' ? ' days' : ''}`}>
         {columns.map((column) => {
+          /* The column's own header line: time, what is still unestimated and,
+             where the column is a day, how full it is. */
+          const load = summariseLoad(column.items, props.childrenOf, column.capacityMinutes ?? null);
+          const parts = [
+            load.estimatedMinutes > 0 ? formatDuration(load.estimatedMinutes, locale) : null,
+            load.unestimatedCount > 0 ? t('metrics.unestimated', { count: load.unestimatedCount }) : null,
+            load.percentage !== null ? `${load.percentage} %` : null,
+          ].filter((part): part is string => part !== null);
+          // An empty column has nothing to measure; "0 %" under it is noise.
+          if (column.items.length === 0) parts.length = 0;
           const body = (isOver: boolean) => (
             <section className={`col${isOver ? ' dropping' : ''}`}>
             <div className="chead">
@@ -102,6 +121,9 @@ function BoardSurface(props: ModeSurfaceProps) {
                 <small>{t('metrics.tasks', { count: column.items.length })}</small>
               </div>
             </div>
+            {parts.length > 0 && (
+              <p className={`cload${load.level === 'over' ? ' over' : ''}`}>{parts.join(' · ')}</p>
+            )}
             {column.items.map((item) => (
               <DraggableTask
                 key={item.id}
@@ -109,6 +131,7 @@ function BoardSurface(props: ModeSurfaceProps) {
                 childrenOf={props.childrenOf}
                 onOpen={props.onOpen}
                 showProject={props.showProject}
+                surface="card"
               />
             ))}
             {column.items.length === 0 && <p className="empty">{t('group.empty')}</p>}

@@ -28,6 +28,24 @@ const anchorLeftOfCursor: Modifier = ({
 };
 
 /**
+ * When the last drag ended, for the click that a browser fires on a drop.
+ *
+ * A pointer that goes down and comes up inside the same element produces a
+ * click, drag or no drag, so a card dropped back where it started would open.
+ */
+export const dragClock = {
+  endedAt: 0,
+  justEnded: () => Date.now() - dragClock.endedAt < 250,
+};
+
+/**
+ * Todoist's `item_move` takes exactly one destination. A section implies its
+ * project, so the section is sent when there is one and the project otherwise.
+ */
+const moveArgs = (move: { project_id?: string; section_id?: string | null }) =>
+  move.section_id ? { section_id: move.section_id } : { project_id: move.project_id };
+
+/**
  * Drag and drop across the whole app.
  *
  * A drop is translated by the rules in `domain/dnd`, applied optimistically,
@@ -58,6 +76,7 @@ export function DragProvider({ children }: { children: ReactNode }) {
 
   async function onDragEnd(event: DragEndEvent) {
     const activeId = String(event.active.id);
+    dragClock.endedAt = Date.now();
     setDraggingId(null);
     setDragging(null);
     setDraggingSection(null);
@@ -95,11 +114,17 @@ export function DragProvider({ children }: { children: ReactNode }) {
     if (mutation.update) {
       await apply([updateItem(item.id, mutation.update)], patch(mutation.update));
     } else if (mutation.move) {
-      await apply([moveItem(item.id, mutation.move)], patch(mutation.move));
+      await apply([moveItem(item.id, moveArgs(mutation.move))], patch(mutation.move));
     }
 
+    /* A move is undone by a move. `item_update` does not take a project or a
+       section, so undoing a drop between columns used to put the card back on
+       screen and leave it where it was dropped on the server. */
+    const undo = mutation.move
+      ? moveItem(item.id, moveArgs({ project_id: before.project_id, section_id: before.section_id }))
+      : updateItem(item.id, { due: before.due, labels: before.labels });
     toast(item.content, () => {
-      void apply([updateItem(item.id, before)], patch(before));
+      void apply([undo], patch(before));
     });
   }
 

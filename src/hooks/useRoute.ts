@@ -11,8 +11,10 @@ function parse(hash: string): Route {
   const raw = hash.replace(/^#\/?/, '');
   if (!raw) return { view: 'week' };
   const [view, id] = raw.split('/');
+  // The dashboard is a tab of the insights page; an old link still lands there.
+  if (view === 'dashboard') return { view: 'insights' };
   const known: ViewId[] = [
-    'inbox', 'week', 'upcoming', 'someday', 'dashboard',
+    'inbox', 'week', 'upcoming', 'someday',
     'settings', 'project', 'label', 'labels', 'insights',
   ];
   if (!known.includes(view as ViewId)) return { view: 'week' };

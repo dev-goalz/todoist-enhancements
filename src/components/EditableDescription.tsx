@@ -28,6 +28,16 @@ export function EditableDescription({
 
   const html = useMemo(() => renderMarkdown(value), [value]);
 
+  /* The trigger shows one line of plain text: a button cannot legally contain
+     the links the description may carry, and a header is not the place to read
+     three paragraphs. The full text is in the panel below, on hover.
+     Declared before the editor's early return: a hook after it runs on one
+     render and not the next, which React answers by unmounting the page. */
+  const oneLine = useMemo(
+    () => renderInlineMarkdown(value).replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim(),
+    [value],
+  );
+
   function commit() {
     setEditing(false);
     if (draft !== value) onCommit(draft);
@@ -60,14 +70,6 @@ export function EditableDescription({
       />
     );
   }
-
-  /* The trigger shows one line of plain text: a button cannot legally contain
-     the links the description may carry, and a header is not the place to read
-     three paragraphs. The full text is in the panel below, on hover. */
-  const oneLine = useMemo(
-    () => renderInlineMarkdown(value).replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim(),
-    [value],
-  );
 
   return (
     <div className={`descwrap${value ? '' : ' unset'}${className ? ` ${className}` : ''}`}>

@@ -420,6 +420,8 @@ ul{margin:0;padding:0;list-style:none}
 .meta{display:flex;width:100%;flex-wrap:wrap;align-items:center;gap:4px 10px;margin-top:6px;color:var(--muted);font-size:var(--fs-12)}
 .meta > span{display:inline-flex;align-items:center;gap:4px}
 .meta .ic{width:13px;height:13px}
+/* The recurring marker and the project hash are centred badges, not rows. */
+.meta .repeatdot,.meta .hash{display:inline-grid;place-items:center}
 .meta .late{color:var(--accent)}
 .meta .deadline{color:#7a5cb9}
 .meta .at{color:var(--info)}

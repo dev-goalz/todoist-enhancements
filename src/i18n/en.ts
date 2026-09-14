@@ -420,9 +420,9 @@ export const en = {
   'section.move': 'Drag to reorder the section',
   'section.delete': 'Delete section',
   'section.deleteTitle': 'Delete this section?',
-  'section.deleteBody': 'Deleting “{name}” also deletes the {count} tasks in it. Todoist keeps deleted tasks for seven days in its activity history.',
-  'section.deleteBody_one': 'Deleting “{name}” also deletes the task in it. Todoist keeps deleted tasks for seven days in its activity history.',
-  'section.deleteBody_other': 'Deleting “{name}” also deletes the {count} tasks in it. Todoist keeps deleted tasks for seven days in its activity history.',
+  'section.deleteBody': 'The {count} tasks in “{name}” stay in the project, without a section.',
+  'section.deleteBody_one': 'The task in “{name}” stays in the project, without a section.',
+  'section.deleteBody_other': 'The {count} tasks in “{name}” stay in the project, without a section.',
   'section.deleteEmpty': 'Delete “{name}”? It is empty.',
 };
 

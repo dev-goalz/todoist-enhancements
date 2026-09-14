@@ -33,6 +33,7 @@ export function IconSprite() {
 <symbol id="i-deadline" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.4"/><path d="M12 4V2.2M12 21.8V20M4 12H2.2M21.8 12H20"/></symbol>
 <symbol id="i-repeat" viewBox="0 0 24 24"><path d="M4 11V9.5A3.5 3.5 0 0 1 7.5 6H19"/><path d="m15.5 2.5 3.5 3.5-3.5 3.5"/><path d="M20 13v1.5a3.5 3.5 0 0 1-3.5 3.5H5"/><path d="M8.5 21.5 5 18l3.5-3.5"/></symbol>
 <symbol id="i-tag" viewBox="0 0 24 24"><path d="M3.5 11.4V5.2a1.7 1.7 0 0 1 1.7-1.7h6.2a1.7 1.7 0 0 1 1.2.5l8 8a1.7 1.7 0 0 1 0 2.4l-6.2 6.2a1.7 1.7 0 0 1-2.4 0l-8-8a1.7 1.7 0 0 1-.5-1.2Z"/><circle cx="8" cy="8" r="1.6"/></symbol>
+<symbol id="i-star" viewBox="0 0 24 24"><path d="m12 3.2 2.7 5.6 6.1.85-4.45 4.3 1.1 6.05L12 17.1 6.55 20l1.1-6.05L3.2 9.65l6.1-.85z"/></symbol>
 <symbol id="i-flag" viewBox="0 0 24 24"><path d="M5.5 21.5V3"/><path d="M5.5 4.5h12l-2.6 4.2 2.6 4.3h-12z"/></symbol>
 <symbol id="i-subtask" viewBox="0 0 24 24"><path d="M6 4v9.5a3 3 0 0 0 3 3h9"/><path d="m15 13.5 3.5 3-3.5 3"/></symbol>
 <symbol id="i-comment" viewBox="0 0 24 24"><path d="M21 12a8.5 8.5 0 0 1-8.5 8.5H8l-5 2.8 1.3-4.3A8.5 8.5 0 1 1 21 12Z"/></symbol>

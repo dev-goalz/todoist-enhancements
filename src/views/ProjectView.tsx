@@ -42,8 +42,8 @@ export function ProjectView({
   const removeSection = useStore((s) => s.removeSection);
   const confirm = useConfirm();
 
-  /* Deleting a section takes its tasks with it, as it does in Todoist, so it
-     is always confirmed and the count is stated. */
+  /* Deleting a section is always confirmed, and the confirmation says what
+     becomes of its tasks: they stay in the project, without a section. */
   const deleteSection = async (group: { id: string; title: string; items: unknown[] }) => {
     const ok = await confirm({
       title: t('section.deleteTitle'),

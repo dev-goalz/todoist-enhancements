@@ -82,6 +82,7 @@ export function UpcomingView({ onOpen, onInsights, onUnestimated, onAddTaskTo }:
       title: formatRelativeDay(day, locale),
       items: sortItems(byDay.get(toApiDate(day)) ?? [], current.sort, childrenOf),
       dropTarget: { kind: 'day' as const, date: day },
+      capacityMinutes: prefs.dailyCapacity[day.getDay()],
     }))
     .filter((column) => column.items.length > 0 || current.mode === 'board');
 

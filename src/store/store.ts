@@ -539,13 +539,21 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   async removeSection(id) {
-    await get().apply([command('section_delete', { id })], (snapshot) => {
+    /* Todoist deletes a section's tasks with it. The tasks are moved to the
+       project's root first, in the same batch, so only the section goes. */
+    const section = get().snapshot.sections[id];
+    const orphans = Object.values(get().snapshot.items)
+      .filter((item) => item.section_id === id && !item.is_deleted);
+    const moves = section
+      ? orphans.map((item) => moveItem(item.id, { project_id: section.project_id }))
+      : [];
+    await get().apply([...moves, command('section_delete', { id })], (snapshot) => {
       const sections = { ...snapshot.sections };
       delete sections[id];
-      // The tasks go with it, as they do in Todoist.
-      const items = Object.fromEntries(
-        Object.entries(snapshot.items).filter(([, item]) => item.section_id !== id),
-      );
+      const items = { ...snapshot.items };
+      for (const item of orphans) {
+        items[item.id] = { ...items[item.id], section_id: null };
+      }
       return { ...snapshot, sections, items };
     });
   },

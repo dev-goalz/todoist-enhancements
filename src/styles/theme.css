@@ -629,14 +629,20 @@
 .board{
   display:grid;
   grid-auto-flow:row;
-  grid-template-columns:repeat(auto-fill,minmax(248px,1fr));
+  grid-template-columns:repeat(auto-fit,minmax(248px,1fr));
   grid-auto-columns:auto;
   gap:var(--s4);
   overflow-x:visible;
   padding-bottom:var(--s3);
   align-items:start;
 }
-.col{max-height:none}
+/* auto-fit, not auto-fill: three sections fill the row instead of leaving a
+   fourth, empty track beside them. A lone column is capped so it reads as a
+   column rather than a page-wide list. */
+.col{max-height:none;max-width:400px}
+/* A column's load sits under its heading in the same quiet type as the count. */
+.cload{margin:-4px 0 10px;color:var(--faint);font-size:var(--fs-11);font-variant-numeric:tabular-nums}
+.cload.over{color:var(--accent-dark);font-weight:600}
 
 /* A parent and its subtasks are one card, not several. */
 .col .taskwrap{
@@ -664,16 +670,23 @@
   font-size:var(--fs-12);
 }
 .col .taskwrap .task ~ .task .ttitle{font-size:var(--fs-12);font-weight:400}
-/* The controls float in the card's top corner on hover. Given a row of their
-   own they reserved height on every card, which is what left some of them
-   looking bottom-heavy for no reason. */
+/* The controls float in the card's bottom corner on hover, over the duration
+   and tags rather than over the title being read. Given a row of their own
+   they reserved height on every card, which is what left some of them looking
+   bottom-heavy for no reason. */
 .col .taskwrap{position:relative}
 .col .trow-end{
-  position:absolute;top:6px;right:8px;z-index:1;
+  position:absolute;bottom:0;right:0;z-index:1;
   margin-top:0;justify-self:auto;
   border-radius:var(--r-sm);background:var(--surface);
   box-shadow:0 0 0 4px var(--surface);
+  /* The box itself must go, not only its buttons: with the buttons merely
+     invisible its opaque background and halo stayed painted over the title. */
+  visibility:hidden;
 }
+.col .task:hover .trow-end,
+.col .task:focus-within .trow-end{visibility:visible}
+/* On a board the whole card is the handle, as in Todoist's own board. */
 .col .drag{display:none}
 
 /* A card has room for two lines of description; a list row has room for one. */
@@ -748,8 +761,7 @@
 
 /* The two marks of a comparison chart, drawn as their own swatches. */
 .legend i.swatch-bar{width:9px;height:9px;border-radius:2px;background:var(--accent)}
-.legend i.swatch-dot{width:8px;height:8px;border-radius:var(--r-full);
-  background:var(--surface);border:2px solid var(--faint)}
+.legend i.swatch-dot{width:12px;height:2px;border-radius:1px;background:var(--text);opacity:.45}
 
 /* ---------- One bar, split into its parts ---------- */
 .split{display:grid;gap:10px}
@@ -769,12 +781,13 @@
 .chart-plot.compare .slot:hover .bar,
 .chart-plot.compare .slot:focus-visible .bar{opacity:1}
 .chart-plot.compare .slot .bar.current{background:var(--accent);opacity:1}
-/* The earlier period is a position, not a second fill. The 2px surface ring
-   keeps it readable where it lands on top of the bar. */
-.ghostdot{
-  position:absolute;left:50%;width:8px;height:8px;margin:0 0 -4px -4px;
-  border-radius:var(--r-full);background:var(--surface);
-  box-shadow:0 0 0 2px var(--surface),inset 0 0 0 2px var(--faint);
+/* The earlier period is a level, not a second fill: a short tick across the
+   slot at that height, with a hairline of surface under it so it stays
+   readable where it crosses the bar. */
+.ghosttick{
+  position:absolute;left:18%;right:18%;height:2px;margin-bottom:-1px;
+  border-radius:1px;background:var(--text);opacity:.45;
+  box-shadow:0 0 0 1.5px var(--surface);
 }
 
 @media (max-width:560px){
@@ -1088,16 +1101,17 @@
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
 .tagcard-text small{color:var(--faint);font-size:var(--fs-12)}
+/* Always shown: an outline says "not a favourite" as plainly as the filled
+   star says it is, so the card does not have to be hovered to find out. */
 .tagcard-star{
   width:32px;height:32px;flex:0 0 auto;margin-right:10px;
   display:grid;place-items:center;border-radius:var(--r-sm);
-  color:var(--faint);opacity:0;transition:opacity .12s ease-out;
+  color:var(--faint);
 }
-.tagcard:hover .tagcard-star,
-.tagcard-star:focus-visible,
-.tagcard-star.on{opacity:1}
 .tagcard-star:hover{background:var(--hover);color:var(--text)}
+/* Outlined until it is a favourite, then filled. */
 .tagcard-star.on{color:var(--p2)}
+.tagcard-star.on .ic{fill:currentColor}
 
 /* ==========================================================================
    The composer's name field — marks inside the name, not chips beneath it
@@ -1196,3 +1210,11 @@
 
 /* The preview of a section in flight. */
 .dragoverlay.section{font-weight:700}
+
+/* ---------- Drop destinations ---------- */
+/* The destination under the pointer says so before the drop: a ring in the
+   accent colour on a section or column, and the accent on a sidebar item. */
+.navitem.dropping{outline:2px dotted var(--accent);outline-offset:-2px}
+/* The ring stands a little off the rows rather than cutting through them. */
+.group.dropping{outline:2px solid var(--accent);outline-offset:8px;border-radius:var(--r-lg)}
+.col.dropping{box-shadow:inset 0 0 0 2px var(--accent);border-color:var(--accent)}

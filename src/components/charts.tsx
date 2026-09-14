@@ -402,7 +402,7 @@ export function SplitBar({ data, format }: SplitBarProps) {
 /* ------------------------------------------------------------------ */
 
 export interface CompareDatum extends BarDatum {
-  /** The same slot one period earlier, drawn as a dot above the bar. */
+  /** The same slot one period earlier, drawn as a tick at its level. */
   previous?: number;
 }
 
@@ -458,7 +458,7 @@ export function CompareBars({
               style={{ height: `${Math.max(2, (datum.value / max) * 100)}%` }}
             />
             {datum.previous !== undefined && (
-              <s className="ghostdot" style={{ bottom: `${(datum.previous / max) * 100}%` }} />
+              <s className="ghosttick" style={{ bottom: `${(datum.previous / max) * 100}%` }} />
             )}
           </button>
         ))}

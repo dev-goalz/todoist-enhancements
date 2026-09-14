@@ -52,7 +52,7 @@ export function Search({ open, onClose, onOpen }: SearchProps) {
         { key: 'go-upcoming', icon: 'upcoming' as IconName,
           title: t('nav.upcoming'), run: go(() => navigate('upcoming')) },
         { key: 'go-dashboard', icon: 'trend' as IconName,
-          title: t('nav.dashboard'), run: go(() => navigate('dashboard')) },
+          title: t('nav.dashboard'), run: go(() => navigate('insights')) },
         { key: 'go-logbook', icon: 'tasks' as IconName,
           title: t('insights.logbook'), run: go(() => navigate('insights', 'logbook')) },
         { key: 'go-settings', icon: 'settings' as IconName,

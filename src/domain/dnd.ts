@@ -11,6 +11,8 @@ import { toApiDate } from './dates';
 
 export type DropTarget =
   | { kind: 'today' }
+  /** Today, and tagged quick: the Quick group is defined by that tag. */
+  | { kind: 'quick' }
   | { kind: 'anytime' }
   | { kind: 'someday' }
   | { kind: 'day'; date: Date }
@@ -49,6 +51,17 @@ export function dropMutation(item: Item, target: DropTarget): DropMutation | nul
     case 'today':
       // Today's date, the week label dropped, the time of day and reminders kept.
       return { update: { due: dueForDate(item, new Date()), labels: withoutWeek(item.labels) } };
+
+    case 'quick': {
+      const labels = withoutWeek(item.labels);
+      const tagged = labels.some((l) => l.toLowerCase() === SYSTEM_LABELS.quick);
+      return {
+        update: {
+          due: dueForDate(item, new Date()),
+          labels: tagged ? labels : [...labels, SYSTEM_LABELS.quick],
+        },
+      };
+    }
 
     case 'day':
       return { update: { due: dueForDate(item, target.date) } };
@@ -105,7 +118,7 @@ function encodeKind(target: DropTarget): string {
 
 export function decodeTarget(encoded: string): DropTarget | null {
   const id = encoded.includes('|') ? encoded.slice(encoded.indexOf('|') + 1) : encoded;
-  if (id === 'today' || id === 'anytime' || id === 'someday') return { kind: id };
+  if (id === 'today' || id === 'quick' || id === 'anytime' || id === 'someday') return { kind: id };
 
   const [kind, ...rest] = id.split(':');
   if (kind === 'day') {

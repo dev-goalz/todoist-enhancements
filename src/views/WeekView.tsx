@@ -135,7 +135,7 @@ export function WeekView({ onOpen, onInsights, onUnestimated, onAddTaskTo }: Wee
               childrenOf={childrenOf}
               onOpen={onOpen}
               accent="quick"
-              dropTarget={{ kind: 'today' }}
+              dropTarget={{ kind: 'quick' }}
               onAddTask={() => onAddTaskTo({ date: toApiDate(new Date()) })}
             />
           )}

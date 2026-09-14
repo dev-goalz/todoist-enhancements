@@ -16,7 +16,6 @@ import { UpcomingView } from './views/UpcomingView';
 import { SimpleListView } from './views/SimpleListView';
 import { ProjectView } from './views/ProjectView';
 import { LabelsView } from './views/LabelsView';
-import { DashboardView } from './views/DashboardView';
 import { InsightsView } from './views/InsightsView';
 import { SettingsView } from './views/SettingsView';
 import { ConnectView } from './views/ConnectView';
@@ -289,9 +288,6 @@ function AppShell({
           {route.view === 'labels' && <LabelsView />}
           {route.view === 'project' && route.id && (
             <ProjectView projectId={route.id} {...viewProps} />
-          )}
-          {route.view === 'dashboard' && (
-            <DashboardView onIssues={() => setIssuesOpen(true)} />
           )}
           {route.view === 'insights' && <InsightsView />}
           {route.view === 'settings' && <SettingsView />}

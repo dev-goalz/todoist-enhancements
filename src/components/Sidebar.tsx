@@ -204,7 +204,7 @@ export function Sidebar({
 
         {menuOpen && (
           <div className="menu" style={{ display: 'block' }}>
-            <button onClick={() => { setMenuOpen(false); navigate('dashboard'); }}>
+            <button onClick={() => { setMenuOpen(false); navigate('insights'); }}>
               <Icon name="trend" />
               {t('nav.dashboard')}
             </button>
