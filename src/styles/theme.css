@@ -462,9 +462,6 @@
 }
 .chart-empty{padding:var(--s5) 0;text-align:center;color:var(--faint);font-size:var(--fs-12)}
 
-.heatrow{display:flex;gap:2px;height:26px}
-.heatcell{flex:1 1 0;border-radius:3px;background:#2a78d6}
-.heataxis span{text-align:left}
 
 /* Ranked bars always print their value, which is the relief the lighter
    palette slots require. */
@@ -572,6 +569,7 @@
 .page > .mode,
 .page > .bento,
 .page > .logday,
+.page > .logbook,
 .page > .empty{
   max-width:820px;
   margin-left:auto;
@@ -584,6 +582,7 @@
 .page.wide > .mode,
 .page.wide > .bento,
 .page.wide > .logday,
+.page.wide > .logbook,
 .page.wide > .empty{
   max-width:1160px;
 }
@@ -674,3 +673,152 @@
 .confirmactions{display:flex;justify-content:flex-end;gap:var(--s2);margin-top:var(--s2)}
 .btn.danger{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
 .btn.danger:hover{background:var(--accent-dark);border-color:var(--accent-dark)}
+
+/* ==========================================================================
+   Charts — part-to-whole, splits, and period comparison
+   ========================================================================== */
+
+/* ---------- Donut ---------- */
+.donut{display:grid;grid-template-columns:132px minmax(0,1fr);gap:var(--s4);align-items:center}
+.donutplot{position:relative;width:132px;height:132px}
+.donutplot svg{width:100%;height:100%;transform:rotate(-90deg)}
+.donuttrack{fill:none;stroke:var(--c-track);stroke-width:12}
+.donutarc{
+  fill:none;stroke-width:12;stroke-linecap:butt;
+  transition:opacity .14s ease-out,stroke-width .14s ease-out;
+}
+.donutarc:hover{stroke-width:14}
+.donutarc.dim{opacity:.28}
+.donutcentre{
+  position:absolute;inset:0;display:grid;place-content:center;
+  text-align:center;line-height:1.15;pointer-events:none;
+}
+.donutcentre strong{display:block;font-size:var(--fs-20);font-weight:700;letter-spacing:-.02em}
+.donutcentre span{display:block;margin-top:2px;color:var(--faint);font-size:var(--fs-11)}
+
+/* ---------- Legends ----------
+   Every slice is named and valued here, which is the relief the lighter
+   palette slots need: identity never rests on hue alone. */
+.legend{display:grid;gap:5px;min-width:0}
+.legend li{
+  display:grid;grid-template-columns:9px minmax(0,1fr) auto auto;gap:8px;
+  align-items:center;font-size:var(--fs-12);color:var(--muted);
+  transition:opacity .14s ease-out;
+}
+.legend li.dim{opacity:.4}
+.legend i{width:9px;height:9px;border-radius:3px;flex:0 0 auto}
+.legendname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.legend b{color:var(--text);font-weight:600;font-variant-numeric:tabular-nums}
+.legendshare{color:var(--faint);font-variant-numeric:tabular-nums;min-width:30px;text-align:right}
+
+.legend.inline{display:flex;flex-wrap:wrap;gap:6px var(--s4)}
+.legend.inline li{display:inline-flex;gap:6px;grid-template-columns:none}
+.legend.inline b{margin-left:2px}
+
+/* The two marks of a comparison chart, drawn as their own swatches. */
+.legend i.swatch-bar{width:9px;height:9px;border-radius:2px;background:var(--accent)}
+.legend i.swatch-dot{width:8px;height:8px;border-radius:var(--r-full);
+  background:var(--surface);border:2px solid var(--faint)}
+
+/* ---------- One bar, split into its parts ---------- */
+.split{display:grid;gap:10px}
+.splitbar{display:flex;gap:2px;height:9px}   /* 2px surface gap, as everywhere */
+.splitbar i{border-radius:3px;min-width:3px}
+
+/* ---------- This period against the one before ---------- */
+.chart-plot.compare{align-items:stretch}
+.chart-plot.compare .slot{
+  flex:1 1 0;min-width:3px;position:relative;display:flex;align-items:flex-end;
+  background:transparent;padding:0;
+}
+.chart-plot.compare .slot .bar{
+  display:block;width:100%;border-radius:4px 4px 0 0;
+  background:var(--c1);opacity:.85;transition:opacity .12s ease-out;
+}
+.chart-plot.compare .slot:hover .bar,
+.chart-plot.compare .slot:focus-visible .bar{opacity:1}
+.chart-plot.compare .slot .bar.current{background:var(--accent);opacity:1}
+/* The earlier period is a position, not a second fill. The 2px surface ring
+   keeps it readable where it lands on top of the bar. */
+.ghostdot{
+  position:absolute;left:50%;width:8px;height:8px;margin:0 0 -4px -4px;
+  border-radius:var(--r-full);background:var(--surface);
+  box-shadow:0 0 0 2px var(--surface),inset 0 0 0 2px var(--faint);
+}
+
+@media (max-width:560px){
+  .donut{grid-template-columns:1fr;justify-items:center}
+  .donut .legend{width:100%}
+}
+
+/* ==========================================================================
+   Insights — the summary strip, the focus card, and the logbook record
+   ========================================================================== */
+
+/* ---------- "This period at a glance" ---------- */
+.card.summary{background:var(--accent-wash);border-color:transparent}
+.summary-head{display:flex;align-items:baseline;justify-content:space-between;gap:var(--s4)}
+.summary-head strong{font-size:var(--fs-16);font-weight:700;color:var(--accent-dark)}
+.summary-stats{
+  display:flex;flex-wrap:wrap;gap:var(--s3) var(--s6);margin-top:var(--s4);
+}
+.sstat{display:flex;align-items:baseline;gap:8px;font-size:var(--fs-13);color:var(--muted)}
+.sstat strong{font-size:var(--fs-26);font-weight:700;letter-spacing:-.025em;color:var(--text);
+  font-variant-numeric:tabular-nums;line-height:1}
+/* The icon carries the same meaning as the colour, so neither is alone. */
+.sstat .ic{align-self:center}
+.sstat.completed .ic{color:var(--ok)}
+.sstat.active .ic{color:var(--info)}
+.sstat.streak .ic{color:var(--accent)}
+
+/* ---------- Focus score ---------- */
+.focuscardv{display:grid;gap:var(--s3);align-content:start}
+.focuscardv .hero{
+  font-size:var(--fs-32);font-weight:700;letter-spacing:-.03em;line-height:1;
+  font-variant-numeric:tabular-nums;
+}
+.focuscardv .psub{margin-top:0}
+
+/* ---------- Logbook ---------- */
+.logday h4{justify-content:flex-start}
+.logday h4 .gcount{margin-left:auto}
+.logrow{border-bottom-color:var(--border)}
+.logrow:last-child{border-bottom:0}
+.logname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* The tick takes the priority of the task it closed, which is the one piece of
+   context the record was missing. */
+.logtick{width:16px;height:16px;display:grid;place-items:center;border-radius:var(--r-full)}
+.logtick .ic{width:12px;height:12px;stroke-width:2.6}
+.logtick.p1{color:var(--p1);background:rgba(209,69,59,.12)}
+.logtick.p2{color:var(--p2);background:rgba(235,137,9,.12)}
+.logtick.p3{color:var(--p3);background:rgba(36,111,224,.12)}
+.logtick.p4{color:var(--muted);background:var(--subtle)}
+.logrow .logmeta.time{font-variant-numeric:tabular-nums;min-width:52px;text-align:right}
+
+/* ==========================================================================
+   Select — one control, drawn by us rather than by the operating system
+   ========================================================================== */
+.fselect{position:relative;display:grid;gap:4px;min-width:0}
+.fselect-label{font-size:var(--fs-11);font-weight:600;color:var(--faint)}
+.fselect-face{
+  display:flex;align-items:center;justify-content:space-between;gap:var(--s2);
+  min-height:34px;padding:0 10px;border:1px solid var(--border-strong);
+  border-radius:var(--r-ctl);background:var(--surface);
+  font-size:var(--fs-13);font-weight:600;letter-spacing:-.02em;color:var(--text);
+  transition:border-color .14s ease-out,background .14s ease-out;
+}
+.fselect-face .ic{color:var(--muted);flex:0 0 auto}
+.fselect-value{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fselect:hover .fselect-face{border-color:var(--accent);background:var(--accent-tint)}
+/* The native control still runs the interaction; it is simply invisible. */
+.fselect select{
+  position:absolute;inset:0;width:100%;height:100%;
+  opacity:0;cursor:pointer;appearance:none;border:0;
+}
+.fselect:focus-within .fselect-face{outline:2px solid var(--accent);outline-offset:2px}
+.logbar .fselect{min-width:150px}
+
+/* Marks stay thin. Without a cap a seven-day chart draws seven blocks the
+   width of a card, which reads as a table of colour rather than as data. */
+.chart-plot > .bar,
+.chart-plot.compare .slot > .bar{max-width:40px;margin-inline:auto}

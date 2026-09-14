@@ -7,16 +7,21 @@ import type { CompletedItem } from '@/domain/types';
 export type Period = 'day' | 'week' | 'month' | 'quarter' | 'year';
 
 /**
- * Reads completed tasks for a period.
+ * Reads completed tasks for a period, and for the period before it.
  *
  * History is fetched on demand rather than kept in sync: it only changes at
  * the moment a task is completed, and Insights is the only place that needs it.
+ *
+ * The window asked for is twice the period, because every chart that compares
+ * "this month" to "last month" would otherwise need a second round trip to say
+ * anything. The result is split at the period boundary before it is returned.
  */
 export function useCompleted(period: Period, enabled: boolean) {
   const connected = useStore((s) => s.connected);
   const demo = useStore((s) => s.demo);
   const locale = useStore((s) => s.prefs.locale);
   const [data, setData] = useState<CompletedItem[]>([]);
+  const [previous, setPrevious] = useState<CompletedItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -33,9 +38,24 @@ export function useCompleted(period: Period, enabled: boolean) {
     else if (period === 'quarter') since.setMonth(now.getMonth() - 3);
     else since.setFullYear(now.getFullYear() - 1);
 
+    // The preceding window of the same length, for the comparison marks.
+    const cutoff = since.getTime();
+    const previousSince = new Date(cutoff - (now.getTime() - cutoff));
+
+    const split = (items: CompletedItem[]) => {
+      const current: CompletedItem[] = [];
+      const earlier: CompletedItem[] = [];
+      for (const item of items) {
+        (new Date(item.completed_at).getTime() >= cutoff ? current : earlier).push(item);
+      }
+      setData(current);
+      setPrevious(earlier);
+    };
+
     if (demo) {
-      const cutoff = since.getTime();
-      setData(buildDemoCompleted(locale).filter((c) => new Date(c.completed_at).getTime() >= cutoff));
+      split(buildDemoCompleted(locale).filter(
+        (c) => new Date(c.completed_at).getTime() >= previousSince.getTime(),
+      ));
       setLoading(false);
       return;
     }
@@ -43,8 +63,8 @@ export function useCompleted(period: Period, enabled: boolean) {
     setLoading(true);
     setError(null);
 
-    fetchCompleted(since, now, controller.signal)
-      .then((items) => setData(items))
+    fetchCompleted(previousSince, now, controller.signal)
+      .then(split)
       .catch((err: unknown) => {
         if (controller.signal.aborted) return;
         setError(err instanceof Error ? err.message : 'unknown');
@@ -56,5 +76,5 @@ export function useCompleted(period: Period, enabled: boolean) {
     return () => controller.abort();
   }, [period, enabled, connected, demo, locale]);
 
-  return { data, loading, error };
+  return { data, previous, loading, error };
 }

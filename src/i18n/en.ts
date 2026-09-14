@@ -365,6 +365,28 @@ export const en = {
   'common.minutes': 'min',
   'common.retry': 'Retry',
   'common.error': 'Something went wrong.',
+
+  /* Insights — charts added with the Figma reskin */
+  'insights.summary': 'This period at a glance',
+  'insights.completedShare': '{percentage}% completed',
+  'insights.statCompleted': 'completed',
+  'insights.statActive': 'active',
+  'insights.statStreak': 'day streak',
+  'insights.statStreak_one': 'day streak',
+  'insights.statStreak_other': 'days in a row',
+  'insights.tasksPerDay': 'Tasks per day',
+  'insights.tasksPerDayHint': 'Average over the days you finished something',
+  'insights.dayActivity': 'Time of day',
+  'insights.dayActivityHint': 'When completions actually happen',
+  'insights.byLabel': 'Most used tags',
+  'insights.noLabel': 'No tag',
+  'insights.perDay': 'Completed per day',
+  'insights.perDayHint': 'Each day of the period, against the period before it',
+  'insights.thisPeriod': 'This period',
+  'insights.previousPeriod': 'Previous',
+  'insights.focusBalance': 'Where the effort went',
+  'insights.tasks': 'tasks',
+  'logbook.filters': 'Filters',
 };
 
 export type TranslationKey = keyof typeof en;

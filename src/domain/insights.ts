@@ -1,6 +1,6 @@
 import { differenceInCalendarDays, format, startOfDay } from 'date-fns';
 import type { CompletedItem, Item, Snapshot } from './types';
-import { toDisplayPriority } from './types';
+import { ESTIMATE_PREFIX, toDisplayPriority } from './types';
 import { estimateOf } from './estimates';
 
 /**
@@ -28,6 +28,12 @@ export interface InsightsSummary {
   byDay: Array<{ date: string; count: number }>;
   byHour: number[];
   byProject: Array<{ projectId: string; name: string; count: number }>;
+  /**
+   * Tags on completed work, most used first, with the untagged share as the
+   * last entry. `est-*` is this app's own storage for a duration, not a tag
+   * the user chose, so it is not counted here.
+   */
+  byLabel: Array<{ label: string; count: number; untagged?: boolean }>;
   activeDays: number;
   currentStreak: number;
   longestStreak: number;
@@ -105,6 +111,8 @@ export function summariseInsights(
   const dayCounts = new Map<string, number>();
   const hourCounts = new Array<number>(24).fill(0);
   const projectCounts = new Map<string, number>();
+  const labelCounts = new Map<string, number>();
+  let untagged = 0;
 
   let completedMinutes = 0;
   let completedWithoutEstimate = 0;
@@ -115,6 +123,12 @@ export function summariseInsights(
     dayCounts.set(dayKey, (dayCounts.get(dayKey) ?? 0) + 1);
     hourCounts[at.getHours()] += 1;
     projectCounts.set(task.project_id, (projectCounts.get(task.project_id) ?? 0) + 1);
+
+    const tags = (task.labels ?? []).filter(
+      (label) => !label.toLowerCase().startsWith(ESTIMATE_PREFIX),
+    );
+    if (tags.length === 0) untagged += 1;
+    for (const tag of tags) labelCounts.set(tag, (labelCounts.get(tag) ?? 0) + 1);
 
     const minutes = task.labels ? estimateOf({ labels: task.labels } as Item) : null;
     if (minutes === null) completedWithoutEstimate += 1;
@@ -144,6 +158,12 @@ export function summariseInsights(
         count,
       }))
       .sort((a, b) => b.count - a.count),
+    byLabel: [
+      ...[...labelCounts.entries()]
+        .map(([label, count]) => ({ label, count }))
+        .sort((a, b) => b.count - a.count),
+      ...(untagged > 0 ? [{ label: '', count: untagged, untagged: true }] : []),
+    ],
     activeDays: dayCounts.size,
     currentStreak: current,
     longestStreak: longest,

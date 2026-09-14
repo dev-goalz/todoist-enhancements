@@ -2,8 +2,8 @@ import { useMemo, useState } from 'react';
 import { format, startOfDay } from 'date-fns';
 import { Icon } from '@/components/Icon';
 import {
-  Bars, ChartCard, HourHeat, RankedBars, Ring, StatTile, seriesColor,
-  type BarDatum, type RankedDatum,
+  Bars, ChartCard, CompareBars, Donut, RankedBars, SplitBar, StatTile, seriesColor,
+  type BarDatum, type CompareDatum, type RankedDatum, type SliceDatum,
 } from '@/components/charts';
 import { useT } from '@/hooks/useT';
 import { useData } from '@/hooks/useData';
@@ -13,7 +13,7 @@ import { summariseInsights } from '@/domain/insights';
 import { formatDuration, estimateOf } from '@/domain/estimates';
 import { formatRelativeDay } from '@/domain/dates';
 import { markerStyle } from '@/domain/colors';
-import { toDisplayPriority } from '@/domain/types';
+import { toDisplayPriority, type CompletedItem } from '@/domain/types';
 import type { TranslationKey } from '@/i18n';
 
 type Tab = 'overview' | 'logbook';
@@ -33,7 +33,7 @@ export function InsightsView() {
   const { snapshot, items } = useData();
   const [period, setPeriod] = useState<Period>('week');
   const [tab, setTab] = useState<Tab>('overview');
-  const { data: completed, loading } = useCompleted(period, true);
+  const { data: completed, previous, loading } = useCompleted(period, true);
 
   const roots = useMemo(() => rootItems(items), [items]);
   const summary = useMemo(
@@ -43,31 +43,64 @@ export function InsightsView() {
 
   const intl = locale === 'fr' ? 'fr-FR' : 'en-GB';
 
-  const activity: BarDatum[] = useMemo(() => {
+  /* Each day of the period, with the matching day of the period before it
+     drawn as a dot. Both series share one axis; they are never two scales. */
+  const perDay: CompareDatum[] = useMemo(() => {
     const todayKey = format(startOfDay(new Date()), 'yyyy-MM-dd');
-    // A long window is read by week; a short one day by day.
-    if (period === 'year' || period === 'quarter') {
-      const byWeek = new Map<string, number>();
-      for (const day of summary.byDay) {
-        const date = new Date(day.date);
-        const key = format(date, 'yyyy-ww');
-        byWeek.set(key, (byWeek.get(key) ?? 0) + day.count);
-      }
-      return [...byWeek.entries()].map(([key, value]) => ({
-        key,
-        label: key.slice(5),
-        value,
-      }));
-    }
-    return summary.byDay.map((day) => ({
-      key: day.date,
-      label: new Intl.DateTimeFormat(intl, { day: 'numeric', month: 'short' }).format(new Date(day.date)),
-      value: day.count,
-      current: day.date === todayKey,
-    }));
-  }, [summary.byDay, period, intl]);
+    const earlier = countByDay(previous);
+    const current = countByDay(completed);
 
-  const byProject: RankedDatum[] = useMemo(
+    const days = spanOfDays(period);
+    const shift = days;                        // the same slot, one period back
+    const today = startOfDay(new Date());
+
+    return Array.from({ length: days }, (_, offset) => {
+      const day = new Date(today.getTime() - (days - 1 - offset) * 86_400_000);
+      const key = format(day, 'yyyy-MM-dd');
+      const before = format(new Date(day.getTime() - shift * 86_400_000), 'yyyy-MM-dd');
+      return {
+        key,
+        label: new Intl.DateTimeFormat(intl, { day: 'numeric' }).format(day),
+        value: current.get(key) ?? 0,
+        previous: earlier.get(before) ?? 0,
+        current: key === todayKey,
+      };
+    });
+  }, [completed, previous, period, intl]);
+
+  /* The current calendar week, starting on the day the Todoist account does,
+     so the axis reads M T W T F S S rather than "the last seven days". */
+  const weekActivity: BarDatum[] = useMemo(() => {
+    const today = startOfDay(new Date());
+    const todayKey = format(today, 'yyyy-MM-dd');
+    const counts = countByDay(completed);
+    const startDay = snapshot.user?.start_day ?? 1;
+    const back = (today.getDay() - (startDay % 7) + 7) % 7;
+    const first = new Date(today.getTime() - back * 86_400_000);
+
+    return Array.from({ length: 7 }, (_, offset) => {
+      const day = new Date(first.getTime() + offset * 86_400_000);
+      const key = format(day, 'yyyy-MM-dd');
+      return {
+        key,
+        label: new Intl.DateTimeFormat(intl, { weekday: 'narrow' }).format(day),
+        value: counts.get(key) ?? 0,
+        current: key === todayKey,
+      };
+    });
+  }, [completed, intl, snapshot.user]);
+
+  const byHour: BarDatum[] = useMemo(
+    () =>
+      summary.byHour.map((value, hour) => ({
+        key: String(hour),
+        label: `${hour}h`,
+        value,
+      })),
+    [summary.byHour],
+  );
+
+  const byProject: SliceDatum[] = useMemo(
     () =>
       summary.byProject.map((entry, index) => ({
         key: entry.projectId,
@@ -78,24 +111,36 @@ export function InsightsView() {
     [summary.byProject],
   );
 
-  const byPriority: RankedDatum[] = useMemo(() => {
-    const tones = ['var(--p1)', 'var(--p2)', 'var(--p3)', 'var(--p4)'];
-    return ([1, 2, 3, 4] as const).map((p) => ({
-      key: `p${p}`,
-      label: t(`common.p${p}` as TranslationKey),
-      value: summary.priorities[`p${p}` as 'p1'],
-      color: tones[p - 1],
-    }));
-  }, [summary.priorities, t]);
-
-  const remainingMinutes = useMemo(
-    () => roots.reduce((acc, i) => acc + (estimateOf(i) ?? 0), 0),
-    [roots],
+  /* Priority is a fixed set of states, not an open list of series, so it keeps
+     Todoist's own four colours — including the deliberate grey of P4 — and
+     every slice is named in the legend rather than left to its hue. */
+  const byPriority: SliceDatum[] = useMemo(
+    () =>
+      ([1, 2, 3, 4] as const).map((p) => ({
+        key: `p${p}`,
+        label: t(`common.p${p}` as TranslationKey),
+        value: summary.priorities[`p${p}` as 'p1'],
+        color: `var(--p${p})`,
+      })),
+    [summary.priorities, t],
   );
 
-  const averagePerActiveDay = summary.activeDays > 0
+  const byLabel: RankedDatum[] = useMemo(
+    () =>
+      summary.byLabel.map((entry, index) => ({
+        key: entry.untagged ? '__none__' : entry.label,
+        label: entry.untagged ? t('insights.noLabel') : `@${entry.label}`,
+        value: entry.count,
+        color: entry.untagged ? 'var(--faint)' : seriesColor(index),
+      })),
+    [summary.byLabel, t],
+  );
+
+  const perActiveDay = summary.activeDays > 0
     ? Math.round((summary.completedCount / summary.activeDays) * 10) / 10
     : 0;
+
+  const tasksLabel = (count: number) => t('metrics.tasks', { count });
 
   return (
     <div className="page wide">
@@ -136,11 +181,66 @@ export function InsightsView() {
 
       {!loading && tab === 'overview' && (
         <div className="bento">
+          <section className="card w12 summary">
+            <div className="summary-head">
+              <h3>{t('insights.summary')}</h3>
+              <strong>
+                {t('insights.completedShare', { percentage: summary.progressPercentage })}
+              </strong>
+            </div>
+            <div className="summary-stats">
+              <div className="sstat completed">
+                <Icon name="check" size="sm" />
+                <strong>{summary.completedCount}</strong>
+                <span>{t('insights.statCompleted')}</span>
+              </div>
+              <div className="sstat active">
+                <Icon name="tasks" size="sm" />
+                <strong>{summary.activeCount}</strong>
+                <span>{t('insights.statActive')}</span>
+              </div>
+              <div className="sstat streak">
+                <Icon name="trend" size="sm" />
+                <strong>{summary.currentStreak}</strong>
+                <span>{t('insights.statStreak', { count: summary.currentStreak })}</span>
+              </div>
+            </div>
+          </section>
+
+          <section className="card w4 focuscardv">
+            <h3>{t('insights.focusScore')}</h3>
+            <p className="hero">{summary.focusScore}%</p>
+            <SplitBar data={byPriority} />
+            <p className="psub">{t('insights.focusExplainer')}</p>
+          </section>
+
+          <ChartCard
+            title={t('insights.weekActivity')}
+            subtitle={t('insights.completedTasks')}
+            span={8}
+            trailing={<span className="kpi-label">{summary.completedCount}</span>}
+          >
+            <Bars
+              data={weekActivity}
+              height={150}
+              emptyLabel={t('insights.noHistory')}
+              format={tasksLabel}
+            />
+          </ChartCard>
+
           <section className="card w3">
             <StatTile
               label={t('insights.completedTasks')}
               value={summary.completedCount}
-              hint={t('insights.perActiveDay', { value: averagePerActiveDay })}
+              hint={t('insights.activeDays') + ' · ' + summary.activeDays}
+            />
+          </section>
+
+          <section className="card w3">
+            <StatTile
+              label={t('insights.tasksPerDay')}
+              value={perActiveDay}
+              hint={t('insights.tasksPerDayHint')}
             />
           </section>
 
@@ -158,85 +258,107 @@ export function InsightsView() {
 
           <section className="card w3">
             <StatTile
-              label={t('insights.focusScore')}
-              value={`${summary.focusScore}%`}
-              tone="accent"
-              hint={t('insights.focusExplainer')}
-            />
-          </section>
-
-          <section className="card w3">
-            <StatTile
-              label={t('insights.activeDays')}
-              value={summary.activeDays}
-              hint={t('insights.streak', { count: summary.currentStreak })}
+              label={t('insights.coverage')}
+              value={`${summary.estimateCoverage}%`}
+              hint={
+                t('insights.remaining') + ' · '
+                + formatDuration(
+                  roots.reduce((acc, i) => acc + (estimateOf(i) ?? 0), 0),
+                  locale,
+                )
+              }
             />
           </section>
 
           <ChartCard
-            title={t('insights.weekActivity')}
-            subtitle={t('insights.completedTasks')}
-            span={8}
-            trailing={<span className="kpi-label">{summary.completedCount}</span>}
+            title={t('insights.perDay')}
+            subtitle={t('insights.perDayHint')}
+            span={12}
           >
-            <Bars
-              data={activity}
-              height={150}
-              labelEvery={activity.length > 14 ? Math.ceil(activity.length / 10) : 1}
+            <CompareBars
+              data={perDay}
+              height={160}
+              labelEvery={perDay.length > 14 ? Math.ceil(perDay.length / 12) : 1}
               emptyLabel={t('insights.noHistory')}
-              format={(value) => t('metrics.tasks', { count: value })}
+              format={(value) => String(value)}
+              currentLabel={t('insights.thisPeriod')}
+              previousLabel={t('insights.previousPeriod')}
             />
           </ChartCard>
 
-          <section className="card w4">
-            <div className="chead-row">
-              <div><h3>{t('insights.coverage')}</h3><p className="psub">{t('insights.estimates')}</p></div>
-            </div>
-            <Ring
-              percentage={summary.estimateCoverage}
-              label={t('insights.coverage')}
-              caption={t('insights.remaining') + ' · ' + formatDuration(remainingMinutes, locale)}
-            />
-          </section>
-
           <ChartCard title={t('insights.byProject')} span={6}>
-            <RankedBars
+            <Donut
               data={byProject}
               limit={6}
               otherLabel={t('insights.otherProjects')}
+              total={summary.completedCount}
+              caption={t('insights.tasks')}
               emptyLabel={t('insights.noHistory')}
             />
           </ChartCard>
 
           <ChartCard title={t('insights.byPriority')} span={6}>
-            <RankedBars data={byPriority} emptyLabel={t('insights.noHistory')} />
+            <Donut
+              data={byPriority}
+              total={`${summary.focusScore}%`}
+              caption={t('insights.focusScore')}
+              emptyLabel={t('insights.noHistory')}
+            />
           </ChartCard>
 
           <ChartCard
-            title={t('insights.byHour')}
-            subtitle={t('insights.byHourHint')}
-            span={12}
+            title={t('insights.dayActivity')}
+            subtitle={t('insights.dayActivityHint')}
+            span={6}
           >
-            <HourHeat
-              hours={summary.byHour}
-              format={(value, hour) =>
-                `${String(hour).padStart(2, '0')}h · ${t('metrics.tasks', { count: value })}`
-              }
+            <Bars
+              data={byHour}
+              height={140}
+              labelEvery={3}
+              emptyLabel={t('insights.noHistory')}
+              format={tasksLabel}
+            />
+          </ChartCard>
+
+          <ChartCard title={t('insights.byLabel')} span={6}>
+            <RankedBars
+              data={byLabel}
+              limit={7}
+              otherLabel={t('insights.otherProjects')}
+              emptyLabel={t('insights.noHistory')}
             />
           </ChartCard>
         </div>
       )}
 
-      {!loading && tab === 'logbook' && (
-        <Logbook completed={completed} />
-      )}
+      {!loading && tab === 'logbook' && <Logbook completed={completed} />}
     </div>
   );
 }
 
 /* ------------------------------------------------------------------ */
 
-function Logbook({ completed }: { completed: ReturnType<typeof useCompleted>['data'] }) {
+/** How many days one period covers, for the day-by-day comparison. */
+function spanOfDays(period: Period): number {
+  if (period === 'day') return 1;
+  if (period === 'week') return 7;
+  if (period === 'month') return 30;
+  if (period === 'quarter') return 90;
+  return 365;
+}
+
+function countByDay(items: CompletedItem[]): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (const item of items) {
+    const key = format(new Date(item.completed_at), 'yyyy-MM-dd');
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  return counts;
+}
+
+/* ------------------------------------------------------------------ */
+
+function Logbook({ completed }: { completed: CompletedItem[] }) {
   const { t, locale } = useT();
   const { snapshot } = useData();
   const [group, setGroup] = useState<LogGroup>('day');
@@ -293,34 +415,36 @@ function Logbook({ completed }: { completed: ReturnType<typeof useCompleted>['da
   return (
     <>
       <div className="viewbar logbar">
-        <label className="cfield">
-          <span>{t('toolbar.group')}</span>
-          <select value={group} onChange={(e) => setGroup(e.target.value as LogGroup)}>
-            <option value="day">{t('group.day')}</option>
-            <option value="project">{t('group.project')}</option>
-            <option value="priority">{t('group.priority')}</option>
-          </select>
-        </label>
+        <Select
+          label={t('toolbar.group')}
+          value={group}
+          onChange={(value) => setGroup(value as LogGroup)}
+          options={[
+            { value: 'day', label: t('group.day') },
+            { value: 'project', label: t('group.project') },
+            { value: 'priority', label: t('group.priority') },
+          ]}
+        />
 
-        <label className="cfield">
-          <span>{t('filter.projects')}</span>
-          <select value={projectFilter} onChange={(e) => setProjectFilter(e.target.value)}>
-            <option value="">{t('common.all')}</option>
-            {projects.map((p) => (
-              <option key={p.id} value={p.id}>{p.name}</option>
-            ))}
-          </select>
-        </label>
+        <Select
+          label={t('filter.projects')}
+          value={projectFilter}
+          onChange={setProjectFilter}
+          options={[
+            { value: '', label: t('common.all') },
+            ...projects.map((p) => ({ value: p.id, label: p.name })),
+          ]}
+        />
 
-        <label className="cfield">
-          <span>{t('filter.priorities')}</span>
-          <select value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value)}>
-            <option value="">{t('common.all')}</option>
-            {([1, 2, 3, 4] as const).map((p) => (
-              <option key={p} value={String(p)}>P{p}</option>
-            ))}
-          </select>
-        </label>
+        <Select
+          label={t('filter.priorities')}
+          value={priorityFilter}
+          onChange={setPriorityFilter}
+          options={[
+            { value: '', label: t('common.all') },
+            ...([1, 2, 3, 4] as const).map((p) => ({ value: String(p), label: `P${p}` })),
+          ]}
+        />
 
         <span className="kpi-label">{t('metrics.tasks', { count: filtered.length })}</span>
       </div>
@@ -328,33 +452,70 @@ function Logbook({ completed }: { completed: ReturnType<typeof useCompleted>['da
       {groups.length === 0 ? (
         <p className="empty">{t('insights.noHistory')}</p>
       ) : (
-        groups.map((entry) => (
-          <section className="logday" key={entry.key}>
-            <h4>
-              {entry.title}
-              <span>{t('metrics.tasks', { count: entry.rows.length })}</span>
-            </h4>
-            {entry.rows.map((task) => {
-              const project = snapshot.projects[task.project_id];
-              const minutes = task.labels ? estimateOf({ labels: task.labels } as never) : null;
-              return (
-                <div className="logrow" key={`${task.id}-${task.completed_at}`}>
-                  <Icon name="check" size="sm" />
-                  <span>{task.content}</span>
-                  {project && (
-                    <span className="logmeta" style={markerStyle(project.color, false)}>
-                      #{project.name}
+        <div className="logbook">
+          {groups.map((entry) => (
+            <section className="logday" key={entry.key}>
+              <h4>
+                {entry.title}
+                <span className="gcount">{entry.rows.length}</span>
+              </h4>
+              {entry.rows.map((task) => {
+                const project = snapshot.projects[task.project_id];
+                const minutes = task.labels ? estimateOf({ labels: task.labels } as never) : null;
+                const priority = toDisplayPriority(task.priority ?? 1);
+                return (
+                  <div className="logrow" key={`${task.id}-${task.completed_at}`}>
+                    <span className={`logtick p${priority}`}><Icon name="check" size="sm" /></span>
+                    <span className="logname">{task.content}</span>
+                    {project && (
+                      <span className="logmeta" style={markerStyle(project.color, false)}>
+                        #{project.name}
+                      </span>
+                    )}
+                    <span className="logmeta time">
+                      {minutes !== null ? formatDuration(minutes, locale) : '—'}
                     </span>
-                  )}
-                  <span className="logmeta">
-                    {minutes !== null ? formatDuration(minutes, locale) : '—'}
-                  </span>
-                </div>
-              );
-            })}
-          </section>
-        ))
+                  </div>
+                );
+              })}
+            </section>
+          ))}
+        </div>
       )}
     </>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+
+interface SelectProps {
+  label: string;
+  value: string;
+  options: Array<{ value: string; label: string }>;
+  onChange: (value: string) => void;
+}
+
+/**
+ * A select that is styled rather than left to the operating system.
+ *
+ * The native control is kept underneath — it does the keyboard handling and
+ * the mobile picker — and the visible face is drawn on top of it, so the
+ * appearance is ours without any of the behaviour being reimplemented.
+ */
+export function Select({ label, value, options, onChange }: SelectProps) {
+  const current = options.find((o) => o.value === value)?.label ?? '';
+  return (
+    <label className="fselect">
+      <span className="fselect-label">{label}</span>
+      <span className="fselect-face">
+        <span className="fselect-value">{current}</span>
+        <Icon name="caret" size="sm" />
+      </span>
+      <select value={value} onChange={(e) => onChange(e.target.value)} aria-label={label}>
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>{option.label}</option>
+        ))}
+      </select>
+    </label>
   );
 }

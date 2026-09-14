@@ -204,51 +204,6 @@ export function Ring({ percentage, label, caption, color }: RingProps) {
 
 /* ------------------------------------------------------------------ */
 
-interface HeatRowProps {
-  /** 24 values, one per hour. */
-  hours: number[];
-  format?: (value: number, hour: number) => string;
-}
-
-/** When work actually happens, as one sequential ramp of a single hue. */
-export function HourHeat({ hours, format }: HeatRowProps) {
-  const [hover, setHover] = useState<number | null>(null);
-  const max = Math.max(1, ...hours);
-
-  return (
-    <div className="chart">
-      <div className="heatrow">
-        {hours.map((value, hour) => (
-          <button
-            key={hour}
-            className="heatcell"
-            style={{ opacity: value === 0 ? 0.12 : 0.25 + (value / max) * 0.75 }}
-            onMouseEnter={() => setHover(hour)}
-            onMouseLeave={() => setHover(null)}
-            onFocus={() => setHover(hour)}
-            onBlur={() => setHover(null)}
-            aria-label={format ? format(value, hour) : `${hour}h: ${value}`}
-          />
-        ))}
-      </div>
-      <div className="chart-axis heataxis">
-        {hours.map((_, hour) => (
-          <span key={hour}>{hour % 6 === 0 ? `${hour}h` : ''}</span>
-        ))}
-      </div>
-      <p className="chart-readout" aria-live="polite">
-        {hover === null
-          ? ' '
-          : format
-            ? format(hours[hover], hover)
-            : `${hover}h · ${hours[hover]}`}
-      </p>
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-
 interface CardProps {
   title: string;
   subtitle?: string;
@@ -269,5 +224,263 @@ export function ChartCard({ title, subtitle, span = 6, trailing, children }: Car
       </div>
       {children}
     </section>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+
+export interface SliceDatum {
+  key: string;
+  label: string;
+  value: number;
+  /** Overrides the palette when the entity already owns a colour. */
+  color?: string;
+}
+
+interface DonutProps {
+  data: SliceDatum[];
+  /** Printed in the hole, above the caption. */
+  total?: ReactNode;
+  caption?: string;
+  emptyLabel?: string;
+  /** Slices beyond this fold into one "other" row. */
+  limit?: number;
+  otherLabel?: string;
+  format?: (value: number) => string;
+}
+
+/**
+ * A part-to-whole split.
+ *
+ * The arc carries the shape of the split and the legend carries the numbers:
+ * every slice is named, valued and given its share in text, so the reading
+ * never depends on telling two hues apart. Segments are separated by a 2px
+ * surface gap rather than a stroke, which keeps thin slices legible.
+ */
+export function Donut({
+  data, total, caption, emptyLabel, limit, otherLabel = 'Other', format,
+}: DonutProps) {
+  const [hover, setHover] = useState<string | null>(null);
+
+  const rows = foldTail(data, limit, otherLabel);
+  const sum = rows.reduce((acc, row) => acc + row.value, 0);
+  if (rows.length === 0 || sum === 0) return <p className="chart-empty">{emptyLabel}</p>;
+
+  // A 42-radius circle in a 100 box: the arc is drawn as a dashed stroke, so
+  // the gap between slices is simply a shortened dash.
+  const R = 42;
+  const C = 2 * Math.PI * R;
+  const GAP = 2;
+
+  let offset = 0;
+  const arcs = rows.map((row, index) => {
+    const length = (row.value / sum) * C;
+    const arc = {
+      ...row,
+      color: row.color ?? seriesColor(index),
+      share: Math.round((row.value / sum) * 100),
+      dash: Math.max(1, length - GAP),
+      rest: C - Math.max(1, length - GAP),
+      offset,
+    };
+    offset -= length;
+    return arc;
+  });
+
+  return (
+    <div className="donut">
+      <div className="donutplot">
+        <svg viewBox="0 0 100 100" role="img" aria-label={caption ?? ''}>
+          <circle className="donuttrack" cx="50" cy="50" r={R} />
+          {arcs.map((arc) => (
+            <circle
+              key={arc.key}
+              cx="50"
+              cy="50"
+              r={R}
+              stroke={arc.color}
+              strokeDasharray={`${arc.dash} ${arc.rest}`}
+              strokeDashoffset={arc.offset}
+              className={`donutarc${hover && hover !== arc.key ? ' dim' : ''}`}
+              onMouseEnter={() => setHover(arc.key)}
+              onMouseLeave={() => setHover(null)}
+            />
+          ))}
+        </svg>
+        {total !== undefined && (
+          <div className="donutcentre">
+            <strong>{total}</strong>
+            {caption && <span>{caption}</span>}
+          </div>
+        )}
+      </div>
+
+      <ul className="legend">
+        {arcs.map((arc) => (
+          <li
+            key={arc.key}
+            className={hover && hover !== arc.key ? 'dim' : undefined}
+            onMouseEnter={() => setHover(arc.key)}
+            onMouseLeave={() => setHover(null)}
+          >
+            <i style={{ background: arc.color }} />
+            <span className="legendname" title={arc.label}>{arc.label}</span>
+            <b>{format ? format(arc.value) : arc.value}</b>
+            <span className="legendshare">{arc.share}%</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/** Caps a list and sums whatever is left into one trailing row. */
+function foldTail<T extends { key: string; label: string; value: number; color?: string }>(
+  data: T[], limit: number | undefined, otherLabel: string,
+): Array<{ key: string; label: string; value: number; color?: string }> {
+  const rows = data.filter((row) => row.value > 0);
+  if (!limit || rows.length <= limit) return rows;
+  const tail = rows.slice(limit);
+  return [
+    ...rows.slice(0, limit),
+    {
+      key: 'other',
+      label: otherLabel,
+      value: tail.reduce((acc, row) => acc + row.value, 0),
+      color: 'var(--faint)',
+    },
+  ];
+}
+
+/* ------------------------------------------------------------------ */
+
+interface SplitBarProps {
+  data: SliceDatum[];
+  format?: (value: number) => string;
+}
+
+/**
+ * One horizontal bar split into its parts, with every part named underneath.
+ *
+ * This is the Figma focus-score mark: the bar shows the balance at a glance
+ * and the legend states it, which is what lets the grey P4 segment carry
+ * meaning without relying on its hue.
+ */
+export function SplitBar({ data, format }: SplitBarProps) {
+  const sum = data.reduce((acc, row) => acc + row.value, 0);
+  return (
+    <div className="split">
+      <div className="splitbar">
+        {sum === 0
+          ? <i style={{ width: '100%', background: 'var(--c-track)' }} />
+          : data
+            .filter((row) => row.value > 0)
+            .map((row, index) => (
+              <i
+                key={row.key}
+                style={{
+                  width: `${(row.value / sum) * 100}%`,
+                  background: row.color ?? seriesColor(index),
+                }}
+                title={`${row.label}: ${format ? format(row.value) : row.value}`}
+              />
+            ))}
+      </div>
+      <ul className="legend inline">
+        {data.map((row, index) => (
+          <li key={row.key}>
+            <i style={{ background: row.color ?? seriesColor(index) }} />
+            <span className="legendname">{row.label}</span>
+            <b>{format ? format(row.value) : row.value}</b>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+
+export interface CompareDatum extends BarDatum {
+  /** The same slot one period earlier, drawn as a dot above the bar. */
+  previous?: number;
+}
+
+interface CompareBarsProps {
+  data: CompareDatum[];
+  height?: number;
+  format?: (value: number) => string;
+  labelEvery?: number;
+  emptyLabel?: string;
+  /** Names the two marks, which is what keeps them apart. */
+  currentLabel: string;
+  previousLabel: string;
+}
+
+/**
+ * This period against the one before it.
+ *
+ * Both series share one axis — never two scales. The current period is a
+ * filled bar and the earlier one a dot at the same height, so the comparison
+ * is read as a position, not as a second colour.
+ */
+export function CompareBars({
+  data, height = 150, format, labelEvery = 1, emptyLabel,
+  currentLabel, previousLabel,
+}: CompareBarsProps) {
+  const [hover, setHover] = useState<number | null>(null);
+  const id = useId();
+
+  if (data.length === 0) return <p className="chart-empty">{emptyLabel}</p>;
+
+  const max = Math.max(1, ...data.map((d) => Math.max(d.value, d.previous ?? 0)));
+  const shown = hover === null ? null : data[hover];
+  const fmt = (value: number) => (format ? format(value) : String(value));
+
+  return (
+    <div className="chart">
+      <div className="chart-plot compare" style={{ height }} role="img" aria-labelledby={id}>
+        {data.map((datum, index) => (
+          <button
+            key={datum.key}
+            className={`slot${hover === index ? ' hovered' : ''}`}
+            onMouseEnter={() => setHover(index)}
+            onMouseLeave={() => setHover(null)}
+            onFocus={() => setHover(index)}
+            onBlur={() => setHover(null)}
+            aria-label={
+              `${datum.label}: ${currentLabel} ${fmt(datum.value)}`
+              + (datum.previous === undefined ? '' : `, ${previousLabel} ${fmt(datum.previous)}`)
+            }
+          >
+            <i
+              className={`bar${datum.current ? ' current' : ''}`}
+              style={{ height: `${Math.max(2, (datum.value / max) * 100)}%` }}
+            />
+            {datum.previous !== undefined && (
+              <s className="ghostdot" style={{ bottom: `${(datum.previous / max) * 100}%` }} />
+            )}
+          </button>
+        ))}
+      </div>
+
+      <div className="chart-axis">
+        {data.map((datum, index) => (
+          <span key={datum.key}>{index % labelEvery === 0 ? datum.label : ''}</span>
+        ))}
+      </div>
+
+      <ul className="legend inline">
+        <li><i className="swatch-bar" /><span className="legendname">{currentLabel}</span></li>
+        <li><i className="swatch-dot" /><span className="legendname">{previousLabel}</span></li>
+      </ul>
+
+      <p className="chart-readout" id={id} aria-live="polite">
+        {shown
+          ? `${shown.label} · ${currentLabel} ${fmt(shown.value)}`
+            + (shown.previous === undefined ? '' : ` · ${previousLabel} ${fmt(shown.previous)}`)
+          : ' '}
+      </p>
+    </div>
   );
 }
