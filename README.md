@@ -17,9 +17,16 @@ This project is not affiliated with, endorsed by, or approved by Doist Inc.
   one makes sense.
 - **Drag and drop** with one fixed meaning per destination: today, anytime,
   someday, a day column, a project, a section or a tag. Every drop can be undone.
-- **Insights** in the spirit of Todoist Rewind, including the Focus score.
+- **Insights** in the spirit of Todoist Rewind: the focus score, the week's
+  activity, completions per day against the period before them, the time of day
+  work actually happens, project and priority as ring splits, and a tag ranking
+  that counts the untagged share.
+- **A logbook** of what was actually finished, grouped by day, project or
+  priority, and filterable by either.
 - **Things to settle**: tasks missing an estimate, and conflicts inside a task
   that the app refuses to resolve silently.
+- **Settings** as one page you read downwards, with a homepage you choose, the
+  capacity of each day, and which conflicts the app should flag.
 - French and English, chosen from the browser and changeable in settings.
 
 ## How it is put together
@@ -40,6 +47,20 @@ what changed is transferred. Writes go out as sync commands, applied optimistica
 on screen and rolled back if Todoist refuses them. Polling runs every 45 seconds
 while the tab is visible, and immediately on focus or when the network returns.
 
+### The design system
+
+One set of tokens in `src/styles/app.css` carries the whole interface: five
+radii, eight type sizes, and about thirty colours. Four warm reds do all the
+brand work, each with exactly one job — `--accent` paints a solid mark,
+`--accent-tint` fills a quiet control, `--accent-wash` tints a surface, and
+`--accent-line` draws the border of an outlined one. `theme.css` and
+`additions.css` layer on top of that file and add no second system.
+
+Charts share one categorical palette, assigned in a fixed order and never
+cycled, so a colour always means the same entity. Priority keeps Todoist's own
+four colours, and every chart that uses them names each one in its legend, so
+the grey of P4 carries meaning without relying on its hue.
+
 ### Layout
 
 ```
@@ -49,7 +70,7 @@ src/
   domain/     the rules: estimates, dates, view buckets, load, conflicts, insights
   store/      application state and derived selectors
   i18n/       English and French dictionaries
-  components/ shared interface pieces and dialogs
+  components/ shared interface pieces, chart marks and dialogs
   views/      one file per page
 ```
 
@@ -64,8 +85,12 @@ npm install
 npm run dev
 ```
 
-Requires Node 20 or newer. Open the app, then paste a personal API token from
-Todoist under Settings, Integrations, Developer.
+Requires Node 20 or newer — `.nvmrc` pins it, so `nvm use` is enough. The
+service-worker step of the build fails on Node 18.
+
+Open the app, then paste a personal API token from Todoist under Settings,
+Integrations, Developer. Or press **Explore with demo data** on the connect
+screen to look around a made-up account without a token.
 
 ```bash
 npm run build
@@ -89,6 +114,10 @@ subfolder.
 
 To install it as an app, open it in Safari or Chrome and choose Add to Home
 Screen or Install.
+
+## Changelog
+
+[CHANGELOG.md](CHANGELOG.md) records what changed in each version.
 
 ## If this is ever published for other people
 

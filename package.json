@@ -1,7 +1,10 @@
 {
   "name": "todoist-enhancements",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
+  "engines": {
+    "node": ">=20"
+  },
   "type": "module",
   "description": "Enhancements for Todoist — an alternative, local-first Todoist client.",
   "scripts": {

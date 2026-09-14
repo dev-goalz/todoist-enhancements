@@ -5,3 +5,6 @@ dist-ssr
 *.local
 .vite
 *.tsbuildinfo
+
+# A build, zipped for upload. Rebuilt on demand; never committed.
+todoist-enhancements-dist.zip
