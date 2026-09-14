@@ -558,15 +558,26 @@ ul{margin:0;padding:0;list-style:none}
    10. SETTINGS
    ========================================================================== */
 .settings{display:grid;grid-template-columns:186px 1fr;gap:var(--s6);margin-top:var(--s5)}
-.setnav{display:grid;align-content:start;gap:2px}
-.setnav button{min-height:34px;padding:0 10px;border-radius:var(--r-sm);font-size:var(--fs-13);text-align:left}
-.setnav button:hover{background:var(--hover)}
-.setnav button[aria-current="true"]{background:var(--subtle);font-weight:600}
+/* The menu stays with the reader while the page scrolls under it. */
+.setnav{display:grid;align-content:start;gap:2px;position:sticky;top:var(--s5);align-self:start}
+.setnav a{
+  display:flex;align-items:center;min-height:34px;padding:0 var(--s3);
+  border-radius:var(--r-ctl);font-size:var(--fs-13);font-weight:500;
+  letter-spacing:-.02em;color:var(--muted);text-decoration:none;
+  transition:background .14s ease-out,color .14s ease-out;
+}
+.setnav a:hover{background:var(--hover);color:var(--text)}
+.setnav a[aria-current="true"]{background:var(--accent-soft);color:var(--accent-dark);font-weight:600}
+/* A section scrolled to by anchor must not hide under the sticky menu. */
+.setsection{scroll-margin-top:var(--s5)}
 .setsection{padding-bottom:var(--s6);margin-bottom:var(--s6);border-bottom:1px solid var(--border)}
+.setsection.last{padding-bottom:0;margin-bottom:0;border-bottom:0}
 .setsection h2{margin-bottom:var(--s3);font-size:var(--fs-16);font-weight:700}
 .setrow{min-height:62px;display:flex;align-items:center;justify-content:space-between;gap:var(--s5)}
 .setrow strong{display:block;font-size:var(--fs-13);font-weight:600}
-.setrow span{display:block;margin-top:2px;color:var(--muted);font-size:var(--fs-12)}
+/* The hint belongs to the row's own label column. Left unscoped, this rule
+   also caught the text inside any control sitting in the row and broke it. */
+.setrow > div > span{display:block;margin-top:2px;color:var(--muted);font-size:var(--fs-12)}
 .switch{width:38px;height:22px;flex:0 0 auto;padding:2px;border-radius:var(--r-full);background:#c9c5c0}
 .switch::after{content:"";display:block;width:18px;height:18px;border-radius:var(--r-full);background:#fff;
   box-shadow:var(--sh-sm);transition:margin .15s ease}

@@ -387,6 +387,19 @@ export const en = {
   'insights.focusBalance': 'Where the effort went',
   'insights.tasks': 'tasks',
   'logbook.filters': 'Filters',
+
+  /* Settings — the scrolling page */
+  'settings.homepage': 'Homepage',
+  'settings.homepageHint': 'The view the app opens on when no link says otherwise',
+  'settings.weeklySource': 'Weekly capacity',
+  'settings.weeklyFromDays': 'Sum of my days',
+  'settings.weeklyCustom': 'A weekly value I set',
+  'settings.weeklyValue': 'Weekly value',
+  'settings.capacityDefaults': 'Restore the default capacities',
+  'settings.capacityDefaultsHint': 'Back to eight hours on weekdays and none at the weekend',
+  'settings.restore': 'Restore',
+  'settings.sections': 'Sections',
+  'settings.avatarHint': 'Your Todoist profile picture',
 };
 
 export type TranslationKey = keyof typeof en;

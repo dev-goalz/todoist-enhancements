@@ -293,3 +293,45 @@
   color:var(--faint);border-bottom:1px dashed var(--border-strong);
 }
 .metric-link:hover{color:var(--accent-dark);border-bottom-color:var(--accent)}
+
+/* ==========================================================================
+   Settings — one page, read downwards
+   ========================================================================== */
+.setbody{min-width:0}
+
+/* The account row leads with the picture, so it breaks the two-column rhythm. */
+.setrow.account{align-items:center;gap:var(--s4)}
+.setrow.account > div{flex:1;min-width:0}
+.setrow.account strong{font-size:var(--fs-16)}
+.setavatar{
+  width:56px;height:56px;flex:0 0 auto;display:grid;place-items:center;overflow:hidden;
+  border-radius:var(--r-full);color:#fff;font-size:var(--fs-20);font-weight:700;
+  background:linear-gradient(145deg,#2d5961,#d87c62);
+}
+.setavatar img{width:100%;height:100%;object-fit:cover}
+
+/* A value the account decides for us: stated, never offered as a control. */
+.setvalue{
+  flex:0 0 auto;padding:6px 12px;border-radius:var(--r-ctl);
+  background:var(--subtle);color:var(--muted);
+  font-size:var(--fs-13);font-weight:600;
+}
+.sethint{margin-top:var(--s2);color:var(--faint);font-size:var(--fs-12);line-height:1.55}
+
+/* Controls in a settings row keep their own width rather than stretching. */
+.setrow .fselect{flex:0 0 auto;min-width:190px}
+.setrow .fselect-label{display:none}
+.setrow .btn{flex:0 0 auto}
+.setrow .estinput{flex:0 0 auto}
+
+.capgrid{margin-bottom:var(--s5)}
+.capday input{border-radius:var(--r-ctl)}
+
+@media (max-width:900px){
+  .setnav{
+    position:static;grid-auto-flow:column;grid-auto-columns:max-content;
+    overflow-x:auto;padding-bottom:var(--s2);
+  }
+  .setrow{flex-wrap:wrap}
+  .setrow .fselect{min-width:0;width:100%}
+}

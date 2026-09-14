@@ -389,4 +389,17 @@ export const fr: Record<TranslationKey, string> = {
   'insights.focusBalance': 'Où est passée l’énergie',
   'insights.tasks': 'tâches',
   'logbook.filters': 'Filtres',
+
+  /* Réglages — la page qui défile */
+  'settings.homepage': 'Page d’accueil',
+  'settings.homepageHint': 'La vue sur laquelle l’application s’ouvre, sauf lien contraire',
+  'settings.weeklySource': 'Capacité hebdomadaire',
+  'settings.weeklyFromDays': 'Somme de mes journées',
+  'settings.weeklyCustom': 'Une valeur hebdomadaire que je fixe',
+  'settings.weeklyValue': 'Valeur hebdomadaire',
+  'settings.capacityDefaults': 'Rétablir les capacités par défaut',
+  'settings.capacityDefaultsHint': 'Retour à huit heures en semaine et rien le week-end',
+  'settings.restore': 'Rétablir',
+  'settings.sections': 'Sections',
+  'settings.avatarHint': 'Votre photo de profil Todoist',
 };

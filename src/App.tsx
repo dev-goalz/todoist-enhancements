@@ -37,6 +37,7 @@ export function App() {
   const init = useStore((s) => s.init);
   const startPolling = useStore((s) => s.startPolling);
   const locale = useStore((s) => s.prefs.locale);
+  const homepage = useStore((s) => s.prefs.homepage);
   const toasts = useStore((s) => s.toasts);
   const dismissToast = useStore((s) => s.dismissToast);
 
@@ -52,6 +53,12 @@ export function App() {
   const [placement, setPlacement] = useState<ComposerPlacement>({});
 
   useEffect(() => { void init(); }, [init]);
+
+  /* The address bar wins, always — a shared or reopened link must land where
+     it says. The homepage only fills in when there is nothing to obey. */
+  useEffect(() => {
+    if (ready && !window.location.hash.replace(/^#\/?/, '')) navigate(homepage);
+  }, [ready, homepage]);
   useEffect(() => { document.documentElement.lang = locale; }, [locale]);
   useEffect(() => (connected ? startPolling() : undefined), [connected, startPolling]);
 

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { format, startOfDay } from 'date-fns';
 import { Icon } from '@/components/Icon';
+import { Select } from '@/components/Select';
 import {
   Bars, ChartCard, CompareBars, Donut, RankedBars, SplitBar, StatTile, seriesColor,
   type BarDatum, type CompareDatum, type RankedDatum, type SliceDatum,
@@ -483,39 +484,5 @@ function Logbook({ completed }: { completed: CompletedItem[] }) {
         </div>
       )}
     </>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-
-interface SelectProps {
-  label: string;
-  value: string;
-  options: Array<{ value: string; label: string }>;
-  onChange: (value: string) => void;
-}
-
-/**
- * A select that is styled rather than left to the operating system.
- *
- * The native control is kept underneath — it does the keyboard handling and
- * the mobile picker — and the visible face is drawn on top of it, so the
- * appearance is ours without any of the behaviour being reimplemented.
- */
-export function Select({ label, value, options, onChange }: SelectProps) {
-  const current = options.find((o) => o.value === value)?.label ?? '';
-  return (
-    <label className="fselect">
-      <span className="fselect-label">{label}</span>
-      <span className="fselect-face">
-        <span className="fselect-value">{current}</span>
-        <Icon name="caret" size="sm" />
-      </span>
-      <select value={value} onChange={(e) => onChange(e.target.value)} aria-label={label}>
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>{option.label}</option>
-        ))}
-      </select>
-    </label>
   );
 }
