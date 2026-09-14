@@ -5,6 +5,47 @@ Every notable change to Enhancements for Todoist, newest first.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project follows [semantic versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] — 2026-09-14
+
+### Added
+
+- **Marks inside the task name.** What the parser will take out — a date, a
+  `#project`, `p1`, an `@tag` — is highlighted in the name as it is typed, the
+  way Todoist does it, instead of being listed underneath. Typing `@` or `#`
+  opens the matching list.
+- **Adding a section** from the seam between two of them: a rule appears under
+  the pointer where the new section will land, and the name is typed in place.
+- **Renaming a section** where it is read.
+
+### Changed
+
+- The tags page is a grid of cards. It had been borrowing the task row's grid,
+  which gave every tag an empty checkbox column and an empty actions column.
+- A completed task in the logbook is filled in its priority with a white tick,
+  and its project keeps its own colour.
+- Descriptions are secondary text, sit closer to the heading they belong to,
+  and their "see more" is part of the text rather than a line of its own.
+  Enter saves; Shift+Enter is a new line.
+- My week accepts a drop and means "anytime this week". Upcoming no longer
+  does: no single day can be inferred from it.
+- The Add task button shows its plus again.
+
+### Fixed
+
+- **Drop targets in the sidebar silently stopped working** whenever the same
+  destination existed on the page, and a favourite project shadowed its own row
+  under the workspace. Two droppables cannot share an id; the sidebar's are
+  scoped now.
+- The drop hint was an outline, which the sidebar's own scroll container
+  clipped on the left and right. It is an inset ring and a tint.
+- Board columns were forced four across, squeezing each to 157px and leaving
+  task titles unreadable. The board also keeps the same measure as every other
+  view now.
+- Collapsing a section only worked on the words themselves; the strip between
+  them and the rule did nothing.
+- The project description was a `<div>` inside a `<p>`, which is not legal.
+- The sidebar's group carets and folder markers line up with the rows below.
+
 ## [0.3.0] — 2026-09-14
 
 A second review pass: the app gets its own mark, the composer learns to read

@@ -58,8 +58,16 @@ export function EditableDescription({
         onBlur={commit}
         onKeyDown={(e) => {
           if (e.key === 'Escape') {
+            e.stopPropagation();
             setDraft(value);
             setEditing(false);
+          }
+          // Enter saves. Shift+Enter is how you get a second line, which is
+          // the convention every comment box in the product already uses.
+          if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            e.stopPropagation();
+            commit();
           }
         }}
       />
@@ -83,13 +91,24 @@ export function EditableDescription({
         ) : (
           placeholder
         )}
-      </button>
 
-      {value && (overflows || expanded) && (
-        <button className="seemore" onClick={() => setExpanded((v) => !v)}>
-          {expanded ? t('project.seeLess') : t('project.seeMore')}
-        </button>
-      )}
+        {value && (overflows || expanded) && (
+          <span
+            className="seemore"
+            role="button"
+            tabIndex={0}
+            onClick={(e) => { e.stopPropagation(); setExpanded((v) => !v); }}
+            onKeyDown={(e) => {
+              if (e.key !== 'Enter' && e.key !== ' ') return;
+              e.preventDefault();
+              e.stopPropagation();
+              setExpanded((v) => !v);
+            }}
+          >
+            {expanded ? t('project.seeLess') : t('project.seeMore')}
+          </span>
+        )}
+      </button>
     </div>
   );
 }

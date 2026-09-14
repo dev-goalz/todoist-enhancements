@@ -57,7 +57,7 @@
   background:transparent;
 }
 
-.gheadblock{padding-bottom:6px;border-bottom:1px solid var(--border-strong)}
+.gheadblock{padding-bottom:0;border-bottom:1px solid var(--border-strong)}
 .ghead{min-height:34px;padding:0;border-bottom:0}
 .gname{font-size:var(--fs-14);font-weight:700;color:var(--text)}
 .gtime,.gcount{color:var(--faint);font-weight:400}
@@ -390,21 +390,24 @@
 .estfield.invalid .estinput{border-color:var(--accent);color:var(--accent-dark)}
 
 /* A description folds to a few lines until the reader opens it. */
-.descwrap{display:grid;gap:2px;justify-items:start}
+.descwrap{display:block}
 .md.clamped{
   display:-webkit-box;-webkit-box-orient:vertical;
   -webkit-line-clamp:var(--clamp,2);line-clamp:var(--clamp,2);
   overflow:hidden;
 }
+/* Part of the text it folds, not a control beside it: it reads as the last
+   words of the paragraph, which is where the eye already is. */
 .seemore{
-  color:var(--accent-dark);font-size:var(--fs-12);font-weight:600;padding:2px 6px;
-  border-radius:var(--r-xs);
+  display:inline;margin-left:6px;
+  color:var(--faint);font-weight:700;font-size:inherit;cursor:pointer;
 }
-.seemore:hover{background:var(--accent-soft)}
+.seemore:hover{color:var(--muted);text-decoration:underline}
 
 /* A section's own description sits under its heading. */
+/* A section's description belongs to its heading, so it sits close under it. */
 .gdesc .descwrap{width:100%}
-.gdesc .descview{padding:4px 6px;margin-left:-6px;font-size:var(--fs-12)}
+.gdesc .descview{padding:2px 6px;margin-left:-6px;font-size:var(--fs-12)}
 
 /* ---------- Demo mode ---------- */
 .app.demo{grid-template-rows:auto minmax(0,1fr)}
@@ -507,7 +510,9 @@
   border-bottom:1px solid var(--border);font-size:var(--fs-13);
 }
 .logrow .ic{color:var(--ok)}
-.logrow .logmeta{color:var(--faint);font-size:var(--fs-12)}
+/* A project keeps its own colour here as it does everywhere else; this rule
+   used to win over the marker and flatten them all to grey. */
+.logrow .logmeta{color:var(--marker,var(--faint));font-size:var(--fs-12)}
 
 /* Logbook controls sit on one row above the record. */
 .logbar{justify-content:flex-start;align-items:flex-end;gap:var(--s4);flex-wrap:wrap}
@@ -587,9 +592,8 @@
   max-width:1160px;
 }
 
-/* A board or a month grid is not prose: it takes the whole workspace. */
-.page > .mode.wide,
-.page.wide > .mode.wide{max-width:1160px}
+/* A board keeps the same measure as every other view. It wraps its columns
+   onto a second row rather than asking the page to grow around it. */
 
 /* ---------- Behind schedule and Quick read as callouts ---------- */
 .group.accent-late,
@@ -813,15 +817,18 @@
 .logrow{border-bottom-color:var(--border)}
 .logrow:last-child{border-bottom:0}
 .logname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-/* The tick takes the priority of the task it closed, which is the one piece of
-   context the record was missing. */
-.logtick{width:16px;height:16px;display:grid;place-items:center;border-radius:var(--r-sm)}
-.logtick .ic{width:12px;height:12px;stroke-width:2.6}
-.logtick.p1{color:var(--p1);background:rgba(209,69,59,.12)}
-.logtick.p2{color:var(--p2);background:rgba(235,137,9,.12)}
-.logtick.p3{color:var(--p3);background:rgba(36,111,224,.12)}
-.logtick.p4{color:var(--muted);background:var(--subtle)}
-.logrow .logmeta.time{font-variant-numeric:tabular-nums;min-width:52px;text-align:right}
+/* A completed task is filled in its priority with a white tick, which is what
+   "done" looks like everywhere else in the product. */
+.logtick{
+  width:16px;height:16px;display:grid;place-items:center;
+  border-radius:var(--r-sm);color:#fff;
+}
+.logtick .ic{width:11px;height:11px;stroke-width:3}
+.logtick.p1{background:var(--p1)}
+.logtick.p2{background:var(--p2)}
+.logtick.p3{background:var(--p3)}
+.logtick.p4{background:var(--p4)}
+.logrow .logmeta.time{color:var(--faint);font-variant-numeric:tabular-nums;min-width:52px;text-align:right}
 
 /* ==========================================================================
    Select — one control, drawn by us rather than by the operating system
@@ -955,19 +962,9 @@
 .pager .iconbtn:disabled{opacity:.35;cursor:default}
 .pager .iconbtn:disabled:hover{background:transparent;color:var(--muted)}
 
-/* Paged, the board never scrolls sideways: the columns simply fit. */
-.board.days{
-  grid-auto-flow:row;
-  grid-template-columns:repeat(4,minmax(0,1fr));
-  grid-auto-columns:auto;
-  overflow-x:visible;
-}
-@media (max-width:900px){
-  .board.days{grid-template-columns:repeat(2,minmax(0,1fr))}
-}
-@media (max-width:620px){
-  .board.days{grid-template-columns:minmax(0,1fr)}
-}
+/* The pager decides how many days are in the data; the grid decides how many
+   fit on a row. Forcing four across squeezed every column to 157px and left
+   the task titles unreadable. */
 
 /* The add button states its shortcut, the way the search field does. */
 .addbtn kbd{
@@ -1000,3 +997,129 @@
 .phead .psub .descwrap,
 .phead .psub .descview,
 .phead .psub .descfield{width:100%;max-width:72ch}
+
+/* A description is secondary text wherever it appears — under a section
+   heading, or under a project's title. */
+.gdesc .md,
+.phead .psub .md{color:var(--faint)}
+.phead .psub{color:var(--faint)}
+.phead .psub .descview{padding:2px 6px;margin-left:-6px}
+
+/* ==========================================================================
+   Adding a section — the seam between two of them
+   ========================================================================== */
+/* Nothing at rest; under the pointer, a rule marking exactly where the new
+   section will land. */
+.addsection{
+  display:flex;align-items:center;gap:10px;width:100%;
+  height:20px;margin:2px 0;padding:0;
+  opacity:0;transition:opacity .12s ease-out;
+}
+.mode:hover .addsection:hover,
+.addsection:focus-visible{opacity:1}
+.addsection-rule{flex:1;height:2px;border-radius:1px;background:var(--accent)}
+.addsection-label{
+  flex:0 0 auto;color:var(--accent);
+  font-size:var(--fs-12);font-weight:600;white-space:nowrap;
+}
+
+/* A section's name is typed where it is read. */
+.gnamefield{
+  min-width:0;flex:0 1 auto;width:auto;
+  border:1px solid transparent;border-radius:var(--r-sm);
+  padding:2px 6px;margin-left:-6px;background:transparent;
+  font:inherit;font-size:var(--fs-14);font-weight:700;color:var(--text);
+}
+.gnamefield:hover{border-color:var(--border)}
+.gnamefield:focus{outline:none;border-color:var(--accent);background:var(--surface)}
+.gnamefield::placeholder{color:var(--faint);font-weight:400}
+
+/* ==========================================================================
+   Tags — a page of tags, not a list of tasks pretending to be one
+   ========================================================================== */
+/* It borrowed the task row's grid, which gave every tag an empty checkbox
+   column, an empty actions column and a hairline it had no use for. */
+.taggrid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));
+  gap:var(--s3);margin-top:var(--s5);
+}
+.tagcard{
+  position:relative;display:flex;align-items:center;
+  border:1px solid var(--border);border-radius:14px;background:var(--surface);
+  box-shadow:0 1px 2px rgba(28,25,23,.04);
+  transition:border-color .14s ease-out,box-shadow .14s ease-out;
+}
+.tagcard:hover{border-color:var(--border-strong);box-shadow:0 2px 8px rgba(28,25,23,.07)}
+.tagcard-open{
+  flex:1;min-width:0;display:flex;align-items:center;gap:12px;
+  padding:14px 16px;text-align:left;
+}
+.tagcard-mark{
+  width:34px;height:34px;flex:0 0 auto;display:grid;place-items:center;
+  border-radius:10px;
+  color:var(--marker,var(--muted));background:var(--marker-soft,var(--subtle));
+}
+.tagcard-mark .ic{width:17px;height:17px}
+.tagcard-text{display:grid;gap:1px;min-width:0}
+.tagcard-text strong{
+  font-size:var(--fs-14);font-weight:600;letter-spacing:-.01em;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.tagcard-text small{color:var(--faint);font-size:var(--fs-12)}
+.tagcard-star{
+  width:32px;height:32px;flex:0 0 auto;margin-right:10px;
+  display:grid;place-items:center;border-radius:var(--r-sm);
+  color:var(--faint);opacity:0;transition:opacity .12s ease-out;
+}
+.tagcard:hover .tagcard-star,
+.tagcard-star:focus-visible,
+.tagcard-star.on{opacity:1}
+.tagcard-star:hover{background:var(--hover);color:var(--text)}
+.tagcard-star.on{color:var(--p2)}
+
+/* ==========================================================================
+   The composer's name field — marks inside the name, not chips beneath it
+   ========================================================================== */
+/* An <input> cannot hold markup, so a mirror of the same text sits behind it
+   with transparent letters and coloured backgrounds. Both layers must share
+   every metric exactly or the marks slide off the words. */
+.namefield{position:relative}
+.namefield .composer-name,
+.namemirror{
+  font:inherit;font-size:var(--fs-16);font-weight:600;
+  line-height:1.4;letter-spacing:normal;
+  padding:6px 0;border:0;
+  white-space:pre;overflow-x:auto;
+  scrollbar-width:none;
+}
+.namemirror::-webkit-scrollbar,
+.namefield .composer-name::-webkit-scrollbar{display:none}
+.namemirror{
+  position:absolute;inset:0;z-index:0;
+  color:transparent;pointer-events:none;user-select:none;
+}
+.namefield .composer-name{position:relative;z-index:1;width:100%;background:transparent}
+
+.nmark{
+  color:transparent;background:var(--subtle);
+  border-radius:5px;box-shadow:0 0 0 2px var(--subtle);
+}
+/* A date is the one the parser guessed rather than one you spelled out, so it
+   is the one that has to be impossible to miss. */
+.nmark.date{background:var(--accent-tint);box-shadow:0 0 0 2px var(--accent-tint)}
+.nmark.project{background:#eaf2fd;box-shadow:0 0 0 2px #eaf2fd}
+.nmark.label{background:#f2edfb;box-shadow:0 0 0 2px #f2edfb}
+.nmark.priority{background:var(--accent-tint);box-shadow:0 0 0 2px var(--accent-tint)}
+
+/* The list that opens on @ or #. */
+.namepicker{
+  top:calc(100% + 4px);left:0;right:auto;z-index:70;
+  min-width:220px;max-height:220px;overflow-y:auto;padding:var(--s2);
+}
+.namepicker button{
+  width:100%;display:flex;align-items:center;gap:8px;
+  min-height:32px;padding:0 8px;border-radius:var(--r-sm);
+  font-size:var(--fs-13);text-align:left;
+}
+.namepicker button[aria-selected="true"]{background:var(--accent-soft);color:var(--accent-dark)}
+.namepicker .hash{width:18px;height:18px;font-size:var(--fs-12)}

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Overlay } from './Overlay';
 import { Icon } from '../Icon';
 import { EstimateField } from '../EstimateField';
+import { TaskNameField } from '../TaskNameField';
 import { useT } from '@/hooks/useT';
 import { useStore } from '@/store/store';
 import { estimateLabel } from '@/domain/estimates';
@@ -112,48 +113,15 @@ export function Composer({
   return (
     <Overlay open={open} onClose={onClose} label={t('nav.addTask')} size="sm">
       <div className="composerbox">
-        <input
-          className="composer-name"
-          placeholder={t('composer.namePlaceholder')}
-          aria-label={t('composer.name')}
+        <TaskNameField
           value={name}
-          onChange={(e) => setName(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              void submit();
-            }
-          }}
+          onChange={setName}
+          onSubmit={() => void submit()}
+          placeholder={t('composer.namePlaceholder')}
+          ariaLabel={t('composer.name')}
+          snapshot={snapshot}
+          naturalDates={naturalDates}
         />
-
-        {(parsed.dateText || parsed.projectId || parsed.priority || parsed.labels.length > 0) && (
-          <p className="composer-read">
-            {parsed.dateText && (
-              <span className="readchip date">
-                <Icon name="calendar" size="sm" />
-                {parsed.dateText}
-              </span>
-            )}
-            {parsed.projectId && (
-              <span className="readchip">
-                <Icon name="project" size="sm" />
-                {snapshot.projects[parsed.projectId]?.name}
-              </span>
-            )}
-            {parsed.priority && (
-              <span className="readchip">
-                <span className="flagdot" style={{ background: `var(--p${parsed.priority})` }} />
-                P{parsed.priority}
-              </span>
-            )}
-            {parsed.labels.map((label) => (
-              <span className="readchip" key={label}>
-                <Icon name="tag" size="sm" />
-                {label}
-              </span>
-            ))}
-          </p>
-        )}
 
         <textarea
           className="composer-desc"

@@ -417,4 +417,8 @@ export const fr: Record<TranslationKey, string> = {
 
   'search.hintMove': 'pour naviguer',
   'search.hintOpen': 'pour ouvrir',
+
+  'section.add': 'Ajouter une section',
+  'section.name': 'Nom de la section',
+  'section.untitled': 'Section sans titre',
 };

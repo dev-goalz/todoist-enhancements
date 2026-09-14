@@ -170,6 +170,11 @@ ul{margin:0;padding:0;list-style:none}
 .side-group{margin-top:22px}
 .side-head{padding:0 var(--s3) var(--s1);display:flex;align-items:center;gap:var(--s1);
   color:var(--muted);font-size:var(--fs-14);font-weight:600;letter-spacing:-.02em}
+/* The heading row uses the same right padding as a nav row, so its caret ends
+   on the same vertical line as the counts underneath it. */
+.side-head{padding-right:var(--s2)}
+.side-disclose,
+.side-add{width:20px}
 /* The heading is the disclosure control, with its caret on the right so it
    lines up with the folder carets below it. */
 .side-headbtn{
@@ -197,6 +202,9 @@ ul{margin:0;padding:0;list-style:none}
 .navitem .disclose{flex:0 0 auto}
 .dot{width:9px;height:9px;flex:0 0 auto;border-radius:var(--r-full);background:currentColor}
 .hash{width:20px;height:20px;flex:0 0 auto;display:grid;place-items:center;border-radius:var(--r-sm);font-size:var(--fs-13);font-weight:700}
+/* A folder sits in the same 20px marker slot as a project's hash, or the two
+   rows read as different indents. */
+.navitem.folderitem > .ic:first-child{width:20px;height:20px;padding:2px;box-sizing:border-box}
 .hash.green{color:#4c8631;background:#edf6e9}
 .hash.orange{color:#a4650c;background:#fdf2e2}
 .hash.purple{color:#7656bb;background:#f2edfb}
@@ -346,8 +354,12 @@ ul{margin:0;padding:0;list-style:none}
 .group.tinted-late{padding:var(--s4) var(--s4) var(--s3);background:#fdf8f6}
 .group.tinted-quick{padding:var(--s4) var(--s4) var(--s3);background:#f6f8fb}
 
-.gheadblock{padding-bottom:8px;border-bottom:1px solid var(--border)}
+/* No dead strip between the heading row and the rule under it: the toggle's
+   own padding reaches the rule, so clicking anywhere on the row collapses the
+   section rather than only on the words themselves. */
+.gheadblock{padding-bottom:0;border-bottom:1px solid var(--border)}
 .ghead{min-height:38px;display:flex;align-items:center;flex-wrap:wrap;gap:var(--s2);padding:0 4px}
+.gtoggle{align-self:stretch}
 /* a collapsed group has nothing under it, so the rule would float free */
 .group.collapsed .gheadblock{border-bottom:0;padding-bottom:0}
 .group.collapsed .gdesc{display:none}
@@ -355,10 +367,10 @@ ul{margin:0;padding:0;list-style:none}
 .gflag{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:var(--r-full);
   color:var(--warn);background:var(--warn-soft);font-size:var(--fs-11);font-weight:600;white-space:nowrap}
 .gflag .ic{width:12px;height:12px;stroke-width:2}
-.gdesc{flex:0 0 100%;width:100%;margin-top:6px;color:var(--muted);font-size:var(--fs-12);line-height:1.5;text-wrap:pretty}
+.gdesc{flex:0 0 100%;width:100%;margin-top:0;padding-bottom:6px;color:var(--faint);font-size:var(--fs-12);line-height:1.5;text-wrap:pretty}
 .gdesc span{display:block;max-width:72ch}
 .gdesc.empty{color:var(--faint);font-style:italic}
-.gtoggle{display:flex;align-items:baseline;gap:8px;flex:1;min-width:0;padding:4px 0;text-align:left}
+.gtoggle{display:flex;align-items:center;gap:8px;flex:1;min-width:0;padding:10px 0;text-align:left}
 .gdisclose{
   width:22px;height:22px;flex:0 0 auto;display:grid;place-items:center;
   border-radius:var(--r-xs);color:var(--faint);

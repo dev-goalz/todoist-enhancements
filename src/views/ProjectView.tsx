@@ -1,9 +1,10 @@
-import { useMemo } from 'react';
+import { useMemo, Fragment } from 'react';
 import { PageHeader } from '@/components/PageHeader';
 import { DisplayMenu } from '@/components/DisplayMenu';
 import { TaskGroup } from '@/components/TaskGroup';
 import { ModeSurface } from '@/components/ModeSurface';
 import { EditableDescription } from '@/components/EditableDescription';
+import { AddSectionLine } from '@/components/AddSectionLine';
 import { Icon } from '@/components/Icon';
 import { useT } from '@/hooks/useT';
 import { useData } from '@/hooks/useData';
@@ -36,6 +37,17 @@ export function ProjectView({
   const prefs = useStore((s) => s.prefs);
   const updateProjectFields = useStore((s) => s.updateProjectFields);
   const updateSectionFields = useStore((s) => s.updateSectionFields);
+  const createSection = useStore((s) => s.createSection);
+
+  const addSection = async (index: number) => {
+    const id = await createSection(projectId, index);
+    // The row does not exist until React has rendered it.
+    requestAnimationFrame(() => {
+      const field = document.querySelector<HTMLInputElement>(`[data-section-name="${id}"]`);
+      field?.focus();
+      field?.select();
+    });
+  };
   const viewKey = `project:${projectId}`;
   const current = viewPrefs(prefs, viewKey);
 
@@ -152,10 +164,20 @@ export function ProjectView({
         />
       ) : current.mode === 'list' && current.group === 'none' ? (
         <div className="mode">
-          {sectionGroups.map((group) => (
+          {sectionGroups.map((group, index) => (
+            <Fragment key={group.id}>
+            <AddSectionLine
+              label={t('section.add')}
+              onAdd={() => void addSection(index)}
+            />
             <TaskGroup
-              key={group.id}
               title={group.title}
+              sectionId={group.id === 'none' ? undefined : group.id}
+              onRename={
+                group.id === 'none'
+                  ? undefined
+                  : (name) => void updateSectionFields(group.id, { name })
+              }
               items={group.items}
               childrenOf={childrenOf}
               onOpen={onOpen}
@@ -179,7 +201,12 @@ export function ProjectView({
                 )
               }
             />
+            </Fragment>
           ))}
+          <AddSectionLine
+            label={t('section.add')}
+            onAdd={() => void addSection(sectionGroups.length)}
+          />
           {scoped.length === 0 && <p className="empty">{t('task.noTasks')}</p>}
         </div>
       ) : current.mode === 'list' && current.group === 'scheduled' ? (

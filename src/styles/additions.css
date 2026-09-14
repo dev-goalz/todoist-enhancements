@@ -196,7 +196,22 @@
 }
 
 /* Drag and drop affordances */
-.dropping{outline:2px dashed var(--accent);outline-offset:2px;border-radius:var(--r-sm)}
+/* An inset ring rather than an outline: an outline sits outside the element
+   and the sidebar's own scroll container clipped its left and right edges, so
+   the hint was half invisible exactly where it mattered. */
+.dropping{
+  position:relative;
+  border-radius:var(--r-ctl);
+  background:var(--accent-tint);
+  box-shadow:inset 0 0 0 2px var(--accent);
+}
+.navitem.dropping{color:var(--accent-dark)}
+.navitem.dropping .ic,
+.navitem.dropping .count{color:var(--accent-dark)}
+/* A section is a big target, so its ring is drawn in the same colour but
+   softer, and the surface tint does the talking. */
+.group.dropping{box-shadow:inset 0 0 0 2px var(--accent);border-radius:var(--r-lg)}
+.col.dropping{box-shadow:inset 0 0 0 2px var(--accent)}
 .dragoverlay{
   background:var(--surface);border:1px solid var(--border-strong);
   border-radius:var(--r-sm);box-shadow:var(--sh-md);padding:8px 12px;
@@ -444,3 +459,6 @@
 }
 .checkrow .ic{flex:0 0 auto}
 .checkrow span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* A chip that names a project carries its marker, at chip scale. */
+.chip .hash{width:18px;height:18px;font-size:var(--fs-12);margin-left:-3px}

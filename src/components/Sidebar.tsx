@@ -103,11 +103,11 @@ export function Sidebar({
       </button>
     );
     if (!dropTarget) return button(false);
-    return <Droppable target={dropTarget}>{({ isOver }) => button(isOver)}</Droppable>;
+    return <Droppable target={dropTarget} scope="nav">{({ isOver }) => button(isOver)}</Droppable>;
   };
 
   const tagItem = (name: string, color: string, count?: number) => (
-    <Droppable target={{ kind: 'label', label: name }} key={`tag-${name}`}>
+    <Droppable target={{ kind: 'label', label: name }} scope="nav" key={`tag-${name}`}>
       {({ isOver }) => (
         <button
           className={`navitem${isOver ? ' dropping' : ''}`}
@@ -145,7 +145,13 @@ export function Sidebar({
     }
 
     return (
-      <Droppable target={{ kind: 'project', projectId: project.id }} key={`${keyPrefix}${project.id}`}>
+      <Droppable
+        target={{ kind: 'project', projectId: project.id }}
+        /* A favourite project also appears under its workspace, so the two
+           rows must not claim the same droppable id. */
+        scope={`nav-${keyPrefix || 'tree'}`}
+        key={`${keyPrefix}${project.id}`}
+      >
         {({ isOver }) => (
           <button
             className={`navitem${isOver ? ' dropping' : ''}`}
@@ -236,8 +242,8 @@ export function Sidebar({
             // Dropping on Inbox means filing there, which is a plain project move.
             inboxId ? { kind: 'project', projectId: inboxId } : undefined,
           )}
-          {navItem('week', 'week', 'nav.week', counts.week)}
-          {navItem('upcoming', 'upcoming', 'nav.upcoming', counts.upcoming, { kind: 'upcoming' })}
+          {navItem('week', 'week', 'nav.week', counts.week, { kind: 'anytime' })}
+          {navItem('upcoming', 'upcoming', 'nav.upcoming', counts.upcoming)}
           {navItem('someday', 'someday', 'nav.someday', counts.someday, { kind: 'someday' })}
           {navItem('labels', 'tag', 'nav.labels', 0)}
         </nav>
@@ -275,9 +281,7 @@ export function Sidebar({
       <div className="side-foot">
         <button className="addbtn" onClick={onAddTask}>
           {t('nav.addTask')}
-          {/* The shortcut existed and nothing said so, which is the same as it
-              not existing. */}
-          <kbd>Q</kbd>
+          <Icon name="plus" />
         </button>
         {/* Status and the issues badge share the last line, baseline aligned. */}
         <div className="footrow">

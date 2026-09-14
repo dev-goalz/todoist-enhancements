@@ -30,7 +30,9 @@ export function PageHeader({
       <div className="phead">
         <div className="phead-text">
           <h1 className="ptitle">{title}</h1>
-          {subtitle && <p className="psub">{subtitle}</p>}
+          {/* A div, not a p: the project description is an editable block and
+              markup cannot legally sit inside a paragraph. */}
+          {subtitle && <div className="psub">{subtitle}</div>}
         </div>
         {actions && <div className="pactions">{actions}</div>}
       </div>

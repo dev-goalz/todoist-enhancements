@@ -13,7 +13,6 @@ export type DropTarget =
   | { kind: 'today' }
   | { kind: 'anytime' }
   | { kind: 'someday' }
-  | { kind: 'upcoming' }
   | { kind: 'day'; date: Date }
   | { kind: 'project'; projectId: string }
   | { kind: 'section'; sectionId: string | null; projectId: string }
@@ -61,13 +60,6 @@ export function dropMutation(item: Item, target: DropTarget): DropMutation | nul
     case 'someday':
       return { update: { due: null, labels: withoutWeek(item.labels) } };
 
-    case 'upcoming': {
-      // Upcoming starts tomorrow, so that is the one date this drop can mean.
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      return { update: { due: dueForDate(item, tomorrow), labels: withoutWeek(item.labels) } };
-    }
-
     case 'project':
       if (item.project_id === target.projectId) return null;
       return { move: { project_id: target.projectId } };
@@ -88,8 +80,20 @@ export function dropMutation(item: Item, target: DropTarget): DropMutation | nul
   }
 }
 
-/** Encodes a target as a droppable id, and reads it back. */
-export function encodeTarget(target: DropTarget): string {
+/**
+ * Encodes a target as a droppable id, and reads it back.
+ *
+ * Two places can offer the same destination — the sidebar's "My week" and the
+ * page's "Anytime this week" are both `anytime` — and a droppable registry is
+ * keyed by id, so without a scope the second registration silently replaces
+ * the first and one of the two stops accepting drops.
+ */
+export function encodeTarget(target: DropTarget, scope?: string): string {
+  const id = encodeKind(target);
+  return scope ? `${scope}|${id}` : id;
+}
+
+function encodeKind(target: DropTarget): string {
   switch (target.kind) {
     case 'day': return `day:${toApiDate(target.date)}`;
     case 'project': return `project:${target.projectId}`;
@@ -99,10 +103,9 @@ export function encodeTarget(target: DropTarget): string {
   }
 }
 
-export function decodeTarget(id: string): DropTarget | null {
-  if (id === 'today' || id === 'anytime' || id === 'someday' || id === 'upcoming') {
-    return { kind: id };
-  }
+export function decodeTarget(encoded: string): DropTarget | null {
+  const id = encoded.includes('|') ? encoded.slice(encoded.indexOf('|') + 1) : encoded;
+  if (id === 'today' || id === 'anytime' || id === 'someday') return { kind: id };
 
   const [kind, ...rest] = id.split(':');
   if (kind === 'day') {

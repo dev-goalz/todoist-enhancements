@@ -73,6 +73,8 @@ interface AppState {
   createProject: (name: string, color: string) => Promise<void>;
   updateProjectFields: (id: string, args: Record<string, unknown>) => Promise<void>;
   updateSectionFields: (id: string, args: Record<string, unknown>) => Promise<void>;
+  /** Creates a section and hands back its id, so the caller can focus its name. */
+  createSection: (projectId: string, order: number) => Promise<string>;
 
   /* Toasts */
   toast: (message: string, undo?: () => void) => void;
@@ -458,6 +460,29 @@ export const useStore = create<AppState>((set, get) => ({
       if (!project) return snapshot;
       return { ...snapshot, projects: { ...snapshot.projects, [id]: { ...project, ...args } } };
     });
+  },
+
+  async createSection(projectId, order) {
+    const tempId = newUuid();
+    await get().apply(
+      [{
+        type: 'section_add',
+        uuid: newUuid(),
+        temp_id: tempId,
+        args: { name: '', project_id: projectId, section_order: order },
+      }],
+      (snapshot) => ({
+        ...snapshot,
+        sections: {
+          ...snapshot.sections,
+          [tempId]: {
+            id: tempId, project_id: projectId, name: '', description: '',
+            section_order: order, is_archived: false, is_deleted: false,
+          },
+        },
+      }),
+    );
+    return tempId;
   },
 
   async updateSectionFields(id, args) {

@@ -27,12 +27,15 @@ interface TaskGroupProps {
   descriptionSlot?: ReactNode;
   /** When set, the whole group accepts tasks dropped onto it. */
   dropTarget?: DropTarget;
+  /** A real section can be renamed in place; a derived grouping cannot. */
+  sectionId?: string;
+  onRename?: (name: string) => void;
 }
 
 export function TaskGroup({
   title, items, childrenOf, onOpen, tint, description, actions,
   showProject = true, defaultCollapsed = false, dropTarget, onAddTask, accent,
-  descriptionSlot,
+  descriptionSlot, sectionId, onRename,
 }: TaskGroupProps) {
   const { t, locale } = useT();
   const dragging = useStore((s) => s.draggingTaskId !== null);
@@ -61,7 +64,26 @@ export function TaskGroup({
             aria-expanded={!collapsed}
             onClick={() => setCollapsed((v) => !v)}
           >
-            <span className="gname">{title}</span>
+            {onRename && sectionId ? (
+              <input
+                className="gname gnamefield"
+                data-section-name={sectionId}
+                defaultValue={title}
+                placeholder={t('section.untitled')}
+                aria-label={t('section.name')}
+                onClick={(e) => e.stopPropagation()}
+                onBlur={(e) => {
+                  const next = e.target.value.trim();
+                  if (next !== title) onRename(next);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); }
+                  if (e.key === 'Escape') { e.currentTarget.value = title ?? ''; e.currentTarget.blur(); }
+                }}
+              />
+            ) : (
+              <span className="gname">{title}</span>
+            )}
             {totalMinutes > 0 && <span className="gtime">{formatDuration(totalMinutes, locale)}</span>}
           </button>
           {actions && <span className="gactions">{actions}</span>}

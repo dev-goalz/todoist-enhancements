@@ -172,7 +172,7 @@ export function DisplayMenu({ viewKey, modes, groups }: DisplayMenuProps) {
                     aria-pressed={current.filters.labels.includes(label.name)}
                     onClick={() => setFilters({ labels: toggleIn(current.filters.labels, label.name) })}
                   >
-                    <Icon name="tag" size="sm" style={markerStyle(label.color, false)} />
+                    <Icon name="tag" size="sm" className="taglabel" style={markerStyle(label.color, false)} />
                     {label.name}
                   </button>
                 ))}

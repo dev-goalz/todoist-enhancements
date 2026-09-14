@@ -577,10 +577,7 @@ function Logbook({ completed }: { completed: CompletedItem[] }) {
                     aria-pressed={projectFilter.includes(project.id)}
                     onClick={() => setProjectFilter((list) => toggleIn(list, project.id))}
                   >
-                    <span
-                      className="flagdot"
-                      style={{ background: markerStyle(project.color, false).color }}
-                    />
+                    <span className="hash" style={markerStyle(project.color)}>#</span>
                     {project.name}
                   </button>
                 ))}

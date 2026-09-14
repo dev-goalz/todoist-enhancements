@@ -415,6 +415,10 @@ export const en = {
 
   'search.hintMove': 'to move',
   'search.hintOpen': 'to open',
+
+  'section.add': 'Add section',
+  'section.name': 'Section name',
+  'section.untitled': 'Untitled section',
 };
 
 export type TranslationKey = keyof typeof en;
