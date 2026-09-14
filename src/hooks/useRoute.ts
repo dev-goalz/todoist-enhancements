@@ -13,7 +13,7 @@ function parse(hash: string): Route {
   const [view, id] = raw.split('/');
   const known: ViewId[] = [
     'inbox', 'week', 'upcoming', 'someday', 'dashboard',
-    'settings', 'project', 'label', 'insights',
+    'settings', 'project', 'label', 'labels', 'insights',
   ];
   if (!known.includes(view as ViewId)) return { view: 'week' };
   return id ? { view: view as ViewId, id } : { view: view as ViewId };

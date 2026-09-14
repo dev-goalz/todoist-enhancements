@@ -19,6 +19,7 @@ export function DragProvider({ children }: { children: ReactNode }) {
   const apply = useStore((s) => s.apply);
   const toast = useStore((s) => s.toast);
   const [draggingId, setDraggingId] = useState<string | null>(null);
+  const setDragging = useStore((s) => s.setDragging);
 
   // A short distance threshold keeps a plain click on a task from starting a drag.
   const sensors = useSensors(
@@ -27,10 +28,12 @@ export function DragProvider({ children }: { children: ReactNode }) {
 
   function onDragStart(event: DragStartEvent) {
     setDraggingId(String(event.active.id));
+    setDragging(String(event.active.id));
   }
 
   async function onDragEnd(event: DragEndEvent) {
     setDraggingId(null);
+    setDragging(null);
     if (!event.over) return;
 
     const item = snapshot.items[String(event.active.id)];

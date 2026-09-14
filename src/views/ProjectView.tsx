@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { PageHeader } from '@/components/PageHeader';
-import { Toolbar } from '@/components/Toolbar';
+import { DisplayMenu } from '@/components/DisplayMenu';
 import { TaskGroup } from '@/components/TaskGroup';
 import { ModeSurface } from '@/components/ModeSurface';
 import { Icon } from '@/components/Icon';
@@ -14,8 +14,8 @@ import { summariseLoad } from '@/domain/load';
 interface ProjectViewProps {
   projectId: string;
   onOpen: (id: string) => void;
-  onAddTask: () => void;
   onInsights: () => void;
+  onUnestimated: () => void;
 }
 
 /**
@@ -25,7 +25,7 @@ interface ProjectViewProps {
  * is available to pick up. Sections become board columns when the user
  * switches modes, which is the only place a Kanban actually means something.
  */
-export function ProjectView({ projectId, onOpen, onAddTask, onInsights }: ProjectViewProps) {
+export function ProjectView({ projectId, onOpen, onInsights, onUnestimated }: ProjectViewProps) {
   const { t } = useT();
   const { snapshot, items, childrenOf } = useData();
   const prefs = useStore((s) => s.prefs);
@@ -83,8 +83,8 @@ export function ProjectView({ projectId, onOpen, onAddTask, onInsights }: Projec
 
   // A Kanban is only offered where sections exist to give it columns.
   const modes = sections.length > 0
-    ? (['list', 'board', 'focus', 'calendar'] as const)
-    : (['list', 'focus', 'calendar'] as const);
+    ? (['list', 'board', 'calendar'] as const)
+    : (['list', 'calendar'] as const);
 
   return (
     <div className="page wide">
@@ -92,26 +92,22 @@ export function ProjectView({ projectId, onOpen, onAddTask, onInsights }: Projec
         title={project.name}
         subtitle={project.description || undefined}
         load={load}
+        onOpenUnestimated={load.unestimatedCount > 0 ? onUnestimated : undefined}
         actions={
-          <>
-            <button className="btn primary" onClick={onAddTask}>
-              <Icon name="plus" />
-              {t('nav.addTask')}
-            </button>
-            <button className="btn" onClick={onInsights}>
-              <Icon name="trend" />
-              {t('toolbar.insights')}
-            </button>
-          </>
+          <button className="btn" onClick={onInsights}>
+            <Icon name="trend" />
+            {t('toolbar.insights')}
+          </button>
         }
       />
 
-      <Toolbar
-        viewKey={viewKey}
-        modes={[...modes]}
-        groups={['none', 'section', 'priority', 'label', 'estimate', 'day']}
-        onInsights={onInsights}
-      />
+      <div className="viewbar">
+        <DisplayMenu
+          viewKey={viewKey}
+          modes={[...modes]}
+          groups={['none', 'section', 'priority', 'label', 'estimate', 'day']}
+        />
+      </div>
 
       {current.mode === 'board' ? (
         <ModeSurface

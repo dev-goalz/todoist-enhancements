@@ -4,6 +4,7 @@ import { DraggableTask } from './dnd/DraggableTask';
 import { Droppable } from './dnd/Droppable';
 import type { DropTarget } from '@/domain/dnd';
 import { useT } from '@/hooks/useT';
+import { useStore } from '@/store/store';
 import { formatDuration, effectiveEstimate } from '@/domain/estimates';
 import type { Item } from '@/domain/types';
 
@@ -27,9 +28,12 @@ export function TaskGroup({
   showProject = true, defaultCollapsed = false, dropTarget,
 }: TaskGroupProps) {
   const { t, locale } = useT();
+  const dragging = useStore((s) => s.draggingTaskId !== null);
   const [collapsed, setCollapsed] = useState(defaultCollapsed);
 
-  if (items.length === 0 && !dropTarget) return null;
+  // An empty section is noise. It reappears only while a task is in flight,
+  // so it can still be used as a destination.
+  if (items.length === 0 && !(dropTarget && dragging)) return null;
 
   const totalMinutes = items.reduce(
     (acc, item) => acc + (effectiveEstimate(item, childrenOf).minutes ?? 0),

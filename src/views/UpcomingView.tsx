@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { PageHeader } from '@/components/PageHeader';
-import { Toolbar } from '@/components/Toolbar';
+import { DisplayMenu } from '@/components/DisplayMenu';
 import { TaskGroup } from '@/components/TaskGroup';
 import { ModeSurface } from '@/components/ModeSurface';
 import { Icon } from '@/components/Icon';
@@ -16,8 +16,8 @@ import { addDays, startOfDay } from 'date-fns';
 
 interface UpcomingViewProps {
   onOpen: (id: string) => void;
-  onAddTask: () => void;
   onInsights: () => void;
+  onUnestimated: () => void;
 }
 
 /**
@@ -26,7 +26,7 @@ interface UpcomingViewProps {
  * The day columns double as drop targets: moving a task between them is how a
  * date gets changed without opening anything.
  */
-export function UpcomingView({ onOpen, onAddTask, onInsights }: UpcomingViewProps) {
+export function UpcomingView({ onOpen, onInsights, onUnestimated }: UpcomingViewProps) {
   const { t, locale } = useT();
   const { snapshot, items, childrenOf } = useData();
   const prefs = useStore((s) => s.prefs);
@@ -84,26 +84,22 @@ export function UpcomingView({ onOpen, onAddTask, onInsights }: UpcomingViewProp
         title={t('nav.upcoming')}
         subtitle={t('upcoming.subtitle')}
         load={load}
+        onOpenUnestimated={load.unestimatedCount > 0 ? onUnestimated : undefined}
         actions={
-          <>
-            <button className="btn primary" onClick={onAddTask}>
-              <Icon name="plus" />
-              {t('nav.addTask')}
-            </button>
-            <button className="btn" onClick={onInsights}>
-              <Icon name="trend" />
-              {t('toolbar.insights')}
-            </button>
-          </>
+          <button className="btn" onClick={onInsights}>
+            <Icon name="trend" />
+            {t('toolbar.insights')}
+          </button>
         }
       />
 
-      <Toolbar
-        viewKey="upcoming"
-        modes={['list', 'board', 'calendar']}
-        groups={['day', 'week', 'month', 'project', 'priority', 'label', 'none']}
-        onInsights={onInsights}
-      />
+      <div className="viewbar">
+        <DisplayMenu
+          viewKey="upcoming"
+          modes={['list', 'board', 'calendar']}
+          groups={['day', 'week', 'month', 'project', 'priority', 'label', 'none']}
+        />
+      </div>
 
       {current.mode === 'board' ? (
         <ModeSurface

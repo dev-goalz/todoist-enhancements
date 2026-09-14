@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { PageHeader } from '@/components/PageHeader';
-import { Toolbar } from '@/components/Toolbar';
+import { DisplayMenu } from '@/components/DisplayMenu';
 import { ModeSurface } from '@/components/ModeSurface';
 import { TaskGroup } from '@/components/TaskGroup';
 import { Icon } from '@/components/Icon';
@@ -18,8 +18,8 @@ interface SimpleListViewProps {
   kind: 'someday' | 'inbox' | 'label';
   labelName?: string;
   onOpen: (id: string) => void;
-  onAddTask: () => void;
   onInsights: () => void;
+  onUnestimated: () => void;
 }
 
 /**
@@ -30,7 +30,7 @@ interface SimpleListViewProps {
  * to measure itself against.
  */
 export function SimpleListView({
-  kind, labelName, onOpen, onAddTask, onInsights,
+  kind, labelName, onOpen, onInsights, onUnestimated,
 }: SimpleListViewProps) {
   const { t } = useT();
   const { snapshot, items, childrenOf } = useData();
@@ -68,26 +68,22 @@ export function SimpleListView({
         title={title}
         subtitle={subtitle}
         load={load}
+        onOpenUnestimated={load.unestimatedCount > 0 ? onUnestimated : undefined}
         actions={
-          <>
-            <button className="btn primary" onClick={onAddTask}>
-              <Icon name="plus" />
-              {t('nav.addTask')}
-            </button>
-            <button className="btn" onClick={onInsights}>
-              <Icon name="trend" />
-              {t('toolbar.insights')}
-            </button>
-          </>
+          <button className="btn" onClick={onInsights}>
+            <Icon name="trend" />
+            {t('toolbar.insights')}
+          </button>
         }
       />
 
-      <Toolbar
-        viewKey={viewKey}
-        modes={['list', 'board', 'focus']}
-        groups={['none', 'project', 'priority', 'label', 'estimate']}
-        onInsights={onInsights}
-      />
+      <div className="viewbar">
+        <DisplayMenu
+          viewKey={viewKey}
+          modes={['list', 'board']}
+          groups={['none', 'project', 'priority', 'label', 'estimate']}
+        />
+      </div>
 
       {kind === 'someday' && current.mode === 'list' && current.group === 'none' ? (
         <div className="mode">

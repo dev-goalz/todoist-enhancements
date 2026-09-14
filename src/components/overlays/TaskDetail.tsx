@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Overlay } from './Overlay';
 import { Icon } from '../Icon';
 import { useT } from '@/hooks/useT';
@@ -8,6 +8,8 @@ import {
   effectiveEstimate, formatDuration, parseDurationInput, withEstimate,
 } from '@/domain/estimates';
 import { deadlineDate, dueDate, formatRelativeDay, toApiDate } from '@/domain/dates';
+import { renderMarkdown } from '@/domain/markdown';
+import { markerStyle } from '@/domain/colors';
 import { toDisplayPriority, toTodoistPriority, type DisplayPriority } from '@/domain/types';
 
 interface TaskDetailProps {
@@ -16,7 +18,14 @@ interface TaskDetailProps {
   onOpen: (id: string) => void;
 }
 
-/** The full task, close to Todoist's own panel but with the estimate first-class. */
+/**
+ * The full task.
+ *
+ * Laid out as in the design: the checkbox and title share a line, the
+ * description sits on the title's own left edge, and every property lives in
+ * the right-hand column. Destructive actions are behind the overflow menu,
+ * never next to Close.
+ */
 export function TaskDetail({ taskId, onClose, onOpen }: TaskDetailProps) {
   const { t, locale } = useT();
   const { snapshot, childrenOf } = useData();
@@ -29,18 +38,58 @@ export function TaskDetail({ taskId, onClose, onOpen }: TaskDetailProps) {
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [editingDescription, setEditingDescription] = useState(false);
   const [estimate, setEstimate] = useState('');
   const [subtaskDraft, setSubtaskDraft] = useState('');
+  const [addingSubtask, setAddingSubtask] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const descriptionRef = useRef<HTMLTextAreaElement>(null);
+  const titleRef = useRef<HTMLTextAreaElement>(null);
+
+  /**
+   * Keeps the title box exactly as tall as its text, so nothing is clipped.
+   *
+   * The field is sized border-box, and scrollHeight excludes the border, so
+   * the border has to be added back or the last line is cropped.
+   */
+  const fitTitle = useCallback(() => {
+    const el = titleRef.current;
+    if (!el) return;
+    const style = getComputedStyle(el);
+    const border =
+      Number.parseFloat(style.borderTopWidth) + Number.parseFloat(style.borderBottomWidth);
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight + border}px`;
+  }, []);
 
   // Re-seed the editable fields whenever a different task is opened.
   useEffect(() => {
     if (!item) return;
     setTitle(item.content);
     setDescription(item.description);
+    setEditingDescription(false);
+    setAddingSubtask(false);
+    setSubtaskDraft('');
+    setMenuOpen(false);
     const own = effectiveEstimate(item, childrenOf);
     setEstimate(own.computed || own.minutes === null ? '' : String(own.minutes));
-    setSubtaskDraft('');
   }, [item?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (editingDescription) descriptionRef.current?.focus();
+  }, [editingDescription]);
+
+  // Measured after layout, and again once webfonts settle, because the text
+  // height is not final on the first paint.
+  useLayoutEffect(fitTitle, [fitTitle, title, taskId]);
+  useEffect(() => {
+    void document.fonts?.ready.then(fitTitle);
+  }, [fitTitle]);
+
+  const descriptionHtml = useMemo(
+    () => renderMarkdown(item?.description ?? ''),
+    [item?.description],
+  );
 
   if (!item) return null;
 
@@ -54,11 +103,14 @@ export function TaskDetail({ taskId, onClose, onOpen }: TaskDetailProps) {
   const comments = Object.values(snapshot.notes)
     .filter((n) => n.item_id === item.id)
     .sort((a, b) => a.posted_at.localeCompare(b.posted_at));
+  const visibleLabels = item.labels.filter((l) => !l.toLowerCase().startsWith('est-'));
 
   const commitTitle = () => {
-    if (title.trim() && title !== item.content) void updateTask(item.id, { content: title.trim() });
+    const next = title.trim();
+    if (next && next !== item.content) void updateTask(item.id, { content: next });
   };
   const commitDescription = () => {
+    setEditingDescription(false);
     if (description !== item.description) void updateTask(item.id, { description });
   };
   const commitEstimate = () => {
@@ -67,39 +119,77 @@ export function TaskDetail({ taskId, onClose, onOpen }: TaskDetailProps) {
     void updateTask(item.id, { labels: withEstimate(item.labels, parsed) });
   };
 
+  function addSubtask() {
+    const content = subtaskDraft.trim();
+    if (!content) {
+      setAddingSubtask(false);
+      return;
+    }
+    void createTask({ content, project_id: item!.project_id, parent_id: item!.id });
+    setSubtaskDraft('');
+  }
+
   return (
     <Overlay open onClose={onClose} label={t('detail.title')}>
-      <div className="detail-top">
+      <header className="detail-top">
         <div className="crumb">
-          {project && <span className="proj">#{project.name}</span>}
-          {section && <span className="proj">/ {section.name}</span>}
+          {project && (
+            <>
+              <span className="hash" style={markerStyle(project.color)}>#</span>
+              {project.name}
+            </>
+          )}
+          {section && <span className="crumb-sep">/ {section.name}</span>}
         </div>
-        <div style={{ display: 'flex', gap: 4 }}>
-          <button
-            className="iconbtn"
-            aria-label={t('task.openInTodoist')}
-            title={t('task.openInTodoist')}
-            onClick={() => window.open(`https://app.todoist.com/app/task/${item.id}`, '_blank', 'noopener')}
-          >
-            <Icon name="external" />
-          </button>
-          <button
-            className="iconbtn"
-            aria-label={t('task.delete')}
-            title={t('task.delete')}
-            onClick={() => { void removeTask(item.id); onClose(); }}
-          >
+
+        <div className="detail-tools">
+          <div className="menuwrap">
+            <button
+              className="iconbtn"
+              aria-label={t('task.moreActions')}
+              title={t('task.moreActions')}
+              aria-expanded={menuOpen}
+              onClick={() => setMenuOpen((v) => !v)}
+            >
+              <Icon name="more" />
+            </button>
+            {menuOpen && (
+              <div className="popover rowmenu" role="menu">
+                <button
+                  className="opt"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    window.open(`https://app.todoist.com/app/task/${item.id}`, '_blank', 'noopener');
+                  }}
+                >
+                  <span><Icon name="external" size="sm" /> {t('task.openInTodoist')}</span>
+                </button>
+                <hr />
+                <button
+                  className="opt danger"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    if (window.confirm(t('task.deleteConfirm', { name: item.content }))) {
+                      void removeTask(item.id);
+                      onClose();
+                    }
+                  }}
+                >
+                  <span><Icon name="close" size="sm" /> {t('task.delete')}</span>
+                </button>
+              </div>
+            )}
+          </div>
+
+          <button className="iconbtn" aria-label={t('detail.close')} title={t('detail.close')} onClick={onClose}>
             <Icon name="close" />
           </button>
-          <button className="iconbtn" aria-label={t('detail.close')} onClick={onClose}>
-            <Icon name="close" />
-          </button>
         </div>
-      </div>
+      </header>
 
       <div className="detail-body">
         <div className="detail-main">
-          <h2 className="detail-title">
+          <div className="detail-headline">
             <span
               className={`check p${priority}`}
               role="checkbox"
@@ -107,83 +197,135 @@ export function TaskDetail({ taskId, onClose, onOpen }: TaskDetailProps) {
               aria-label={t('task.complete')}
               tabIndex={0}
               onClick={() => void toggleTask(item.id)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  void toggleTask(item.id);
+                }
+              }}
             >
               <Icon name="check" />
             </span>
-            <input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              onBlur={commitTitle}
-              onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
-              style={{
-                flex: 1, border: 0, background: 'transparent', font: 'inherit',
-                color: 'inherit', padding: 0,
-              }}
-              aria-label={t('detail.title')}
-            />
-          </h2>
 
-          <textarea
-            className="composer"
-            style={{ minHeight: 72 }}
-            placeholder={t('detail.descriptionPlaceholder')}
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            onBlur={commitDescription}
-            aria-label={t('detail.description')}
-          />
+            <div className="detail-content">
+              <textarea
+                className="titlefield"
+                value={title}
+                rows={1}
+                aria-label={t('detail.title')}
+                ref={titleRef}
+                onChange={(e) => { setTitle(e.target.value); fitTitle(); }}
+                onBlur={commitTitle}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    e.currentTarget.blur();
+                  }
+                }}
+              />
 
-          <section style={{ marginTop: 'var(--s5)' }}>
-            <h3 className="ikicker">{t('detail.subtasks')}</h3>
+              {editingDescription ? (
+                <textarea
+                  ref={descriptionRef}
+                  className="descfield"
+                  value={description}
+                  placeholder={t('detail.descriptionPlaceholder')}
+                  aria-label={t('detail.description')}
+                  onChange={(e) => setDescription(e.target.value)}
+                  onBlur={commitDescription}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape') {
+                      setDescription(item.description);
+                      setEditingDescription(false);
+                    }
+                  }}
+                />
+              ) : (
+                <button
+                  className={`descview${item.description ? '' : ' placeholder'}`}
+                  onClick={() => setEditingDescription(true)}
+                  aria-label={t('detail.description')}
+                >
+                  {item.description ? (
+                    <div className="md" dangerouslySetInnerHTML={{ __html: descriptionHtml }} />
+                  ) : (
+                    t('detail.descriptionPlaceholder')
+                  )}
+                </button>
+              )}
+            </div>
+          </div>
+
+          <section className="detail-section">
+            {subtasks.length > 0 && (
+              <h3 className="sectionlabel">
+                {t('detail.subtasks')}
+                <span className="count">
+                  {t('task.subtaskProgress', {
+                    done: subtasks.filter((c) => c.checked).length,
+                    total: subtasks.length,
+                  })}
+                </span>
+              </h3>
+            )}
+
             {subtasks.map((child) => (
-              <div className="task" key={child.id} role="button" tabIndex={0} onClick={() => onOpen(child.id)}>
+              <div className="subtaskrow" key={child.id}>
                 <span
                   className={`check p${toDisplayPriority(child.priority)}`}
                   role="checkbox"
                   aria-checked={child.checked}
                   aria-label={t('task.complete')}
-                  onClick={(e) => { e.stopPropagation(); void toggleTask(child.id); }}
+                  tabIndex={0}
+                  onClick={() => void toggleTask(child.id)}
                 >
                   <Icon name="check" />
                 </span>
-                <span className="tmain">
-                  <span className="ttitle" style={child.checked ? { textDecoration: 'line-through', color: 'var(--faint)' } : undefined}>
+                <button className="subtasktitle" onClick={() => onOpen(child.id)}>
+                  <span style={child.checked ? { textDecoration: 'line-through', color: 'var(--faint)' } : undefined}>
                     {child.content}
                   </span>
-                </span>
+                </button>
               </div>
             ))}
-            <input
-              className="estinput"
-              style={{ width: '100%', marginTop: 'var(--s2)' }}
-              placeholder={t('detail.addSubtask')}
-              value={subtaskDraft}
-              onChange={(e) => setSubtaskDraft(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && subtaskDraft.trim()) {
-                  void createTask({
-                    content: subtaskDraft.trim(),
-                    project_id: item.project_id,
-                    parent_id: item.id,
-                  });
-                  setSubtaskDraft('');
-                }
-              }}
-            />
+
+            {addingSubtask ? (
+              <input
+                className="textfield"
+                autoFocus
+                placeholder={t('detail.addSubtask')}
+                value={subtaskDraft}
+                onChange={(e) => setSubtaskDraft(e.target.value)}
+                onBlur={() => { addSubtask(); setAddingSubtask(false); }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addSubtask();
+                  }
+                  if (e.key === 'Escape') {
+                    setSubtaskDraft('');
+                    setAddingSubtask(false);
+                  }
+                }}
+              />
+            ) : (
+              <button className="addline" onClick={() => setAddingSubtask(true)}>
+                <Icon name="plus" size="sm" />
+                {t('detail.addSubtask')}
+              </button>
+            )}
           </section>
 
-          <section style={{ marginTop: 'var(--s5)' }}>
-            <h3 className="ikicker">{t('detail.comments')}</h3>
+          <section className="detail-section">
+            <h3 className="sectionlabel">{t('detail.comments')}</h3>
             {comments.length === 0 ? (
               <p className="psub">{t('detail.noComments')}</p>
             ) : (
               comments.map((note) => (
-                <div key={note.id} style={{ marginBottom: 'var(--s3)' }}>
-                  <p className="tdesc" style={{ whiteSpace: 'pre-wrap' }}>{note.content}</p>
-                  <span className="psub">
-                    {formatRelativeDay(new Date(note.posted_at), locale)}
-                  </span>
-                </div>
+                <article className="comment" key={note.id}>
+                  <div className="md" dangerouslySetInnerHTML={{ __html: renderMarkdown(note.content) }} />
+                  <time className="psub">{formatRelativeDay(new Date(note.posted_at), locale)}</time>
+                </article>
               ))
             )}
           </section>
@@ -191,9 +333,60 @@ export function TaskDetail({ taskId, onClose, onOpen }: TaskDetailProps) {
 
         <aside className="detail-side">
           <div className="prop">
+            <span>{t('detail.project')}</span>
+            <select
+              className="propselect"
+              value={item.project_id}
+              onChange={(e) => void updateTask(item.id, { project_id: e.target.value })}
+            >
+              {Object.values(snapshot.projects)
+                .filter((p) => !p.is_archived && !p.is_deleted)
+                .map((p) => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+            </select>
+          </div>
+
+          <div className="prop">
+            <span>{t('detail.date')}</span>
+            <input
+              className="propinput"
+              type="date"
+              value={due ? toApiDate(due) : ''}
+              onChange={(e) => {
+                const value = e.target.value;
+                void updateTask(item.id, {
+                  due: value
+                    ? {
+                        date: value,
+                        timezone: null,
+                        string: value,
+                        lang: locale,
+                        is_recurring: item.due?.is_recurring ?? false,
+                      }
+                    : null,
+                });
+              }}
+            />
+          </div>
+
+          <div className="prop">
+            <span>{t('detail.deadline')}</span>
+            <input
+              className="propinput"
+              type="date"
+              value={deadline ? toApiDate(deadline) : ''}
+              onChange={(e) => {
+                const value = e.target.value;
+                void updateTask(item.id, { deadline: value ? { date: value, lang: locale } : null });
+              }}
+            />
+          </div>
+
+          <div className="prop">
             <span>{t('detail.estimate')}</span>
             <input
-              className="estinput"
+              className="propinput"
               value={estimate}
               placeholder={
                 computed && minutes !== null
@@ -207,41 +400,9 @@ export function TaskDetail({ taskId, onClose, onOpen }: TaskDetailProps) {
           </div>
 
           <div className="prop">
-            <span>{t('detail.date')}</span>
-            <input
-              className="estinput"
-              type="date"
-              value={due ? toApiDate(due) : ''}
-              onChange={(e) => {
-                const value = e.target.value;
-                void updateTask(item.id, {
-                  due: value
-                    ? { date: value, timezone: null, string: value, lang: locale, is_recurring: item.due?.is_recurring ?? false }
-                    : null,
-                });
-              }}
-            />
-          </div>
-
-          <div className="prop">
-            <span>{t('detail.deadline')}</span>
-            <input
-              className="estinput"
-              type="date"
-              value={deadline ? toApiDate(deadline) : ''}
-              onChange={(e) => {
-                const value = e.target.value;
-                void updateTask(item.id, {
-                  deadline: value ? { date: value, lang: locale } : null,
-                });
-              }}
-            />
-          </div>
-
-          <div className="prop">
             <span>{t('detail.priority')}</span>
             <select
-              className="btn"
+              className="propselect"
               value={priority}
               onChange={(e) =>
                 void updateTask(item.id, {
@@ -256,46 +417,33 @@ export function TaskDetail({ taskId, onClose, onOpen }: TaskDetailProps) {
           </div>
 
           <div className="prop">
-            <span>{t('detail.project')}</span>
-            <select
-              className="btn"
-              value={item.project_id}
-              onChange={(e) => void updateTask(item.id, { project_id: e.target.value })}
-            >
-              {Object.values(snapshot.projects)
-                .filter((p) => !p.is_archived && !p.is_deleted)
-                .map((p) => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
-                ))}
-            </select>
-          </div>
-
-          <div className="prop">
             <span>{t('detail.labels')}</span>
-            <div className="meta" style={{ flexWrap: 'wrap' }}>
-              {item.labels
-                .filter((l) => !l.toLowerCase().startsWith('est-'))
-                .map((label) => (
+            <div className="pills">
+              {visibleLabels.length === 0 && <span className="psub">{t('common.none')}</span>}
+              {visibleLabels.map((label) => {
+                const known = Object.values(snapshot.labels).find((l) => l.name === label);
+                return (
                   <button
                     key={label}
-                    className="tag"
-                    title={t('detail.labels')}
+                    className="pill"
+                    title={t('labels.unfavourite')}
                     onClick={() =>
-                      void updateTask(item.id, {
-                        labels: item.labels.filter((l) => l !== label),
-                      })
+                      void updateTask(item.id, { labels: item.labels.filter((l) => l !== label) })
                     }
                   >
-                    {label} ×
+                    <Icon name="flag" size="sm" className="taglabel" />
+                    <span style={markerStyle(known?.color, false)}>{label}</span>
+                    <Icon name="close" size="sm" />
                   </button>
-                ))}
+                );
+              })}
             </div>
           </div>
 
           {item.due?.is_recurring && (
             <div className="prop">
               <span>{t('detail.recurring')}</span>
-              <span className="meta"><Icon name="repeat" />{item.due.string}</span>
+              <strong><Icon name="repeat" size="sm" />{item.due.string}</strong>
             </div>
           )}
         </aside>

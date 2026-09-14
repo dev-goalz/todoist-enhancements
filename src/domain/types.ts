@@ -139,6 +139,8 @@ export interface TodoistUser {
   premium_status?: string;
   is_premium?: boolean;
   lang?: string;
+  image_id?: string | null;
+  avatar_big?: string | null;
 }
 
 /** A completed task as returned by the completed-tasks endpoints. */
@@ -212,6 +214,7 @@ export type ViewId =
   | 'settings'
   | 'project'
   | 'label'
+  | 'labels'
   | 'insights';
 
 export type DisplayMode = 'list' | 'board' | 'focus' | 'calendar';

@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { Icon } from './Icon';
+import { TaskActions } from './TaskActions';
 import { useT } from '@/hooks/useT';
 import { useStore } from '@/store/store';
 import { toDisplayPriority, type Item } from '@/domain/types';
-import { effectiveEstimate, formatDuration, parseDurationInput, withEstimate } from '@/domain/estimates';
+import { effectiveEstimate, formatDuration } from '@/domain/estimates';
 import { deadlineDate, dueDate, formatRelativeDay, formatTime, hasTime, isOverdue, overdueBy } from '@/domain/dates';
 
 interface TaskRowProps {
@@ -23,11 +24,8 @@ export function TaskRow({
   const snapshot = useStore((s) => s.snapshot);
   const hour12 = useStore((s) => s.prefs.hour12);
   const toggleTask = useStore((s) => s.toggleTask);
-  const updateTask = useStore((s) => s.updateTask);
 
   const [expanded, setExpanded] = useState(false);
-  const [editingEstimate, setEditingEstimate] = useState(false);
-  const [estimateDraft, setEstimateDraft] = useState('');
 
   const children = childrenOf(item.id);
   const openChildren = children.filter((c) => !c.checked);
@@ -42,13 +40,6 @@ export function TaskRow({
 
   // Estimate labels are shown as a duration, never as an ordinary tag.
   const visibleLabels = item.labels.filter((l) => !l.toLowerCase().startsWith('est-'));
-
-  async function commitEstimate() {
-    setEditingEstimate(false);
-    const parsed = parseDurationInput(estimateDraft);
-    if (parsed === null && estimateDraft.trim() !== '') return;
-    await updateTask(item.id, { labels: withEstimate(item.labels, parsed) });
-  }
 
   return (
     <>
@@ -156,34 +147,7 @@ export function TaskRow({
           </span>
         </span>
 
-        <span className="trow-actions" onClick={(e) => e.stopPropagation()}>
-          {editingEstimate ? (
-            <input
-              className="estinput"
-              autoFocus
-              value={estimateDraft}
-              placeholder={t('task.estimatePlaceholder')}
-              onChange={(e) => setEstimateDraft(e.target.value)}
-              onBlur={() => void commitEstimate()}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') void commitEstimate();
-                if (e.key === 'Escape') setEditingEstimate(false);
-              }}
-            />
-          ) : (
-            <button
-              className="iconbtn"
-              aria-label={t('task.setEstimate')}
-              title={t('task.setEstimate')}
-              onClick={() => {
-                setEstimateDraft(minutes !== null && !computed ? String(minutes) : '');
-                setEditingEstimate(true);
-              }}
-            >
-              <Icon name="clock" size="sm" />
-            </button>
-          )}
-        </span>
+        <TaskActions item={item} childrenOf={childrenOf} onOpen={onOpen} />
       </div>
 
       {expanded &&

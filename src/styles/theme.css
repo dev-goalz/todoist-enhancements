@@ -1,0 +1,238 @@
+/* ==========================================================================
+   Todoist theme — structural corrections applied over the prototype's
+   stylesheet, matching the reskin in Figma.
+
+   The prototype framed the app as a centred card on a beige page and drew
+   each group as a rounded panel. Todoist does neither: the page is white and
+   edge to edge, and groups are hairline-separated rows.
+   ========================================================================== */
+
+/* ---------- The app fills the window ---------- */
+.app{
+  width:100%;
+  max-width:none;
+  height:100dvh;
+  min-height:0;
+  margin:0;
+  border:0;
+  border-radius:0;
+  box-shadow:none;
+}
+
+/* ---------- Content spans the workspace ---------- */
+.page,
+.page.wide{
+  width:100%;
+  max-width:none;
+  margin:0;
+  padding:36px 55px 96px;
+}
+
+/* A comfortable reading measure for lists, while headers and toolbars keep
+   the full width, exactly as Todoist arranges them. */
+.page > .mode,
+.page > .bento{
+  max-width:1100px;
+}
+
+@media (max-width:900px){
+  .page,.page.wide{padding:24px 20px 96px}
+}
+@media (max-width:600px){
+  .page,.page.wide{padding:16px 16px 96px}
+}
+
+/* ---------- Groups are rows, not cards ---------- */
+.group{
+  margin-top:28px;
+  padding:0;
+  border-radius:0;
+  background:transparent;
+}
+.group:first-of-type{margin-top:var(--s4)}
+/* Todoist does not tint a section to say it is late; the red date says it. */
+.group.tinted-late,
+.group.tinted-quick{
+  padding:0;
+  background:transparent;
+}
+
+.ghead{
+  min-height:34px;
+  padding:0 0 6px;
+  border-bottom:1px solid var(--border-strong);
+}
+.gname{font-size:var(--fs-14);font-weight:700;color:var(--text)}
+.gtime,.gcount{color:var(--faint);font-weight:400}
+
+/* ---------- Task rows ---------- */
+.task{
+  border-radius:0;
+  border-bottom:1px solid var(--border);
+  padding-left:0;
+  padding-right:0;
+}
+.task:hover{background:transparent}
+.task:last-child{border-bottom:0}
+.ttitle{font-size:var(--fs-14);font-weight:400;color:var(--text)}
+.tdesc{color:var(--faint)}
+
+/* The drag handle lives in the left gutter so it never shifts the row. */
+.drag{left:-24px}
+
+/* ---------- Sidebar ---------- */
+.sidebar{border-right:1px solid var(--border)}
+.navitem{border-radius:var(--r-sm);min-height:32px;font-size:var(--fs-14)}
+.navitem[aria-current="page"]{
+  background:var(--accent-soft);
+  color:var(--accent-dark);
+  font-weight:600;
+}
+.navitem .count{color:var(--faint);font-weight:400}
+
+/* Project and tag markers take the colour Todoist gives them. */
+.hash{
+  width:20px;height:20px;flex:0 0 auto;display:grid;place-items:center;
+  border-radius:var(--r-sm);font-size:var(--fs-14);font-weight:700;
+  color:var(--marker,#808080);background:var(--marker-soft,transparent);
+}
+.taglabel{color:var(--marker,#808080)}
+
+/* ---------- Overlays ---------- */
+.sheet{border-radius:var(--r-lg)}
+
+/* ==========================================================================
+   Task detail — laid out as in the design: checkbox and title on one line,
+   description on the title's left edge, properties in the right column.
+   ========================================================================== */
+.detail-top{height:52px}
+.detail-top .crumb{display:flex;align-items:center;gap:6px;font-size:var(--fs-13);font-weight:600;color:var(--muted)}
+.crumb-sep{color:var(--faint);font-weight:400}
+.detail-tools{display:flex;align-items:center;gap:2px}
+.menuwrap{position:relative}
+
+.detail-body{min-height:460px}
+.detail-main{padding:var(--s5) var(--s5) var(--s6)}
+
+/* The checkbox occupies a fixed gutter; everything else shares one left edge. */
+.detail-headline{display:grid;grid-template-columns:22px minmax(0,1fr);gap:12px;align-items:start}
+.detail-headline .check{margin-top:5px;width:20px;height:20px}
+.detail-content{min-width:0}
+
+.titlefield{
+  width:100%;display:block;resize:none;overflow:hidden;
+  border:1px solid transparent;border-radius:var(--r-sm);
+  padding:2px 6px;margin:0 0 0 -6px;background:transparent;
+  font:inherit;font-size:var(--fs-20);font-weight:700;line-height:1.3;
+  letter-spacing:-.01em;color:var(--text);
+}
+.titlefield:hover{border-color:var(--border)}
+.titlefield:focus{outline:none;border-color:var(--border-strong);background:var(--surface)}
+
+/* The description reads as a field: it shows a boundary on hover and focus. */
+.descview{
+  display:block;width:calc(100% + 12px);margin:var(--s2) 0 0 -6px;padding:6px;
+  border:1px solid transparent;border-radius:var(--r-sm);
+  text-align:left;font:inherit;font-size:var(--fs-14);line-height:1.6;color:var(--text);
+}
+.descview:hover{border-color:var(--border-strong)}
+.descview.placeholder{color:var(--faint)}
+.descfield{
+  width:calc(100% + 12px);margin:var(--s2) 0 0 -6px;padding:6px;
+  min-height:96px;resize:vertical;box-sizing:border-box;
+  border:1px solid var(--border-strong);border-radius:var(--r-sm);
+  background:var(--surface);color:var(--text);
+  font:inherit;font-size:var(--fs-14);line-height:1.6;
+}
+.descfield:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:transparent}
+
+/* Rendered Markdown */
+.md > *:first-child{margin-top:0}
+.md > *:last-child{margin-bottom:0}
+.md p{margin:0 0 .6em}
+.md h3,.md h4,.md h5,.md h6{margin:1em 0 .4em;font-weight:700;line-height:1.3}
+.md h3{font-size:var(--fs-16)}
+.md h4,.md h5,.md h6{font-size:var(--fs-14)}
+.md ul,.md ol{margin:0 0 .6em;padding-left:1.35em}
+.md li{margin:.15em 0}
+.md a{color:var(--info);text-decoration:underline}
+.md code{
+  padding:1px 5px;border-radius:var(--r-xs);background:var(--subtle);
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.9em;
+}
+.md pre{
+  margin:0 0 .6em;padding:10px 12px;border-radius:var(--r-sm);
+  background:var(--subtle);overflow-x:auto;
+}
+.md pre code{padding:0;background:transparent}
+.md blockquote{
+  margin:0 0 .6em;padding:2px 0 2px 12px;
+  border-left:3px solid var(--border-strong);color:var(--muted);
+}
+.md del{color:var(--faint)}
+
+.detail-section{margin-top:var(--s5);padding-left:34px}
+.sectionlabel{
+  display:flex;align-items:center;gap:8px;margin-bottom:var(--s2);
+  font-size:var(--fs-12);font-weight:600;color:var(--faint);
+}
+.sectionlabel .count{font-weight:400}
+
+.subtaskrow{
+  display:grid;grid-template-columns:18px minmax(0,1fr);gap:10px;align-items:center;
+  min-height:36px;border-bottom:1px solid var(--border);
+}
+.subtasktitle{text-align:left;font-size:var(--fs-14);color:var(--text);padding:4px 0}
+.subtasktitle:hover{color:var(--accent-dark)}
+
+.addline{
+  display:flex;align-items:center;gap:8px;margin-top:var(--s2);
+  padding:6px 0;color:var(--muted);font-size:var(--fs-13);
+}
+.addline:hover{color:var(--accent)}
+.addline .ic{color:var(--accent)}
+
+.comment{padding:var(--s3) 0;border-bottom:1px solid var(--border)}
+.comment time{display:block;margin-top:4px}
+
+/* Right-hand property column */
+.detail-side{background:var(--sidebar);padding:var(--s4) var(--s4) var(--s6)}
+.prop{padding:10px 0;border-bottom:1px solid var(--border);border-radius:0}
+.prop:hover{background:transparent}
+.prop > span{font-size:var(--fs-12);font-weight:600;color:var(--faint);margin-bottom:6px}
+.prop strong{display:flex;align-items:center;gap:6px;font-size:var(--fs-14);font-weight:400}
+.propinput,.propselect{
+  width:100%;height:30px;box-sizing:border-box;padding:0 6px;margin:0;
+  border:1px solid transparent;border-radius:var(--r-sm);background:transparent;
+  font:inherit;font-size:var(--fs-14);color:var(--text);
+}
+.propinput:hover,.propselect:hover{border-color:var(--border-strong);background:var(--surface)}
+.propinput:focus,.propselect:focus{outline:2px solid var(--accent);outline-offset:-1px}
+.prop .pills{display:flex;flex-wrap:wrap;gap:5px}
+.prop .pill{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;
+  border:1px solid var(--border-strong);border-radius:var(--r-sm);font-size:var(--fs-12)}
+.prop .pill:hover{border-color:var(--accent);color:var(--accent-dark)}
+
+@media (max-width:820px){
+  .detail-body{grid-template-columns:minmax(0,1fr)}
+  .detail-side{border-left:0;border-top:1px solid var(--border)}
+  .detail-section{padding-left:0}
+}
+
+/* The view controls sit alone on their own right-aligned line. */
+.viewbar{
+  display:flex;align-items:center;justify-content:flex-end;
+  gap:var(--s2);margin-top:var(--s3);position:relative;
+}
+
+/* Board columns hold the same rows the list does. */
+.col .task{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r-md);margin-bottom:8px;padding:10px 12px;
+  grid-template-columns:18px minmax(0,1fr);
+}
+.col .task .trow-actions{grid-column:2;justify-self:end;margin-top:6px}
+.col .drag{display:none}
+
+.btn.linklike{border:0;color:var(--accent);background:transparent;padding:0 4px}
+.btn.linklike:hover{text-decoration:underline;background:transparent}

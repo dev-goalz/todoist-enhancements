@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { PageHeader } from '@/components/PageHeader';
-import { Toolbar } from '@/components/Toolbar';
+import { DisplayMenu } from '@/components/DisplayMenu';
 import { TaskGroup } from '@/components/TaskGroup';
 import { ModeSurface } from '@/components/ModeSurface';
 import { Icon } from '@/components/Icon';
@@ -15,8 +15,8 @@ import { toApiDate } from '@/domain/dates';
 
 interface WeekViewProps {
   onOpen: (id: string) => void;
-  onAddTask: () => void;
   onInsights: () => void;
+  onUnestimated: () => void;
 }
 
 /**
@@ -26,7 +26,7 @@ interface WeekViewProps {
  * untimed, then timed. Anytime this week follows, holding the flexible work
  * that carries the `week` label but no day.
  */
-export function WeekView({ onOpen, onAddTask, onInsights }: WeekViewProps) {
+export function WeekView({ onOpen, onInsights, onUnestimated }: WeekViewProps) {
   const { t } = useT();
   const { snapshot, items, childrenOf } = useData();
   const prefs = useStore((s) => s.prefs);
@@ -51,8 +51,13 @@ export function WeekView({ onOpen, onAddTask, onInsights }: WeekViewProps) {
   );
 
   async function rescheduleOverdue() {
-    const today = toApiDate(new Date());
     const affected = groups.overdue;
+    if (affected.length === 0) return;
+    // Moving several tasks at once is worth confirming, and the wording says
+    // exactly where they land.
+    if (!window.confirm(t('task.rescheduleAllConfirm', { count: affected.length }))) return;
+
+    const today = toApiDate(new Date());
     for (const item of affected) {
       // Moving to today drops the `week` label, which would otherwise put the
       // same task in two groups at once.
@@ -78,26 +83,22 @@ export function WeekView({ onOpen, onAddTask, onInsights }: WeekViewProps) {
         title={t('nav.week')}
         subtitle={t('week.subtitle')}
         load={load}
+        onOpenUnestimated={load.unestimatedCount > 0 ? onUnestimated : undefined}
         actions={
-          <>
-            <button className="btn primary" onClick={onAddTask}>
-              <Icon name="plus" />
-              {t('nav.addTask')}
-            </button>
-            <button className="btn" onClick={onInsights}>
-              <Icon name="trend" />
-              {t('toolbar.insights')}
-            </button>
-          </>
+          <button className="btn" onClick={onInsights}>
+            <Icon name="trend" />
+            {t('toolbar.insights')}
+          </button>
         }
       />
 
-      <Toolbar
-        viewKey="week"
-        modes={['list', 'board', 'focus']}
-        groups={['none', 'project', 'priority', 'label', 'estimate']}
-        onInsights={onInsights}
-      />
+      <div className="viewbar">
+        <DisplayMenu
+          viewKey="week"
+          modes={['list', 'board']}
+          groups={['none', 'project', 'priority', 'label', 'estimate']}
+        />
+      </div>
 
       {current.mode === 'list' && current.group === 'none' ? (
         <div className="mode">
@@ -110,9 +111,9 @@ export function WeekView({ onOpen, onAddTask, onInsights }: WeekViewProps) {
             dropTarget={{ kind: 'today' }}
             actions={
               <button
-                className="btn sm"
-                style={{ color: 'var(--accent-dark)' }}
+                className="btn sm linklike"
                 onClick={() => void rescheduleOverdue()}
+                title={t('group.rescheduleAllHint')}
               >
                 {t('group.rescheduleAll')}
               </button>

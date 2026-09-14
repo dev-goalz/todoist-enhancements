@@ -4,6 +4,7 @@ import { App } from './App';
 import { useStore } from './store/store';
 import './styles/app.css';
 import './styles/additions.css';
+import './styles/theme.css';
 
 // Exposed only while developing, so views can be exercised against sample data
 // without a real account. Vite strips this branch from production builds.

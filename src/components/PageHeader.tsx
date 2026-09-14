@@ -8,6 +8,8 @@ interface PageHeaderProps {
   subtitle?: ReactNode;
   load: LoadSummary;
   actions?: ReactNode;
+  /** Opens the list of tasks on this page that have no estimate. */
+  onOpenUnestimated?: () => void;
 }
 
 /**
@@ -15,7 +17,9 @@ interface PageHeaderProps {
  * whether that fits. The percentage only appears where capacity means
  * something, which the caller decides by passing it or not.
  */
-export function PageHeader({ title, subtitle, load, actions }: PageHeaderProps) {
+export function PageHeader({
+  title, subtitle, load, actions, onOpenUnestimated,
+}: PageHeaderProps) {
   const { t, locale } = useT();
 
   return (
@@ -58,9 +62,19 @@ export function PageHeader({ title, subtitle, load, actions }: PageHeaderProps) 
         {load.unestimatedCount > 0 && (
           <>
             <span className="sep">·</span>
-            <span className="metric" style={{ color: 'var(--faint)' }}>
-              {t('metrics.unestimated', { count: load.unestimatedCount })}
-            </span>
+            {onOpenUnestimated ? (
+              <button
+                className="metric metric-link"
+                onClick={onOpenUnestimated}
+                title={t('issues.toComplete')}
+              >
+                {t('metrics.unestimated', { count: load.unestimatedCount })}
+              </button>
+            ) : (
+              <span className="metric" style={{ color: 'var(--faint)' }}>
+                {t('metrics.unestimated', { count: load.unestimatedCount })}
+              </span>
+            )}
           </>
         )}
       </div>

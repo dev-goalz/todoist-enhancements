@@ -8,10 +8,13 @@ import { TaskDetail } from './components/overlays/TaskDetail';
 import { Issues } from './components/overlays/Issues';
 import { Search } from './components/overlays/Search';
 import { InsightsPanel } from './components/overlays/InsightsPanel';
+import { AddProject } from './components/overlays/AddProject';
+import { Unestimated } from './components/overlays/Unestimated';
 import { WeekView } from './views/WeekView';
 import { UpcomingView } from './views/UpcomingView';
 import { SimpleListView } from './views/SimpleListView';
 import { ProjectView } from './views/ProjectView';
+import { LabelsView } from './views/LabelsView';
 import { DashboardView } from './views/DashboardView';
 import { InsightsView } from './views/InsightsView';
 import { SettingsView } from './views/SettingsView';
@@ -19,10 +22,11 @@ import { ConnectView } from './views/ConnectView';
 import { useStore } from './store/store';
 import { useT } from './hooks/useT';
 import { useData } from './hooks/useData';
-import { navigate, useRoute } from './hooks/useRoute';
+import { navigate, useRoute, type Route } from './hooks/useRoute';
 import { rootItems } from './store/selectors';
 import { detectConflicts } from './domain/conflicts';
-import { weekItems } from './domain/views';
+import { hasLabel, somedayItems, upcomingItems, weekItems } from './domain/views';
+import { effectiveEstimate } from './domain/estimates';
 import type { TranslationKey } from './i18n';
 
 export function App() {
@@ -41,16 +45,21 @@ export function App() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [issuesOpen, setIssuesOpen] = useState(false);
   const [insightsOpen, setInsightsOpen] = useState(false);
+  const [addProjectOpen, setAddProjectOpen] = useState(false);
+  const [unestimatedOpen, setUnestimatedOpen] = useState(false);
 
   useEffect(() => { void init(); }, [init]);
   useEffect(() => { document.documentElement.lang = locale; }, [locale]);
   useEffect(() => (connected ? startPolling() : undefined), [connected, startPolling]);
 
-  // Keyboard shortcuts: search and quick add, the two things reached constantly.
+  // Search and quick add are reached constantly, so both have a shortcut.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
-      const typing = target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA';
+      const typing =
+        target?.tagName === 'INPUT' ||
+        target?.tagName === 'TEXTAREA' ||
+        target?.isContentEditable;
 
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
@@ -100,6 +109,10 @@ export function App() {
           setIssuesOpen={setIssuesOpen}
           insightsOpen={insightsOpen}
           setInsightsOpen={setInsightsOpen}
+          addProjectOpen={addProjectOpen}
+          setAddProjectOpen={setAddProjectOpen}
+          unestimatedOpen={unestimatedOpen}
+          setUnestimatedOpen={setUnestimatedOpen}
         />
       </DragProvider>
 
@@ -122,7 +135,7 @@ export function App() {
 }
 
 interface ShellProps {
-  route: ReturnType<typeof useRoute>;
+  route: Route;
   openTaskId: string | null;
   setOpenTaskId: (id: string | null) => void;
   composerOpen: boolean;
@@ -133,12 +146,17 @@ interface ShellProps {
   setIssuesOpen: (open: boolean) => void;
   insightsOpen: boolean;
   setInsightsOpen: (open: boolean) => void;
+  addProjectOpen: boolean;
+  setAddProjectOpen: (open: boolean) => void;
+  unestimatedOpen: boolean;
+  setUnestimatedOpen: (open: boolean) => void;
 }
 
 function AppShell({
   route, openTaskId, setOpenTaskId, composerOpen, setComposerOpen,
   searchOpen, setSearchOpen, issuesOpen, setIssuesOpen,
-  insightsOpen, setInsightsOpen,
+  insightsOpen, setInsightsOpen, addProjectOpen, setAddProjectOpen,
+  unestimatedOpen, setUnestimatedOpen,
 }: ShellProps) {
   const { t } = useT();
   const { snapshot, items, childrenOf } = useData();
@@ -150,7 +168,7 @@ function AppShell({
     [roots, childrenOf, conflictSettings],
   );
 
-  // The Insights panel summarises whichever page is open, never a fixed one.
+  /** Whatever the page in front is showing, so the dialogs never describe another one. */
   const { contextItems, contextLabel } = useMemo(() => {
     switch (route.view) {
       case 'project': {
@@ -162,25 +180,37 @@ function AppShell({
       }
       case 'label':
         return {
-          contextItems: roots.filter((i) =>
-            i.labels.some((l) => l.toLowerCase() === route.id?.toLowerCase())),
+          contextItems: route.id ? roots.filter((i) => hasLabel(i, route.id!)) : [],
           contextLabel: route.id ?? '',
         };
       case 'week':
         return { contextItems: weekItems(roots), contextLabel: t('nav.week') };
-      default:
+      case 'upcoming':
+        return { contextItems: upcomingItems(roots), contextLabel: t('nav.upcoming') };
+      case 'someday':
+        return { contextItems: somedayItems(roots), contextLabel: t('nav.someday') };
+      case 'inbox': {
+        const inboxId = snapshot.user?.inbox_project_id;
         return {
-          contextItems: roots,
-          contextLabel: t(`nav.${route.view}` as TranslationKey),
+          contextItems: inboxId ? roots.filter((i) => i.project_id === inboxId) : [],
+          contextLabel: t('nav.inbox'),
         };
+      }
+      default:
+        return { contextItems: roots, contextLabel: t(`nav.${route.view}` as TranslationKey) };
     }
-  }, [route, roots, snapshot.projects, t]);
+  }, [route, roots, snapshot.projects, snapshot.user?.inbox_project_id, t]);
 
-  const defaultProjectId = route.view === 'project' ? route.id : undefined;
+  const unestimatedItems = useMemo(
+    () => contextItems.filter((i) => effectiveEstimate(i, childrenOf).minutes === null),
+    [contextItems, childrenOf],
+  );
 
   const openTask = (id: string) => setOpenTaskId(id);
   const addTask = () => setComposerOpen(true);
   const openInsights = () => setInsightsOpen(true);
+  const openUnestimated = () => setUnestimatedOpen(true);
+  const viewProps = { onOpen: openTask, onInsights: openInsights, onUnestimated: openUnestimated };
 
   return (
     <div className="app">
@@ -189,6 +219,7 @@ function AppShell({
         onAddTask={addTask}
         onSearch={() => setSearchOpen(true)}
         onIssues={() => setIssuesOpen(true)}
+        onAddProject={() => setAddProjectOpen(true)}
         issuesCount={conflictCount}
       />
 
@@ -204,34 +235,16 @@ function AppShell({
         </header>
 
         <section className="screen active">
-          {route.view === 'week' && (
-            <WeekView onOpen={openTask} onAddTask={addTask} onInsights={openInsights} />
-          )}
-          {route.view === 'upcoming' && (
-            <UpcomingView onOpen={openTask} onAddTask={addTask} onInsights={openInsights} />
-          )}
-          {route.view === 'someday' && (
-            <SimpleListView kind="someday" onOpen={openTask} onAddTask={addTask} onInsights={openInsights} />
-          )}
-          {route.view === 'inbox' && (
-            <SimpleListView kind="inbox" onOpen={openTask} onAddTask={addTask} onInsights={openInsights} />
-          )}
+          {route.view === 'week' && <WeekView {...viewProps} />}
+          {route.view === 'upcoming' && <UpcomingView {...viewProps} />}
+          {route.view === 'someday' && <SimpleListView kind="someday" {...viewProps} />}
+          {route.view === 'inbox' && <SimpleListView kind="inbox" {...viewProps} />}
           {route.view === 'label' && route.id && (
-            <SimpleListView
-              kind="label"
-              labelName={route.id}
-              onOpen={openTask}
-              onAddTask={addTask}
-              onInsights={openInsights}
-            />
+            <SimpleListView kind="label" labelName={route.id} {...viewProps} />
           )}
+          {route.view === 'labels' && <LabelsView />}
           {route.view === 'project' && route.id && (
-            <ProjectView
-              projectId={route.id}
-              onOpen={openTask}
-              onAddTask={addTask}
-              onInsights={openInsights}
-            />
+            <ProjectView projectId={route.id} {...viewProps} />
           )}
           {route.view === 'dashboard' && (
             <DashboardView onOpen={openTask} onIssues={() => setIssuesOpen(true)} />
@@ -242,11 +255,22 @@ function AppShell({
 
         <nav className="mobile-nav" aria-label={t('nav.projects')}>
           <button
+            aria-current={route.view === 'inbox' ? 'page' : undefined}
+            onClick={() => navigate('inbox')}
+          >
+            <Icon name="inbox" size="lg" />
+            {t('nav.inbox')}
+          </button>
+          <button
             aria-current={route.view === 'week' ? 'page' : undefined}
             onClick={() => navigate('week')}
           >
             <Icon name="week" size="lg" />
             {t('nav.week')}
+          </button>
+          <button className="fab" aria-label={t('nav.addTask')} onClick={addTask}>
+            {/* The stylesheet paints the round accent disc on this wrapper. */}
+            <i><Icon name="plus" /></i>
           </button>
           <button
             aria-current={route.view === 'upcoming' ? 'page' : undefined}
@@ -255,23 +279,12 @@ function AppShell({
             <Icon name="upcoming" size="lg" />
             {t('nav.upcoming')}
           </button>
-          <button className="fab" aria-label={t('nav.addTask')} onClick={addTask}>
-            {/* The stylesheet paints the round accent disc on this wrapper. */}
-            <i><Icon name="plus" /></i>
-          </button>
           <button
-            aria-current={route.view === 'inbox' ? 'page' : undefined}
-            onClick={() => navigate('inbox')}
+            aria-current={route.view === 'someday' ? 'page' : undefined}
+            onClick={() => navigate('someday')}
           >
-            <Icon name="inbox" size="lg" />
-            {t('nav.inbox')}
-          </button>
-          <button
-            aria-current={route.view === 'dashboard' ? 'page' : undefined}
-            onClick={() => navigate('dashboard')}
-          >
-            <Icon name="dashboard" size="lg" />
-            {t('nav.dashboard')}
+            <Icon name="someday" size="lg" />
+            {t('nav.someday')}
           </button>
         </nav>
       </main>
@@ -279,21 +292,20 @@ function AppShell({
       <Composer
         open={composerOpen}
         onClose={() => setComposerOpen(false)}
-        defaultProjectId={defaultProjectId}
+        defaultProjectId={route.view === 'project' ? route.id : undefined}
       />
       <TaskDetail
         taskId={openTaskId}
         onClose={() => setOpenTaskId(null)}
         onOpen={openTask}
       />
-      <Issues
-        open={issuesOpen}
-        onClose={() => setIssuesOpen(false)}
-        onOpen={openTask}
-      />
-      <Search
-        open={searchOpen}
-        onClose={() => setSearchOpen(false)}
+      <Issues open={issuesOpen} onClose={() => setIssuesOpen(false)} onOpen={openTask} />
+      <Search open={searchOpen} onClose={() => setSearchOpen(false)} onOpen={openTask} />
+      <AddProject open={addProjectOpen} onClose={() => setAddProjectOpen(false)} />
+      <Unestimated
+        open={unestimatedOpen}
+        onClose={() => setUnestimatedOpen(false)}
+        items={unestimatedItems}
         onOpen={openTask}
       />
       <InsightsPanel

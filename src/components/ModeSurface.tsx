@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
-import { Icon } from './Icon';
-import { TaskRow } from './TaskRow';
 import { TaskGroup } from './TaskGroup';
+import { DraggableTask } from './dnd/DraggableTask';
 import { useT } from '@/hooks/useT';
 import { useStore } from '@/store/store';
 import { toDisplayPriority, type DisplayMode, type GroupKey, type Item, type SortKey } from '@/domain/types';
@@ -27,14 +26,13 @@ interface ModeSurfaceProps {
 /**
  * Renders the same set of tasks the way the current mode asks for.
  *
- * List is the mode for scanning and administering. Board shows columns. Focus
- * puts one task in front of everything else. Calendar places dated work on a
- * month grid.
+ * List is the mode for scanning and administering, Board shows columns, and
+ * Calendar places dated work on a month grid. A task carries the same
+ * information and the same hover controls in every one of them.
  */
 export function ModeSurface(props: ModeSurfaceProps) {
   const { mode } = props;
   if (mode === 'board') return <BoardSurface {...props} />;
-  if (mode === 'focus') return <FocusSurface {...props} />;
   if (mode === 'calendar') return <CalendarSurface {...props} />;
   return <ListSurface {...props} />;
 }
@@ -83,7 +81,7 @@ function ListSurface(props: ModeSurfaceProps) {
 }
 
 function BoardSurface(props: ModeSurfaceProps) {
-  const { t, locale } = useT();
+  const { t } = useT();
   const groups = useGrouped(props);
   // Columns derived from a grouping are not drop destinations: dropping onto
   // "priority" or "tag" has no single unambiguous meaning.
@@ -105,22 +103,15 @@ function BoardSurface(props: ModeSurfaceProps) {
                 <small>{t('metrics.tasks', { count: column.items.length })}</small>
               </div>
             </div>
-            {column.items.map((item) => {
-              const due = dueDate(item);
-              return (
-                <button
-                  key={item.id}
-                  className="tcard"
-                  onClick={() => props.onOpen(item.id)}
-                >
-                  <span className={`check p${toDisplayPriority(item.priority)}`} aria-hidden="true">
-                    <Icon name="check" />
-                  </span>
-                  <span className="ttitle">{item.content}</span>
-                  {due && <span className="meta"><span className="at">{formatRelativeDay(due, locale)}</span></span>}
-                </button>
-              );
-            })}
+            {column.items.map((item) => (
+              <DraggableTask
+                key={item.id}
+                item={item}
+                childrenOf={props.childrenOf}
+                onOpen={props.onOpen}
+                showProject={props.showProject}
+              />
+            ))}
             {column.items.length === 0 && <p className="empty">{t('group.empty')}</p>}
             </section>
           );
@@ -133,82 +124,6 @@ function BoardSurface(props: ModeSurfaceProps) {
             <div key={column.id}>{body(false)}</div>
           );
         })}
-      </div>
-    </div>
-  );
-}
-
-function FocusSurface(props: ModeSurfaceProps) {
-  const { t } = useT();
-  const toggleTask = useStore((s) => s.toggleTask);
-  const updateTask = useStore((s) => s.updateTask);
-  const [index, setIndex] = useState(0);
-
-  const ordered = useMemo(
-    () => sortItems(props.items, props.sort, props.childrenOf),
-    [props.items, props.sort, props.childrenOf],
-  );
-
-  if (ordered.length === 0) return <p className="empty">{t('task.noTasks')}</p>;
-
-  // Finishing the last task must not leave the stage pointing past the end.
-  const current = ordered[Math.min(index, ordered.length - 1)];
-  const queue = ordered.slice(Math.min(index, ordered.length - 1) + 1, index + 6);
-  const advance = () => setIndex((i) => Math.min(i + 1, ordered.length - 1));
-
-  return (
-    <div className="mode">
-      <div className="focusstage">
-        <article className="focuscard">
-          <h2>{current.content}</h2>
-          {current.description && <p className="tdesc">{current.description}</p>}
-          <div className="focusactions">
-            <button
-              className="btn primary"
-              onClick={() => { void toggleTask(current.id); advance(); }}
-            >
-              <Icon name="check" />
-              {t('common.done')}
-            </button>
-            <button
-              className="btn"
-              onClick={() => {
-                // Pushing to tomorrow keeps any time of day the task carried.
-                void updateTask(current.id, {
-                  due: { date: toApiDate(addDays(new Date(), 1)), timezone: null, string: 'tomorrow', lang: 'en', is_recurring: false },
-                });
-                advance();
-              }}
-            >
-              <Icon name="arrow-right" />
-              {t('common.tomorrow')}
-            </button>
-            <button className="btn" onClick={advance}>
-              {t('toolbar.focus')} →
-            </button>
-            <button className="btn quiet" onClick={() => props.onOpen(current.id)}>
-              <Icon name="edit" />
-              {t('detail.title')}
-            </button>
-          </div>
-        </article>
-
-        {queue.length > 0 && (
-          <div className="focusqueue">
-            <h5>{t('nav.upcoming')}</h5>
-            <div className="focuslist">
-              {queue.map((item) => (
-                <TaskRow
-                  key={item.id}
-                  item={item}
-                  childrenOf={props.childrenOf}
-                  onOpen={props.onOpen}
-                  showProject={props.showProject}
-                />
-              ))}
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

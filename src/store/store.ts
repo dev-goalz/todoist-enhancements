@@ -3,7 +3,7 @@ import { auth } from '@/api/auth';
 import { ApiError, NotConnectedError } from '@/api/client';
 import { applySync, sync } from '@/api/sync';
 import {
-  sendCommands, type Command,
+  sendCommands, command, type Command,
   addItem, completeItem, deleteItem, moveItem, newUuid,
   uncompleteItem, updateItem,
 } from '@/api/commands';
@@ -40,6 +40,8 @@ interface AppState {
   syncError: string | null;
   pendingCount: number;
   toasts: Toast[];
+  /** The task currently being dragged, so empty drop zones can reveal themselves. */
+  draggingTaskId: string | null;
 
   /* Lifecycle */
   init: () => Promise<void>;
@@ -62,10 +64,14 @@ interface AppState {
   moveTask: (id: string, target: { project_id?: string; section_id?: string | null }) => Promise<void>;
   setTaskLabels: (id: string, labels: string[]) => Promise<void>;
   setTaskPriority: (id: string, priority: DisplayPriority) => Promise<void>;
+  setLabelFavourite: (id: string, favourite: boolean) => Promise<void>;
+  skipOccurrence: (id: string) => Promise<void>;
+  createProject: (name: string, color: string) => Promise<void>;
 
   /* Toasts */
   toast: (message: string, undo?: () => void) => void;
   dismissToast: (id: string) => void;
+  setDragging: (id: string | null) => void;
 }
 
 /** Writes the snapshot to the device without blocking the interface. */
@@ -84,6 +90,7 @@ export const useStore = create<AppState>((set, get) => ({
   syncError: null,
   pendingCount: 0,
   toasts: [],
+  draggingTaskId: null,
 
   async init() {
     const [storedPrefs, snapshot, queue] = await Promise.all([
@@ -229,7 +236,22 @@ export const useStore = create<AppState>((set, get) => ({
 
     try {
       const { response, failures } = await sendCommands(after.syncToken, commands);
-      const merged = applySync(get().snapshot, response);
+      let merged = applySync(get().snapshot, response);
+
+      // Todoist returns the real id for each temp id it accepted. The
+      // placeholder must go, or the created task shows twice.
+      const mapping = response.temp_id_mapping ?? {};
+      const tempIds = Object.keys(mapping);
+      if (tempIds.length > 0) {
+        const items = { ...merged.items };
+        const projects = { ...merged.projects };
+        for (const tempId of tempIds) {
+          delete items[tempId];
+          delete projects[tempId];
+        }
+        merged = { ...merged, items, projects };
+      }
+
       set({ snapshot: merged, syncState: 'idle' });
       schedulePersist(merged);
 
@@ -321,6 +343,52 @@ export const useStore = create<AppState>((set, get) => ({
     await get().updateTask(id, { priority: toTodoistPriority(priority) });
   },
 
+  /**
+   * Advances a recurring task to its next occurrence.
+   *
+   * Todoist has no skip command: closing a recurring task is what rolls the
+   * series forward, which is exactly what the menu offers here.
+   */
+  async skipOccurrence(id) {
+    const item = get().snapshot.items[id];
+    if (!item?.due?.is_recurring) return;
+    await get().apply([command('item_close', { id })], (snapshot) => snapshot);
+    await get().refresh();
+  },
+
+  async setLabelFavourite(id, favourite) {
+    await get().apply(
+      [command('label_update', { id, is_favorite: favourite })],
+      (snapshot) => {
+        const label = snapshot.labels[id];
+        if (!label) return snapshot;
+        return {
+          ...snapshot,
+          labels: { ...snapshot.labels, [id]: { ...label, is_favorite: favourite } },
+        };
+      },
+    );
+  },
+
+  async createProject(name, color) {
+    const tempId = newUuid();
+    await get().apply(
+      [{ type: 'project_add', uuid: newUuid(), args: { name, color }, temp_id: tempId }],
+      (snapshot) => ({
+        ...snapshot,
+        projects: {
+          ...snapshot.projects,
+          [tempId]: {
+            id: tempId, name, color, parent_id: null,
+            child_order: Object.keys(snapshot.projects).length,
+            is_archived: false, is_deleted: false, is_favorite: false,
+            workspace_id: null,
+          },
+        },
+      }),
+    );
+  },
+
   toast(message, undo) {
     const entry: Toast = { id: newUuid(), message, undo };
     set({ toasts: [...get().toasts, entry] });
@@ -329,6 +397,10 @@ export const useStore = create<AppState>((set, get) => ({
 
   dismissToast(id) {
     set({ toasts: get().toasts.filter((t) => t.id !== id) });
+  },
+
+  setDragging(id) {
+    set({ draggingTaskId: id });
   },
 }));
 
