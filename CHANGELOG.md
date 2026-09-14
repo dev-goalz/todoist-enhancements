@@ -2,6 +2,26 @@
 
 What changed in each version, newest first.
 
+## 0.9.0
+
+### Changed
+
+- The separate dashboard page is gone. Its charts are the Dashboard tab of the
+  insights page, and an old `#/dashboard` link lands there.
+- A board column shows its estimated time, how many of its tasks have no
+  estimate and, for a day column, how full it is against that day's capacity.
+- Board columns use the same width as the list.
+- Tasks on a board are laid out as cards rather than as list rows.
+
+### Added
+
+- Dropping a task on the Quick group dates it today and adds the quick tag.
+
+### Fixed
+
+- The click a browser fires at the end of a drag no longer opens the task that
+  was dropped.
+
 ## 0.8.1
 
 ### Changed
