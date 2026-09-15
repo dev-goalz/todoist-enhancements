@@ -6,7 +6,7 @@ import { useStore } from '@/store/store';
 import { avatarUrl } from '@/domain/colors';
 import { formatDuration, parseDurationInput } from '@/domain/estimates';
 import { defaultCapacity, weeklyCapacity, type DailyCapacity } from '@/domain/load';
-import { DENSITIES, HOME_VIEWS, type Density, type HomeView } from '@/store/prefs';
+import { DENSITIES, HOME_VIEWS, THEMES, type Density, type HomeView, type Theme } from '@/store/prefs';
 import type { Locale, TranslationKey } from '@/i18n';
 import { APP_NAME, AUTHOR, COFFEE_URL, GITHUB_URL, SITE_URL, VERSION } from '@/app-info';
 
@@ -138,6 +138,18 @@ export function SettingsView() {
                   { value: '24', label: t('settings.time24') },
                   { value: '12', label: t('settings.time12') },
                 ]}
+              />
+            </Row>
+
+            <Row title={t('settings.theme')} hint={t('settings.themeHint')}>
+              <Select
+                value={prefs.theme}
+                onChange={(value) => setPrefs({ theme: value as Theme })}
+                ariaLabel={t('settings.theme')}
+                options={THEMES.map((theme) => ({
+                  value: theme,
+                  label: t(`settings.theme.${theme}` as TranslationKey),
+                }))}
               />
             </Row>
 

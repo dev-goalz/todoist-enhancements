@@ -657,14 +657,14 @@
   border-radius:var(--r-lg);
 }
 .group.accent-late{background:var(--accent-wash)}
-.group.accent-quick{background:#f5f8fd}
+.group.accent-quick{background:var(--wash-quick-deep)}
 /* A count sitting on a wash needs its own chip, or it disappears. */
 .group.accent-late .gcount{color:var(--accent-dark);background:var(--accent-badge)}
 /* Inside a callout the heading no longer needs its own rule to stand out. */
 .group.accent-late .gheadblock,
 .group.accent-quick .gheadblock{border-bottom-color:transparent}
 .group.accent-late .task,
-.group.accent-quick .task{border-bottom-color:rgba(32,32,32,.07)}
+.group.accent-quick .task{border-bottom-color:var(--row-line-on-wash)}
 
 /* ---------- Kanban ---------- */
 /* Columns keep one width and the board scrolls sideways when there are more
@@ -1198,8 +1198,8 @@
 /* A date is the one the parser guessed rather than one you spelled out, so it
    is the one that has to be impossible to miss. */
 .nmark.date{background:var(--accent-tint);box-shadow:0 0 0 2px var(--accent-tint)}
-.nmark.project{background:#eaf2fd;box-shadow:0 0 0 2px #eaf2fd}
-.nmark.label{background:#f2edfb;box-shadow:0 0 0 2px #f2edfb}
+.nmark.project{background:var(--tag-blue-soft);box-shadow:0 0 0 2px var(--tag-blue-soft)}
+.nmark.label{background:var(--tag-purple-soft);box-shadow:0 0 0 2px var(--tag-purple-soft)}
 .nmark.priority{background:var(--accent-tint);box-shadow:0 0 0 2px var(--accent-tint)}
 
 /* The list that opens on @ or #. */

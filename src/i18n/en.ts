@@ -467,6 +467,11 @@ export const en = {
 
   'composer.subtaskPlaceholder': 'Add a subtask, then press Enter',
   'composer.reads': 'Read from the name',
+  'settings.theme': 'Appearance',
+  'settings.themeHint': 'Light, dark, or the same as this device.',
+  'settings.theme.system': 'Match device',
+  'settings.theme.light': 'Light',
+  'settings.theme.dark': 'Dark',
   'settings.density': 'Density',
   'settings.densityHint': 'How much room a list gives each task. Compact closes the space around a row without taking anything out of it.',
   'settings.density.comfortable': 'Comfortable',

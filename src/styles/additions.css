@@ -36,13 +36,13 @@
   border:1px solid var(--border-strong);border-radius:var(--r-sm);
   background:var(--surface);color:var(--text);font-size:var(--fs-14);font-family:inherit;
 }
-.connect-card input::placeholder{color:#757575}
+.connect-card input::placeholder{color:var(--placeholder)}
 .connect-card input:focus{outline:2px solid var(--accent);outline-offset:1px}
 
 /* The privacy note sits between the field and the button, where it is read. */
 .connect-privacy{
   margin-top:var(--s3);padding:11px 12px;border-radius:9px;
-  background:#f2f2f2;color:#818181;font-size:var(--fs-12);line-height:18px;
+  background:var(--privacy-bg);color:var(--privacy-text);font-size:var(--fs-12);line-height:18px;
 }
 .connect-privacy strong{font-weight:700}
 .connect-privacy a{

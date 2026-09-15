@@ -469,6 +469,11 @@ export const fr: Record<TranslationKey, string> = {
 
   'composer.subtaskPlaceholder': 'Ajouter une sous-tâche, puis Entrée',
   'composer.reads': 'Lu dans le nom',
+  'settings.theme': 'Apparence',
+  'settings.themeHint': 'Clair, sombre, ou comme cet appareil.',
+  'settings.theme.system': 'Comme l’appareil',
+  'settings.theme.light': 'Clair',
+  'settings.theme.dark': 'Sombre',
   'settings.density': 'Densité',
   'settings.densityHint': 'L’espace qu’une liste accorde à chaque tâche. Compact resserre autour de la ligne sans rien lui retirer.',
   'settings.density.comfortable': 'Confortable',
