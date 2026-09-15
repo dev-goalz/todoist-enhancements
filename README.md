@@ -109,16 +109,22 @@ A planning tool is only worth having if you look at it, and looking at
 everything at once is what stops people. The review asks one question at a
 time, in an order, with an end.
 
-The daily pass takes a few minutes: what is late, what was captured and never
-filed, what you committed to this week without naming a day, and what today
-actually holds against the capacity you set. Each row offers three answers —
-today, this week, or park it — and pressing one makes exactly the change
-dragging the task there would make.
+The daily pass takes a few minutes: what is late, what is sitting in the
+Inbox, what you committed to this week without naming a day, and what today
+holds. Each row offers the same three answers — today, this week, or the
+backlog — and the one the task is already in is marked, so leaving it alone
+reads as a decision rather than as not answering. Pressing one makes exactly
+the change dragging the task there would make.
 
-The weekly pass is longer: what you finished, what slipped, what is still
-unfiled, what is in play with no estimate, which projects have gone quiet, the
-backlog, and what next week is being asked to carry. When the last question is
-answered it says so and stops.
+The weekly pass is longer: what you finished — in a list you can order by date
+or by priority, with nothing crossed out, because a review is no place to read
+your own week struck through — then the same week counted, then what slipped,
+what is still unfiled, what is in play with no estimate (with the field right
+there on the row), which projects have gone quiet, and the backlog. When the
+last question is answered it says so and stops.
+
+Any task in a review can be ticked off. Sometimes the answer is that you
+already did it.
 
 It stores nothing of its own. There is no per-project review interval here,
 because there is nowhere in Todoist to keep one, and a review that needs its

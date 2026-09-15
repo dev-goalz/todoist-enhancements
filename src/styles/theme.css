@@ -1256,17 +1256,26 @@
 /* ==========================================================================
    Review
    ==========================================================================
-   One question on screen at a time, and a rail that says how many are left.
-   A review people abandon is a review with no visible end, so the end is the
-   first thing it shows.
+   A measured column, not the full width of the workspace. This is a surface
+   for reading one question and answering it, and a decision that runs the
+   length of a wide screen puts its own buttons out of reach of its own text.
+
+   The frame is fixed: the question at the top, the answer below it, and the
+   same two controls in the same place on every step of both cadences. Only
+   the content between them changes.
    ========================================================================== */
+.review{max-width:760px}
+.reviewhead{
+  display:flex;align-items:center;justify-content:space-between;gap:var(--s4);
+  flex-wrap:wrap;margin-bottom:var(--s4);
+}
 .reviewcadence{width:auto;grid-auto-columns:max-content}
 .reviewcadence button{padding:0 12px}
 
 /* ---------- The rail ---------- */
 .reviewrail{
   display:flex;flex-wrap:wrap;gap:4px;
-  margin:var(--s4) 0 var(--s5);padding:0;list-style:none;
+  margin:0 0 var(--s5);padding:0;list-style:none;
 }
 .reviewpip{
   display:inline-flex;align-items:center;gap:7px;
@@ -1280,7 +1289,6 @@
   background:var(--surface);font-size:10px;font-weight:700;
 }
 .reviewpip-dot .ic{width:11px;height:11px}
-/* Settled is a tick, outstanding is the number of things still in it. */
 .reviewpip.clear .reviewpip-dot{border-color:var(--ok);color:var(--ok)}
 .reviewpip:not(.clear) .reviewpip-dot{border-color:var(--accent);color:var(--accent)}
 .reviewpip.current{background:var(--accent-soft);color:var(--accent-dark)}
@@ -1290,57 +1298,84 @@
 /* ---------- The question ---------- */
 .reviewstep h2{font-size:var(--fs-20);font-weight:700;letter-spacing:-.015em}
 .reviewask{
-  max-width:64ch;margin:6px 0 var(--s4);
+  max-width:62ch;margin:6px 0 var(--s4);
   color:var(--muted);font-size:var(--fs-13);line-height:1.6;text-wrap:pretty;
 }
+/* A floor under the answer, so a step with two rows and a step with twenty do
+   not put the buttons in two different places. */
+.reviewbody{min-height:320px}
 
 /* ---------- The rows ---------- */
+.reviewtoolbar{
+  display:flex;align-items:center;justify-content:space-between;gap:var(--s3);
+  flex-wrap:wrap;margin-bottom:var(--s3);
+}
 .reviewlist{display:grid;border-top:1px solid var(--border)}
 .reviewrow{
   display:grid;grid-template-columns:18px minmax(0,1fr) auto;
-  gap:12px;align-items:center;padding:10px 0;
+  gap:12px;align-items:center;padding:9px 0;
   border-bottom:1px solid var(--border);
 }
 .reviewrow .check{margin-top:0}
 .reviewname{display:grid;gap:3px;min-width:0;text-align:left}
-/* A project is one line, not a title over a meta row, so it lays out across. */
-.reviewname.as-row{display:flex;align-items:center;gap:8px}
-/* And its row has no completion control to leave a column for. */
-.reviewrow.project{grid-template-columns:minmax(0,1fr) auto}
 .reviewname.as-text{cursor:default}
+/* A project is one line, not a title over a meta row. */
+.reviewname.as-row{display:flex;align-items:center;gap:8px}
+.reviewrow.project{grid-template-columns:minmax(0,1fr) auto}
 .reviewname .ttitle{
   display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
   font-size:var(--fs-14);
 }
 .reviewname .meta{margin-top:0}
-.reviewrow.done .ttitle{color:var(--muted);text-decoration:line-through}
-/* A finished task wears the same filled tick it wears everywhere else. */
-.reviewrow.done .check{color:#fff;border-color:var(--ok);background:var(--ok)}
 .reviewrow .hash{flex:0 0 auto}
 
-/* Three buttons, and the review is pressing one of them. They are quiet at
-   rest and step forward under the pointer, because a row of loud buttons on
-   every line is a page nobody wants to read. */
-.reviewactions{display:flex;flex-wrap:wrap;gap:4px;justify-self:end}
+/* A finished task keeps its words. The tick already says it is done, and a
+   review is no place to read your own week crossed out. */
+.reviewrow.done .check{color:#fff;border-color:var(--ok);background:var(--ok)}
+.reviewrow.done .ttitle{color:var(--text);text-decoration:none}
+.pflag{
+  flex:0 0 auto;padding:1px 6px;border-radius:var(--r-xs);
+  font-size:var(--fs-11);font-weight:700;
+}
+.pflag.p1{color:var(--p1);background:rgba(209,69,59,.1)}
+.pflag.p2{color:var(--p2);background:rgba(181,101,0,.1)}
+.pflag.p3{color:var(--p3);background:rgba(36,111,224,.1)}
+
 /* Always drawn, never revealed on hover: these buttons are the review, not a
-   secondary action on a row, and half the devices that will open this page
-   have no pointer to reveal anything with. Quiet at rest, firmer under one. */
+   secondary action on a row. The one the task is already in is marked and
+   inert — on the backlog that is what makes "leave it" an answer. */
+.reviewactions{display:flex;flex-wrap:wrap;gap:4px;justify-self:end}
 .reviewactions .btn{
   min-height:28px;padding:0 9px;font-size:var(--fs-12);
   border-color:var(--border);color:var(--muted);
 }
 .reviewrow:hover .reviewactions .btn,
 .reviewrow:focus-within .reviewactions .btn{border-color:var(--border-strong);color:var(--text)}
-.reviewactions .btn:hover{border-color:var(--accent);color:var(--accent-dark)}
+.reviewactions .btn:hover:not(:disabled){border-color:var(--accent);color:var(--accent-dark)}
+.reviewactions .btn.on,
+.reviewrow:hover .reviewactions .btn.on{
+  border-color:var(--accent);background:var(--accent-soft);
+  color:var(--accent-dark);opacity:1;cursor:default;
+}
+.reviewest{justify-self:end}
 .reviewquiet{color:var(--faint);font-size:var(--fs-12);white-space:nowrap}
-.reviewtally{margin:0 0 var(--s3);color:var(--muted);font-size:var(--fs-13);font-weight:600}
+.reviewtally{color:var(--muted);font-size:var(--fs-13);font-weight:600}
 
-/* ---------- The steps that report a number ---------- */
-.reviewload{display:flex;flex-wrap:wrap;gap:var(--s5) var(--s6);padding:var(--s4) 0}
-.reviewload-fig{display:grid;gap:3px}
-.reviewload-fig b{font-size:var(--fs-26);font-weight:700;letter-spacing:-.02em;line-height:1}
-.reviewload-fig b.loadpill{justify-self:start;font-size:var(--fs-20)}
-.reviewload-fig small{color:var(--faint);font-size:var(--fs-12)}
+/* ---------- The week in numbers ---------- */
+.reviewfigs{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
+  gap:var(--s3);
+}
+.reviewfig{
+  display:grid;gap:2px;align-content:start;
+  padding:var(--s3) var(--s4);border-radius:var(--r-md);background:var(--subtle);
+}
+.reviewfig b{
+  font-size:var(--fs-22);font-weight:700;letter-spacing:-.02em;line-height:1.15;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.reviewfig > span{color:var(--muted);font-size:var(--fs-12);font-weight:600}
+.reviewfig small{color:var(--faint);font-size:var(--fs-11);line-height:1.4}
 
 /* ---------- Nothing to settle ---------- */
 .reviewsettled{
@@ -1368,7 +1403,8 @@
 .reviewdone-actions{display:flex;gap:var(--s2);margin-top:var(--s3)}
 
 @media (max-width:720px){
+  .reviewbody{min-height:0}
   .reviewrow{grid-template-columns:18px minmax(0,1fr);row-gap:8px}
-  .reviewactions{grid-column:2;justify-self:start}
+  .reviewactions,.reviewest{grid-column:2;justify-self:start}
   .reviewquiet{grid-column:2}
 }

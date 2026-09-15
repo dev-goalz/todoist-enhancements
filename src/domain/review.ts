@@ -28,11 +28,11 @@ export type ReviewStepId =
   | 'today'
   /* Weekly */
   | 'done'
+  | 'stats'
   | 'slipped'
   | 'unestimated'
   | 'quiet'
-  | 'parked'
-  | 'ahead';
+  | 'backlog';
 
 /** What a row in a step can be sent to. The drop table does the work. */
 export type ReviewAction = 'today' | 'anytime' | 'someday';
@@ -47,6 +47,8 @@ export interface ReviewStep {
   completed: CompletedItem[];
   /** What each row can be sent to. Empty when the step only reports. */
   actions: ReviewAction[];
+  /** True where the missing thing is an estimate, so the field belongs on the row. */
+  estimable: boolean;
   /**
    * True when the step has nothing to settle. It is still shown — being told
    * the inbox is empty is the point of asking — but it is shown as settled.
@@ -68,7 +70,7 @@ export interface ReviewInput {
 
 const STEPS: Record<ReviewCadence, ReviewStepId[]> = {
   daily: ['overdue', 'inbox', 'anytime', 'today'],
-  weekly: ['done', 'slipped', 'inbox', 'unestimated', 'quiet', 'parked', 'ahead'],
+  weekly: ['done', 'stats', 'slipped', 'inbox', 'unestimated', 'quiet', 'backlog'],
 };
 
 /** The steps a cadence walks through, in order. */
@@ -156,11 +158,13 @@ function contentOf(
     case 'quiet':
       return { ...empty, projects: quietProjects(input) };
 
-    case 'parked':
+    case 'backlog':
       return { ...empty, items: roots.filter((i) => bucketOf(i, now) === 'someday') };
 
-    case 'ahead':
-      return { ...empty, items: anytimeItems(roots, now) };
+    case 'stats':
+      /* The figures are read from the same completions the first step lists,
+         so the two can never disagree about the week they describe. */
+      return { ...empty, completed: input.completed };
 
     default:
       return empty;
@@ -173,13 +177,27 @@ const ACTIONS: Record<ReviewStepId, ReviewAction[]> = {
   slipped: ['today', 'anytime', 'someday'],
   inbox: ['today', 'anytime', 'someday'],
   anytime: ['today', 'someday'],
+  /* The backlog offers all three and marks the one the task is already in, so
+     leaving it where it is reads as a choice rather than as not answering. */
+  backlog: ['today', 'anytime', 'someday'],
   unestimated: [],
-  parked: ['today', 'anytime'],
   today: [],
   done: [],
+  stats: [],
   quiet: [],
-  ahead: [],
 };
+
+/** The step where the thing missing is an estimate, not a destination. */
+const ESTIMABLE: ReviewStepId[] = ['unestimated'];
+
+/**
+ * Steps that only report.
+ *
+ * Everything else asks for something — a destination, a number, or a tick —
+ * so it carries a count until it is empty. Today asks for ticks, which is why
+ * it is not in here even though it offers no destinations.
+ */
+const REPORT_ONLY: ReviewStepId[] = ['done', 'stats', 'quiet'];
 
 /** Builds every step of a review, in order. */
 export function buildReview(cadence: ReviewCadence, input: ReviewInput): ReviewStep[] {
@@ -190,13 +208,16 @@ export function buildReview(cadence: ReviewCadence, input: ReviewInput): ReviewS
       content.projects.length === 0 &&
       content.completed.length === 0;
 
+    const estimable = ESTIMABLE.includes(id);
     return {
       id,
       ...content,
       actions: ACTIONS[id],
+      estimable,
       /* A step that only reports is never "to settle": there is nothing to do
-         about it, so it reads as settled whatever it contains. */
-      clear: nothing || ACTIONS[id].length === 0,
+         about it, so it reads as settled whatever it contains. The backlog is
+         the same — reading it is the point, and a backlog is not a problem. */
+      clear: nothing || REPORT_ONLY.includes(id) || id === 'backlog',
     };
   });
 }

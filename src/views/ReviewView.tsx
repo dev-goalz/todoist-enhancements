@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Icon } from '@/components/Icon';
+import { EstimateField } from '@/components/EstimateField';
 import { useT } from '@/hooks/useT';
 import { useData } from '@/hooks/useData';
 import { useCompleted } from '@/hooks/useCompleted';
@@ -7,11 +8,12 @@ import { useStore } from '@/store/store';
 import { navigate } from '@/hooks/useRoute';
 import { rootItems } from '@/store/selectors';
 import { markerStyle } from '@/domain/colors';
-import { formatDuration, effectiveEstimate } from '@/domain/estimates';
+import { formatDuration, effectiveEstimate, withEstimate } from '@/domain/estimates';
 import { dueDate, formatRelativeDay } from '@/domain/dates';
-import { summariseLoad, weeklyCapacity } from '@/domain/load';
+import { summariseInsights } from '@/domain/insights';
 import { rangeFor } from '@/domain/periods';
-import { toDisplayPriority, type Item } from '@/domain/types';
+import { bucketOf } from '@/domain/views';
+import { toDisplayPriority, type CompletedItem, type Item } from '@/domain/types';
 import {
   buildReview, type ReviewAction, type ReviewCadence, type ReviewStep,
 } from '@/domain/review';
@@ -27,6 +29,9 @@ const TARGETS = {
   someday: { kind: 'someday' },
 } as const;
 
+/** How the finished list can be ordered. */
+type DoneOrder = 'date' | 'priority';
+
 interface ReviewViewProps {
   onOpen: (id: string) => void;
 }
@@ -36,21 +41,24 @@ interface ReviewViewProps {
  *
  * A planning tool is only as good as the habit of looking at it, and what
  * makes that hard is that looking at everything is exhausting. This asks one
- * question at a time, in an order, with an end: the late work, then the
- * unfiled, then what is actually committed, then what today holds. When the
- * last question is answered the review says so and stops.
+ * question at a time, in an order, with an end.
  *
  * Every answer is a change Todoist already understands, made through the same
  * rules a drag makes, so a pass through here leaves nothing behind that the
- * official app would not recognise.
+ * official app would not recognise. Nothing about the review is stored: it is
+ * a way of reading what is already there.
  */
 export function ReviewView({ onOpen }: ReviewViewProps) {
   const { t, locale } = useT();
   const { snapshot, items, childrenOf } = useData();
-  const prefs = useStore((s) => s.prefs);
+  const sendTo = useStore((s) => s.sendTo);
+  const toggleTask = useStore((s) => s.toggleTask);
+  const updateTask = useStore((s) => s.updateTask);
+
   const [cadence, setCadence] = useState<ReviewCadence>('daily');
   const [index, setIndex] = useState(0);
   const [finished, setFinished] = useState(false);
+  const [doneOrder, setDoneOrder] = useState<DoneOrder>('date');
 
   /* The weekly pass reports what was finished, which is history and is read
      on demand. The daily pass never asks, so it never fetches. */
@@ -58,7 +66,7 @@ export function ReviewView({ onOpen }: ReviewViewProps) {
     () => rangeFor('week', 0, null, snapshot.user?.start_day ?? 1),
     [snapshot.user?.start_day],
   );
-  const { data: completed } = useCompleted(weekRange, cadence === 'weekly');
+  const { data: completed, loading } = useCompleted(weekRange, cadence === 'weekly');
 
   const roots = useMemo(() => rootItems(items), [items]);
 
@@ -83,25 +91,24 @@ export function ReviewView({ onOpen }: ReviewViewProps) {
   const step = steps[index];
   const last = index === steps.length - 1;
 
+  /** The number on a step's pip: how many things it is asking about. */
+  const countOf = (s: ReviewStep): number =>
+    s.items.length + s.projects.length + s.completed.length;
+
   return (
     <div className="page review">
-      <div className="phead">
-        <div className="phead-text">
-          <h1 className="ptitle">{t('review.title')}</h1>
-          <div className="psub">{t(`review.intro.${cadence}` as TranslationKey)}</div>
-        </div>
-        <div className="pactions">
-          <div className="segmented small reviewcadence" role="group" aria-label={t('review.title')}>
-            {(['daily', 'weekly'] as const).map((value) => (
-              <button
-                key={value}
-                aria-pressed={cadence === value}
-                onClick={() => setCadence(value)}
-              >
-                {t(`review.cadence.${value}` as TranslationKey)}
-              </button>
-            ))}
-          </div>
+      <div className="reviewhead">
+        <h1 className="ptitle">{t('review.title')}</h1>
+        <div className="segmented small reviewcadence" role="group" aria-label={t('review.title')}>
+          {(['daily', 'weekly'] as const).map((value) => (
+            <button
+              key={value}
+              aria-pressed={cadence === value}
+              onClick={() => setCadence(value)}
+            >
+              {t(`review.cadence.${value}` as TranslationKey)}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -118,7 +125,7 @@ export function ReviewView({ onOpen }: ReviewViewProps) {
               onClick={() => { setIndex(i); setFinished(false); }}
             >
               <span className="reviewpip-dot" aria-hidden="true">
-                {s.clear ? <Icon name="check" size="sm" /> : <b>{count(s)}</b>}
+                {s.clear ? <Icon name="check" size="sm" /> : <b>{countOf(s)}</b>}
               </span>
               <span className="reviewpip-label">{t(`review.step.${s.id}` as TranslationKey)}</span>
             </button>
@@ -127,14 +134,17 @@ export function ReviewView({ onOpen }: ReviewViewProps) {
       </ol>
 
       {finished || !step ? (
-        <Done cadence={cadence} onRestart={() => { setIndex(0); setFinished(false); }} />
+        <Done />
       ) : (
         <>
+          {/* One fixed frame: the question at the top, the answer below it, and
+              the same two buttons in the same place on every step of both
+              cadences. What changes between steps is the content, not where
+              anything is. */}
           <section className="reviewstep" key={step.id}>
             <h2>{t(`review.step.${step.id}` as TranslationKey)}</h2>
             <p className="reviewask">{t(`review.ask.${step.id}` as TranslationKey)}</p>
-
-            <StepBody step={step} onOpen={onOpen} />
+            <div className="reviewbody">{body()}</div>
           </section>
 
           <div className="reviewfoot">
@@ -162,97 +172,58 @@ export function ReviewView({ onOpen }: ReviewViewProps) {
     </div>
   );
 
-  /** The number on a step's pip: how many things it is asking about. */
-  function count(s: ReviewStep): number {
-    return s.items.length + s.projects.length + s.completed.length;
-  }
+  function body() {
+    if (!step) return null;
 
-  function StepBody({ step: s, onOpen: open }: { step: ReviewStep; onOpen: (id: string) => void }) {
-    if (s.id === 'today' || s.id === 'ahead') {
-      return <Load step={s} />;
-    }
+    if (step.id === 'stats') return <Stats />;
+    if (step.id === 'done') return <DoneList />;
+    if (step.id === 'quiet') return <Quiet />;
 
-    if (s.id === 'quiet') {
-      if (s.projects.length === 0) return <Settled />;
-      return (
-        <div className="reviewlist">
-          {s.projects.map((project) => (
-            <div className="reviewrow project" key={project.id}>
-              <button
-                className="reviewname as-row"
-                onClick={() => navigate('project', project.id)}
-              >
-                <span className="hash" style={markerStyle(project.color)}>#</span>
-                <span className="ttitle">{project.name}</span>
-              </button>
-              <span className="reviewquiet">
-                {t('review.quietFor', { days: QUIET_AFTER_DAYS })}
-              </span>
-            </div>
-          ))}
-        </div>
-      );
-    }
-
-    if (s.id === 'done') {
-      if (s.completed.length === 0) return <Settled note={t('review.doneNone')} />;
-      return (
-        <>
-          <p className="reviewtally">
-            {t('review.doneCount', { count: s.completed.length })}
-          </p>
-          <div className="reviewlist">
-            {s.completed.slice(0, 40).map((done) => {
-              const project = snapshot.projects[done.project_id];
-              return (
-                <div className="reviewrow done" key={done.id}>
-                  <span className="check done" aria-hidden="true"><Icon name="check" /></span>
-                  <span className="reviewname as-text">
-                    <span className="ttitle">{done.content}</span>
-                  </span>
-                  {project && !project.inbox_project && (
-                    <span className="proj" style={markerStyle(project.color, false)}>
-                      #{project.name}
-                    </span>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </>
-      );
-    }
-
-    if (s.items.length === 0) return <Settled />;
+    if (step.items.length === 0) return <Settled />;
 
     return (
       <div className="reviewlist">
-        {s.items.map((item) => (
-          <Row key={item.id} item={item} actions={s.actions} onOpen={open} />
+        {step.items.map((item) => (
+          <Row key={item.id} item={item} step={step} />
         ))}
       </div>
     );
   }
 
   /** One decision, one row. */
-  function Row({
-    item, actions, onOpen: open,
-  }: { item: Item; actions: ReviewAction[]; onOpen: (id: string) => void }) {
-    const sendTo = useStore((s) => s.sendTo);
+  function Row({ item, step: s }: { item: Item; step: ReviewStep }) {
     const project = snapshot.projects[item.project_id];
     const { minutes } = effectiveEstimate(item, childrenOf);
     const due = dueDate(item);
 
+    /* Where the task is now, so the row can mark it. On the backlog step this
+       is what makes "leave it here" read as an answer rather than as silence. */
+    const bucket = bucketOf(item);
+    const current: ReviewAction | null =
+      bucket === 'today' ? 'today'
+        : bucket === 'anytime' ? 'anytime'
+          : bucket === 'someday' ? 'someday' : null;
+
     return (
       <div className="reviewrow">
-        <span className={`check p${toDisplayPriority(item.priority)}`} aria-hidden="true">
+        {/* Sometimes the answer is that it is already done. */}
+        <button
+          className={`check p${toDisplayPriority(item.priority)}`}
+          aria-label={t('task.complete')}
+          title={t('task.complete')}
+          onClick={() => void toggleTask(item.id)}
+        >
           <Icon name="check" />
-        </span>
+        </button>
 
-        <button className="reviewname" onClick={() => open(item.id)}>
+        <button className="reviewname" onClick={() => onOpen(item.id)}>
           <span className="ttitle">{item.content}</span>
           <span className="meta">
-            {due && <span className="late"><Icon name="calendar" />{formatRelativeDay(due, locale)}</span>}
+            {due && (
+              <span className={s.id === 'overdue' || s.id === 'slipped' ? 'late' : undefined}>
+                <Icon name="calendar" />{formatRelativeDay(due, locale)}
+              </span>
+            )}
             {minutes !== null && (
               <span><Icon name="clock" />{formatDuration(minutes, locale)}</span>
             )}
@@ -264,59 +235,198 @@ export function ReviewView({ onOpen }: ReviewViewProps) {
           </span>
         </button>
 
-        {/* The whole review is these three buttons. Everything else is context
-            for pressing one of them. */}
-        <span className="reviewactions">
-          {actions.map((action) => (
-            <button
-              key={action}
-              className="btn quiet small"
-              onClick={() => void sendTo(
-                item.id,
-                TARGETS[action],
-                t(`review.to.${action}` as TranslationKey),
-              )}
-            >
-              {t(`review.to.${action}` as TranslationKey)}
-            </button>
-          ))}
-        </span>
+        {s.estimable ? (
+          /* The thing missing here is a number, so the field is on the row and
+             the row leaves the list the moment it has one. */
+          <span className="reviewest">
+            <EstimateField
+              minutes={null}
+              onCommit={(value) => {
+                if (value === null) return;
+                void updateTask(item.id, { labels: withEstimate(item.labels, value) });
+              }}
+              onAdvance={(field) => {
+                const fields = Array.from(
+                  field.closest('.reviewlist')?.querySelectorAll('input') ?? [],
+                );
+                fields[fields.indexOf(field) + 1]?.focus();
+              }}
+            />
+          </span>
+        ) : (
+          <span className="reviewactions">
+            {s.actions.map((action) => (
+              <button
+                key={action}
+                className={`btn quiet${current === action ? ' on' : ''}`}
+                aria-pressed={current === action}
+                disabled={current === action}
+                onClick={() => void sendTo(
+                  item.id,
+                  TARGETS[action],
+                  t(`review.to.${action}` as TranslationKey),
+                )}
+              >
+                {t(`review.to.${action}` as TranslationKey)}
+              </button>
+            ))}
+          </span>
+        )}
       </div>
     );
   }
 
-  /** The load steps report a number rather than asking for a decision. */
-  function Load({ step: s }: { step: ReviewStep }) {
-    const daily = prefs.dailyCapacity;
-    const capacity = s.id === 'today'
-      ? daily[new Date().getDay()]
-      : weeklyCapacity(daily, prefs.weeklyCapacityOverride);
-    const load = summariseLoad(s.items, childrenOf, capacity);
+  /** What you finished, in the order you want to read it. */
+  function DoneList() {
+    const ordered = useMemo(() => {
+      const list = [...(step?.completed ?? [])];
+      if (doneOrder === 'priority') {
+        return list.sort((a, b) => {
+          const left = toDisplayPriority(a.priority ?? 1);
+          const right = toDisplayPriority(b.priority ?? 1);
+          if (left !== right) return left - right;
+          return new Date(b.completed_at).getTime() - new Date(a.completed_at).getTime();
+        });
+      }
+      return list.sort(
+        (a, b) => new Date(b.completed_at).getTime() - new Date(a.completed_at).getTime(),
+      );
+    }, [step?.completed, doneOrder]);
+
+    if (loading && ordered.length === 0) return <p className="reviewquiet">{t('common.loading')}</p>;
+    if (ordered.length === 0) return <Settled note={t('review.doneNone')} />;
 
     return (
-      <div className="reviewload">
-        <div className="reviewload-fig">
-          <b>{load.taskCount}</b>
-          <small>{t('metrics.taskWord', { count: load.taskCount })}</small>
-        </div>
-        <div className="reviewload-fig">
-          <b>{formatDuration(load.estimatedMinutes, locale)}</b>
-          <small>{t('metrics.estimatedWord')}</small>
-        </div>
-        {load.percentage !== null && (
-          <div className="reviewload-fig">
-            <b className={`loadpill ${
-              load.level === 'ok' ? 'ok' : load.level === 'tight' ? 'warn' : 'over'
-            }`}>{load.percentage}%</b>
-            <small>{t('review.ofCapacity')}</small>
+      <>
+        <div className="reviewtoolbar">
+          <span className="reviewtally">
+            {t('review.doneCount', { count: ordered.length })}
+          </span>
+          <div className="segmented small" role="group" aria-label={t('toolbar.sortBy')}>
+            {(['date', 'priority'] as const).map((option) => (
+              <button
+                key={option}
+                aria-pressed={doneOrder === option}
+                onClick={() => setDoneOrder(option)}
+              >
+                {t(`review.order.${option}` as TranslationKey)}
+              </button>
+            ))}
           </div>
-        )}
-        {load.unestimatedCount > 0 && (
-          <div className="reviewload-fig">
-            <b>{load.unestimatedCount}</b>
-            <small>{t('metrics.unestimatedWord')}</small>
+        </div>
+
+        <div className="reviewlist">
+          {ordered.map((done) => <DoneRow key={done.id} done={done} />)}
+        </div>
+      </>
+    );
+  }
+
+  function DoneRow({ done }: { done: CompletedItem }) {
+    const project = snapshot.projects[done.project_id];
+    const priority = toDisplayPriority(done.priority ?? 1);
+    return (
+      <div className="reviewrow done">
+        {/* A tick, not a line through it. This is a record of work, and a
+            review is no place to read your own week crossed out. */}
+        <span className={`check done p${priority}`} aria-hidden="true"><Icon name="check" /></span>
+        <span className="reviewname as-text">
+          <span className="ttitle">{done.content}</span>
+          <span className="meta">
+            <span>{formatRelativeDay(new Date(done.completed_at), locale)}</span>
+            {project && !project.inbox_project && (
+              <span className="proj" style={markerStyle(project.color, false)}>
+                #{project.name}
+              </span>
+            )}
+          </span>
+        </span>
+        {priority < 4 && <span className={`pflag p${priority}`}>P{priority}</span>}
+      </div>
+    );
+  }
+
+  /** The week in figures, from the same completions the first step listed. */
+  function Stats() {
+    const summary = useMemo(
+      () => summariseInsights(step?.completed ?? [], roots, snapshot),
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      [step?.completed, roots, snapshot],
+    );
+
+    if (loading && summary.completedCount === 0) {
+      return <p className="reviewquiet">{t('common.loading')}</p>;
+    }
+
+    const busiest = [...summary.byDay].sort((a, b) => b.count - a.count)[0];
+    const top = summary.byProject[0];
+
+    return (
+      <div className="reviewfigs">
+        <Fig value={String(summary.completedCount)} label={t('review.fig.finished')} />
+        <Fig
+          value={formatDuration(summary.completedMinutes, locale)}
+          label={t('review.fig.time')}
+          note={summary.completedWithoutEstimate > 0
+            ? t('review.fig.timeNote', { count: summary.completedWithoutEstimate })
+            : undefined}
+        />
+        <Fig
+          value={`${summary.focusScore}`}
+          label={t('review.fig.focus')}
+          note={t('review.fig.focusNote')}
+        />
+        <Fig
+          value={busiest && busiest.count > 0
+            ? formatRelativeDay(new Date(`${busiest.date}T12:00:00`), locale)
+            : '—'}
+          label={t('review.fig.busiest')}
+          note={busiest && busiest.count > 0
+            ? t('metrics.tasks', { count: busiest.count })
+            : undefined}
+        />
+        <Fig
+          value={top ? top.name : '—'}
+          label={t('review.fig.topProject')}
+          note={top ? t('metrics.tasks', { count: top.count }) : undefined}
+        />
+        <Fig
+          value={String(summary.activeDays)}
+          label={t('review.fig.activeDays')}
+          note={t('review.fig.streak', { count: summary.currentStreak })}
+        />
+      </div>
+    );
+  }
+
+  function Fig({ value, label, note }: { value: string; label: string; note?: string }) {
+    return (
+      <div className="reviewfig">
+        <b>{value}</b>
+        <span>{label}</span>
+        {note && <small>{note}</small>}
+      </div>
+    );
+  }
+
+  function Quiet() {
+    if (!step || step.projects.length === 0) return <Settled />;
+    return (
+      <div className="reviewlist">
+        {step.projects.map((project) => (
+          <div className="reviewrow project" key={project.id}>
+            <button
+              className="reviewname as-row"
+              onClick={() => navigate('project', project.id)}
+            >
+              <span className="hash" style={markerStyle(project.color)}>#</span>
+              <span className="ttitle">{project.name}</span>
+            </button>
+            <span className="reviewquiet">
+              {t('review.quietFor', { days: QUIET_AFTER_DAYS })}
+            </span>
           </div>
-        )}
+        ))}
       </div>
     );
   }
@@ -330,17 +440,22 @@ export function ReviewView({ onOpen }: ReviewViewProps) {
     );
   }
 
-  function Done({ cadence: c, onRestart }: { cadence: ReviewCadence; onRestart: () => void }) {
+  function Done() {
     return (
       <section className="reviewdone">
         <span className="reviewdone-mark" aria-hidden="true"><Icon name="check" /></span>
         <h2>{t('review.doneTitle')}</h2>
-        <p>{t(`review.doneBody.${c}` as TranslationKey)}</p>
+        <p>{t(`review.doneBody.${cadence}` as TranslationKey)}</p>
         <div className="reviewdone-actions">
           <button className="btn primary" onClick={() => navigate('week')}>
             {t('nav.week')}
           </button>
-          <button className="btn quiet" onClick={onRestart}>{t('review.again')}</button>
+          <button
+            className="btn quiet"
+            onClick={() => { setIndex(0); setFinished(false); }}
+          >
+            {t('review.again')}
+          </button>
         </div>
       </section>
     );
