@@ -17,6 +17,7 @@ export const fr: Record<TranslationKey, string> = {
   'nav.collapseSidebar': 'Réduire le panneau',
   'nav.showSidebar': 'Afficher le panneau',
   'nav.openNavigation': 'Ouvrir la navigation',
+  'nav.browse': 'Parcourir',
   'nav.projects': 'Projets',
   'karma.beginner': 'Débutant',
   'karma.novice': 'Novice',
