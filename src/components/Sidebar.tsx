@@ -172,8 +172,9 @@ export function Sidebar({
     const rowKey = `${keyPrefix}${project.id}`;
     const count = counts.byProject.get(project.id) ?? 0;
     const menuOpen = rowMenu?.key === rowKey;
+    const childrenOpen = openFolders[project.id] ?? true;
 
-    return (
+    const row = (
       <Droppable
         target={{ kind: 'project', projectId: project.id }}
         /* A favourite project also appears under its workspace, so the two
@@ -212,6 +213,20 @@ export function Sidebar({
               </button>
             </span>
 
+            {/* A project that holds projects discloses them, the way a folder
+                does. Without this its children were built, counted, and never
+                drawn: nested projects simply were not in the sidebar. */}
+            {children.length > 0 && (
+              <button
+                className="navtwist"
+                aria-expanded={childrenOpen}
+                aria-label={project.name}
+                onClick={() => setOpenFolders((prev) => ({ ...prev, [project.id]: !childrenOpen }))}
+              >
+                <Icon name={childrenOpen ? 'caret-up' : 'caret'} size="sm" />
+              </button>
+            )}
+
             {menuOpen && (
               <ProjectMenu
                 project={project}
@@ -233,6 +248,14 @@ export function Sidebar({
           </div>
         )}
       </Droppable>
+    );
+
+    if (children.length === 0) return row;
+    return (
+      <div key={`${rowKey}-tree`}>
+        {row}
+        {childrenOpen && children.map((child) => projectNode(child, keyPrefix, depth + 1))}
+      </div>
     );
   };
 

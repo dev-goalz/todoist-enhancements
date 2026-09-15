@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Overlay } from './Overlay';
 import { Icon } from '../Icon';
 import { EstimateField } from '../EstimateField';
+import { Select } from '../Select';
 import { TaskNameField } from '../TaskNameField';
 import { useT } from '@/hooks/useT';
 import { useStore } from '@/store/store';
@@ -59,11 +60,11 @@ export function Composer({
     setTagsOpen(false);
     setSubtasks([]);
     setSubtaskDraft('');
-    setProjectId(defaultProjectId ?? '');
+    setProjectId(defaultProjectId ?? snapshot.user?.inbox_project_id ?? '');
     setSectionId(defaultSectionId ?? '');
     setDate(defaultDate ?? '');
     setDeadline('');
-  }, [open, defaultProjectId, defaultSectionId, defaultDate]);
+  }, [open, defaultProjectId, defaultSectionId, defaultDate, snapshot.user?.inbox_project_id]);
 
   const projects = Object.values(snapshot.projects)
     .filter((p) => !p.is_archived && !p.is_deleted && !p.is_folder)
@@ -86,7 +87,10 @@ export function Composer({
     const allLabels = [...new Set([...labels, ...parsed.labels])];
     if (minutes !== null) allLabels.push(estimateLabel(minutes));
 
-    const targetProject = parsed.projectId ?? projectId ?? snapshot.user?.inbox_project_id;
+    /* `||`, not `??`: an unset picker is an empty string, not null, and an
+       empty string sent as project_id is what Todoist answers "invalid
+       argument value" to — which is a task that never gets created. */
+    const targetProject = parsed.projectId || projectId || snapshot.user?.inbox_project_id;
     // What was typed into the name wins over the picker only when the picker
     // was left alone, so an explicit choice is never quietly overwritten.
     const dueDate = date || parsed.date;
@@ -142,42 +146,50 @@ export function Composer({
             <input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} />
           </label>
 
-          <label className="cfield">
-            <span>{t('composer.project')}</span>
-            <select
+          {/* The Inbox is a project like any other and is already in this list.
+              It used to be offered a second time above it, as an empty value,
+              and that first one could not create anything. */}
+          <span className="cfield">
+            <Select
+              label={t('composer.project')}
               value={projectId}
-              onChange={(e) => { setProjectId(e.target.value); setSectionId(''); }}
-            >
-              <option value="">{t('nav.inbox')}</option>
-              {projects.map((p) => (
-                <option key={p.id} value={p.id}>{p.name}</option>
-              ))}
-            </select>
-          </label>
+              ariaLabel={t('composer.project')}
+              onChange={(next) => { setProjectId(next); setSectionId(''); }}
+              options={projects.map((p) => ({
+                value: p.id,
+                label: p.inbox_project ? t('nav.inbox') : p.name,
+                marker: p.color,
+              }))}
+            />
+          </span>
 
           {sections.length > 0 && (
-            <label className="cfield">
-              <span>{t('detail.section')}</span>
-              <select value={sectionId} onChange={(e) => setSectionId(e.target.value)}>
-                <option value="">{t('group.noSection')}</option>
-                {sections.map((s) => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
-                ))}
-              </select>
-            </label>
+            <span className="cfield">
+              <Select
+                label={t('detail.section')}
+                value={sectionId}
+                ariaLabel={t('detail.section')}
+                onChange={setSectionId}
+                options={[
+                  { value: '', label: t('group.noSection') },
+                  ...sections.map((s) => ({ value: s.id, label: s.name })),
+                ]}
+              />
+            </span>
           )}
 
-          <label className="cfield">
-            <span>{t('composer.priority')}</span>
-            <select
-              value={priority}
-              onChange={(e) => setPriority(Number(e.target.value) as DisplayPriority)}
-            >
-              {([1, 2, 3, 4] as const).map((p) => (
-                <option key={p} value={p}>P{p}</option>
-              ))}
-            </select>
-          </label>
+          <span className="cfield">
+            <Select
+              label={t('composer.priority')}
+              value={String(priority)}
+              ariaLabel={t('composer.priority')}
+              onChange={(next) => setPriority(Number(next) as DisplayPriority)}
+              options={([1, 2, 3, 4] as const).map((p) => ({
+                value: String(p),
+                label: `P${p}`,
+              }))}
+            />
+          </span>
 
           <span className="cfield">
             <span>{t('composer.duration')}</span>

@@ -1,8 +1,14 @@
 import { Icon } from './Icon';
+import { markerStyle } from '@/domain/colors';
 
 export interface SelectOption {
   value: string;
   label: string;
+  /**
+   * A Todoist colour name. The painted face shows the marker; the native list
+   * underneath cannot, which is the one thing this control gives up.
+   */
+  marker?: string;
 }
 
 interface SelectProps {
@@ -25,12 +31,15 @@ interface SelectProps {
  * worth shipping.
  */
 export function Select({ label, value, options, onChange, ariaLabel }: SelectProps) {
-  const current = options.find((option) => option.value === value)?.label ?? '';
+  const current = options.find((option) => option.value === value);
   return (
     <label className="fselect">
       {label && <span className="fselect-label">{label}</span>}
       <span className="fselect-face">
-        <span className="fselect-value">{current}</span>
+        {current?.marker !== undefined && (
+          <span className="hash" style={markerStyle(current.marker)}>#</span>
+        )}
+        <span className="fselect-value">{current?.label ?? ''}</span>
         <Icon name="caret" size="sm" />
       </span>
       <select

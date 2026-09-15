@@ -1270,6 +1270,18 @@
    ========================================================================== */
 .navrow{position:relative;display:flex;align-items:center}
 .navrow .navitem{padding-right:34px}
+/* The disclosure for a project that holds projects, in the left gutter where
+   a tree expects it rather than competing with the count on the right. */
+.navtwist{
+  position:absolute;left:-14px;top:50%;transform:translateY(-50%);
+  width:16px;height:16px;display:grid;place-items:center;
+  border-radius:var(--r-xs);color:var(--faint);
+}
+.navtwist:hover{background:var(--hover);color:var(--text)}
+.navtwist .ic{width:12px;height:12px}
+/* The gutter only exists where the sidebar has room for it. */
+.side-group{padding-left:14px}
+.side-group .side-head{margin-left:-14px}
 .navend{
   position:absolute;right:6px;top:50%;transform:translateY(-50%);
   display:grid;place-items:center;pointer-events:none;
