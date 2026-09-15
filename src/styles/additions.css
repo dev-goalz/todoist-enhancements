@@ -251,12 +251,26 @@
   border-bottom:1px solid var(--border);
 }
 .estrow:last-child{border-bottom:0}
+/* A row that has been answered says so, so the eye can find the gaps left. */
+.estrow.filled{background:linear-gradient(90deg,var(--subtle),transparent 60%)}
+.estrow.filled .estname .ttitle{color:var(--muted)}
 .estname{text-align:left;min-width:0}
 .estname .ttitle{display:block}
 .estname .meta{margin-top:2px}
 .estfield{display:inline-flex;align-items:center;gap:6px}
 .estfield .estunit{color:var(--faint);font-size:var(--fs-12)}
 .estinput.invalid{border-color:var(--accent);color:var(--accent-dark)}
+/* Said once, above the list: what the keyboard does and when writing happens. */
+.estlist-hint{
+  margin:0 0 var(--s3);color:var(--faint);font-size:var(--fs-12);line-height:1.5;
+}
+/* The tally holds the left of the action bar; the buttons keep the right. */
+.estfoot{justify-content:flex-end;gap:var(--s3)}
+.estfoot-tally{
+  margin-right:auto;display:inline-flex;align-items:baseline;gap:8px;
+  color:var(--faint);font-size:var(--fs-12);
+}
+.estfoot-tally b{color:var(--text);font-size:var(--fs-13);font-weight:700}
 
 /* The unestimated count in a page header is a way in, so it looks like one. */
 .metric-link{
@@ -352,11 +366,57 @@
 /* The marker the sidebar will show, so the colour choice has a subject. */
 .projectpreview{
   display:flex;align-items:center;gap:10px;
-  padding:var(--s3) var(--s4);margin-bottom:var(--s4);
+  padding:var(--s3) var(--s4);margin-bottom:var(--s5);
   border-radius:12px;background:var(--subtle);
   font-size:var(--fs-14);font-weight:600;color:var(--text);
 }
-.projectpreview .hash{width:22px;height:22px}
+.projectpreview .hash{width:22px;height:22px;flex:0 0 auto}
+.projectpreview-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* Where it will live, said at the end of the line rather than left to memory. */
+.projectpreview-where{
+  margin-left:auto;flex:0 0 auto;padding-left:var(--s3);
+  color:var(--faint);font-size:var(--fs-12);font-weight:600;
+}
+
+/* One field under the next, each labelled, none of them guessing at a width. */
+.projectform{display:grid;gap:var(--s5)}
+.projectform .projectpreview{margin-bottom:0}
+.formfield{display:grid;gap:8px}
+.fieldlabel{
+  display:block;color:var(--muted);font-size:var(--fs-12);font-weight:600;
+  letter-spacing:.01em;
+}
+
+/* The one text input in the product that is a box rather than a line. */
+.textfield{
+  width:100%;min-height:40px;padding:0 12px;
+  border:1px solid var(--border);border-radius:var(--r-sm);
+  background:var(--surface);color:var(--text);
+  font-size:var(--fs-14);font-family:inherit;
+}
+.textfield::placeholder{color:var(--faint)}
+.textfield:hover{border-color:var(--border-strong)}
+.textfield:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:transparent}
+
+/* The palette. A grid that wraps rather than a row that overflows, and the
+   chosen one says so with a tick instead of a ring nobody can see on yellow. */
+.swatches{
+  display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:8px;
+}
+.swatch{
+  aspect-ratio:1;width:100%;min-width:0;display:grid;place-items:center;
+  border-radius:var(--r-full);background:var(--swatch);
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.08);
+  transition:transform .12s ease-out;cursor:pointer;
+}
+.swatch:hover{transform:scale(1.12)}
+.swatch:focus-visible{outline:2px solid var(--text);outline-offset:2px}
+.swatch.selected{box-shadow:inset 0 0 0 1px rgba(0,0,0,.12),0 0 0 2px var(--surface),0 0 0 4px var(--swatch)}
+.swatch .ic{width:13px;height:13px;color:#fff;filter:drop-shadow(0 1px 1px rgba(0,0,0,.35))}
+
+@media (max-width:520px){
+  .swatches{grid-template-columns:repeat(6,minmax(0,1fr))}
+}
 
 /* A sheet's actions sit on their own bar, against the sheet's own edge. */
 .sheet-foot{
@@ -401,3 +461,9 @@
 }
 .setlinks a:hover{color:var(--accent-dark);text-decoration:underline}
 .setlinks .ic{color:currentColor}
+
+/* A button that cannot be pressed has to look like one. Two dialogs now hold
+   their primary action back until there is something to save, and without
+   this the held-back state looked exactly like the ready one. */
+.btn:disabled{opacity:.4;cursor:default}
+.btn:disabled:hover{filter:none;transform:none}

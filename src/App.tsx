@@ -46,7 +46,9 @@ export function App() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [issuesOpen, setIssuesOpen] = useState(false);
   const [insightsOpen, setInsightsOpen] = useState(false);
-  const [addProjectOpen, setAddProjectOpen] = useState(false);
+  /* Not a boolean: which sidebar section's add button was pressed decides
+     where the project lands, so the open state carries that destination. */
+  const [addProjectIn, setAddProjectIn] = useState<AddProjectTarget>(null);
   const [unestimatedOpen, setUnestimatedOpen] = useState(false);
   /** Where a newly composed task should land, when it was added from a section. */
   const [placement, setPlacement] = useState<ComposerPlacement>({});
@@ -119,8 +121,8 @@ export function App() {
             setIssuesOpen={setIssuesOpen}
             insightsOpen={insightsOpen}
             setInsightsOpen={setInsightsOpen}
-            addProjectOpen={addProjectOpen}
-            setAddProjectOpen={setAddProjectOpen}
+            addProjectIn={addProjectIn}
+            setAddProjectIn={setAddProjectIn}
             unestimatedOpen={unestimatedOpen}
             setUnestimatedOpen={setUnestimatedOpen}
             placement={placement}
@@ -159,13 +161,16 @@ interface ShellProps {
   setIssuesOpen: (open: boolean) => void;
   insightsOpen: boolean;
   setInsightsOpen: (open: boolean) => void;
-  addProjectOpen: boolean;
-  setAddProjectOpen: (open: boolean) => void;
+  addProjectIn: AddProjectTarget;
+  setAddProjectIn: (target: AddProjectTarget) => void;
   unestimatedOpen: boolean;
   setUnestimatedOpen: (open: boolean) => void;
   placement: ComposerPlacement;
   setPlacement: (placement: ComposerPlacement) => void;
 }
+
+/** Where a new project goes, and null when the sheet is closed. */
+export type AddProjectTarget = { workspaceId: string | null } | null;
 
 export interface ComposerPlacement {
   projectId?: string;
@@ -176,7 +181,7 @@ export interface ComposerPlacement {
 function AppShell({
   route, openTaskId, setOpenTaskId, composerOpen, setComposerOpen,
   searchOpen, setSearchOpen, issuesOpen, setIssuesOpen,
-  insightsOpen, setInsightsOpen, addProjectOpen, setAddProjectOpen,
+  insightsOpen, setInsightsOpen, addProjectIn, setAddProjectIn,
   unestimatedOpen, setUnestimatedOpen, placement, setPlacement,
 }: ShellProps) {
   const { t } = useT();
@@ -262,7 +267,7 @@ function AppShell({
         onAddTask={addTask}
         onSearch={() => setSearchOpen(true)}
         onIssues={() => setIssuesOpen(true)}
-        onAddProject={() => setAddProjectOpen(true)}
+        onAddProject={(workspaceId) => setAddProjectIn({ workspaceId })}
         issuesCount={conflictCount}
       />
 
@@ -343,7 +348,11 @@ function AppShell({
       />
       <Issues open={issuesOpen} onClose={() => setIssuesOpen(false)} onOpen={openTask} />
       <Search open={searchOpen} onClose={() => setSearchOpen(false)} onOpen={openTask} />
-      <AddProject open={addProjectOpen} onClose={() => setAddProjectOpen(false)} />
+      <AddProject
+        open={addProjectIn !== null}
+        workspaceId={addProjectIn?.workspaceId ?? null}
+        onClose={() => setAddProjectIn(null)}
+      />
       <Unestimated
         open={unestimatedOpen}
         onClose={() => setUnestimatedOpen(false)}

@@ -9,7 +9,8 @@ interface with one built around planning a week.
 affiliated with, or supported by Todoist.**
 
 [Open it](https://todoistenhanced.julesbertolino.fr) · [Features](#features) ·
-[Contributing](#contributing) · [Disclaimer and trademarks](#disclaimer-and-trademarks) ·
+[Contributing](#contributing) · [Report a bug or an idea](https://tally.so/r/WOLkVN) ·
+[Disclaimer and trademarks](#disclaimer-and-trademarks) ·
 [License](#license) · [Buy me a coffee](https://buymeacoffee.com/julesbertolino)
 
 ![Enhanced for Todoist, My week view](docs/screenshot-my-week.png)
@@ -155,6 +156,9 @@ the main thing it needs help with.
   most useful thing you can tell me is what you do that this app makes
   difficult.
 - Bug reports are welcome, with or without a fix attached.
+- No GitHub account, or would rather not open an issue? There is a short form:
+  **[submit a bug or an idea](https://tally.so/r/WOLkVN)**. It is the same form
+  the app links to from the user menu, and it reaches me just as well.
 - Pull requests are open. The rules live in `src/domain` and depend on nothing
   else, so most behaviour can be changed without touching the interface.
 

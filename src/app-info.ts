@@ -14,5 +14,7 @@ export const AUTHOR = 'julesbertolino';
 export const SITE_URL = 'https://todoistenhanced.julesbertolino.fr';
 export const GITHUB_URL = 'https://github.com/julesvbertolino/todoist-enhancements';
 export const COFFEE_URL = 'https://buymeacoffee.com/julesbertolino';
+/** Where a bug or an idea goes. The same form the README and GitHub point at. */
+export const FEEDBACK_URL = 'https://tally.so/r/WOLkVN';
 export const TODOIST_DEVELOPER_URL =
   'https://app.todoist.com/app/settings/integrations/developer';

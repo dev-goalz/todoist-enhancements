@@ -1202,6 +1202,14 @@
   max-width:100%;
 }
 .phead .descview{display:block;max-width:min(72ch,100%);text-align:left}
+/* A link in the collapsed line: it reads as one, and it is not one. Following
+   it means opening the panel below, where the real anchor lives. */
+.descline .mdlink{color:var(--accent-dark);text-decoration:underline;text-underline-offset:2px}
+.descline code{
+  padding:0 4px;border-radius:var(--r-xs);background:var(--subtle);
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.92em;
+}
+.descline strong{font-weight:700;color:var(--text)}
 
 .deschint{
   position:absolute;z-index:60;top:calc(100% + 4px);left:-6px;

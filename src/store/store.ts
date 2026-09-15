@@ -12,6 +12,7 @@ import {
   emptySnapshot, toTodoistPriority,
   type DisplayPriority, type Item, type Snapshot, type ViewPrefs,
 } from '@/domain/types';
+import { withEstimate } from '@/domain/estimates';
 import { detectLocale, type Locale } from '@/i18n';
 import { buildDemoSnapshot } from '@/demo/demoData';
 import {
@@ -62,6 +63,13 @@ interface AppState {
   /* Mutations */
   apply: (commands: Command[], optimistic: (snapshot: Snapshot) => Snapshot) => Promise<void>;
   updateTask: (id: string, args: Record<string, unknown>) => Promise<void>;
+  /**
+   * Writes several estimates at once, as one request.
+   *
+   * Filling in a page's missing estimates is a single act, so it costs a
+   * single round trip and undoes as a single mistake.
+   */
+  setEstimates: (entries: Array<{ id: string; minutes: number }>) => Promise<void>;
   toggleTask: (id: string) => Promise<void>;
   removeTask: (id: string) => Promise<void>;
   createTask: (args: Record<string, unknown>) => Promise<void>;
@@ -72,7 +80,8 @@ interface AppState {
   /** Puts the tags in this order, which is also the order of the sidebar's favourites. */
   reorderLabels: (ids: string[]) => Promise<void>;
   skipOccurrence: (id: string) => Promise<void>;
-  createProject: (name: string, color: string) => Promise<void>;
+  /** Creates a project, in a workspace when one is named and personal when not. */
+  createProject: (name: string, color: string, workspaceId?: string | null) => Promise<void>;
   updateProjectFields: (id: string, args: Record<string, unknown>) => Promise<void>;
   updateSectionFields: (id: string, args: Record<string, unknown>) => Promise<void>;
   /** Creates a section at `index` and hands back its id, so the caller can focus its name. */
@@ -96,6 +105,25 @@ let persistTimer: ReturnType<typeof setTimeout> | null = null;
 function schedulePersist(snapshot: Snapshot) {
   if (persistTimer) clearTimeout(persistTimer);
   persistTimer = setTimeout(() => void idb.saveSnapshot(snapshot), 400);
+}
+
+
+/**
+ * What to say when Todoist refuses a change.
+ *
+ * Nearly every refusal a person will meet here is an account limit: a free
+ * plan allows five active projects, and the caps on sections, tags,
+ * collaborators and comments work the same way. Todoist answers with a short
+ * English sentence, which is accurate and says nothing about what to do, so a
+ * limit gets the sentence plus the one thing worth knowing — that the change
+ * did not happen, and where the limit lives. Anything else is passed through
+ * as Todoist worded it rather than guessed at.
+ */
+function explainFailure(error: string, locale: Locale): string {
+  if (!/limit/i.test(error)) return error;
+  return locale === 'fr'
+    ? `${error} — c’est une limite de votre compte Todoist, pas de cette application. La modification n’a pas été enregistrée.`
+    : `${error} — this is a limit on your Todoist account, not on this app. The change was not saved.`;
 }
 
 export const useStore = create<AppState>((set, get) => ({
@@ -303,7 +331,7 @@ export const useStore = create<AppState>((set, get) => ({
       if (failures.length > 0) {
         set({ snapshot: before });
         schedulePersist(before);
-        get().toast(failures[0].error);
+        get().toast(explainFailure(failures[0].error, get().prefs.locale));
       }
     } catch (error) {
       if (navigator.onLine && error instanceof ApiError && !error.isAuthError) {
@@ -321,6 +349,24 @@ export const useStore = create<AppState>((set, get) => ({
 
   async updateTask(id, args) {
     await get().apply([updateItem(id, args)], (snapshot) => patchItem(snapshot, id, args));
+  },
+
+  async setEstimates(entries) {
+    const snapshot = get().snapshot;
+    const changes = entries
+      .map(({ id, minutes }) => {
+        const item = snapshot.items[id];
+        return item ? { id, labels: withEstimate(item.labels, minutes) } : null;
+      })
+      .filter((change): change is { id: string; labels: string[] } => change !== null);
+
+    if (changes.length === 0) return;
+
+    await get().apply(
+      changes.map(({ id, labels }) => updateItem(id, { labels })),
+      (current) =>
+        changes.reduce((acc, { id, labels }) => patchItem(acc, id, { labels }), current),
+    );
   },
 
   async toggleTask(id) {
@@ -459,10 +505,15 @@ export const useStore = create<AppState>((set, get) => ({
     );
   },
 
-  async createProject(name, color) {
+  async createProject(name, color, workspaceId = null) {
     const tempId = newUuid();
+    /* Todoist reads the absence of workspace_id as the personal space, so the
+       key is left off entirely rather than sent as null. */
+    const args: Record<string, unknown> = { name, color };
+    if (workspaceId) args.workspace_id = workspaceId;
+
     await get().apply(
-      [{ type: 'project_add', uuid: newUuid(), args: { name, color }, temp_id: tempId }],
+      [{ type: 'project_add', uuid: newUuid(), args, temp_id: tempId }],
       (snapshot) => ({
         ...snapshot,
         projects: {
@@ -471,7 +522,7 @@ export const useStore = create<AppState>((set, get) => ({
             id: tempId, name, color, parent_id: null,
             child_order: Object.keys(snapshot.projects).length,
             is_archived: false, is_deleted: false, is_favorite: false,
-            workspace_id: null,
+            workspace_id: workspaceId,
           },
         },
       }),

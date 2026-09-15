@@ -430,7 +430,11 @@ ul{margin:0;padding:0;list-style:none}
 .meta .late{color:var(--accent)}
 .meta .deadline{color:#7a5cb9}
 .meta .at{color:var(--info)}
-.tag{padding:1px 6px;border-radius:var(--r-xs);background:var(--subtle);color:var(--muted);font-size:var(--fs-11)}
+/* A tag wears its own colour: the glyph in it, the chip a wash of it. Todoist
+   holds a colour for every tag and the row is where it earns its keep. */
+.tag{display:inline-flex;align-items:center;gap:4px;padding:1px 6px 1px 5px;border-radius:var(--r-xs);
+  background:var(--marker-soft,var(--subtle));color:var(--muted);font-size:var(--fs-11)}
+.tag .ic{width:11px;height:11px;color:var(--marker,var(--faint))}
 /* project reference: ONE treatment everywhere (v1 had 3: coloured inline,
    plain grey inline, and a right-hand grey column) */
 .proj{display:inline-flex;align-items:center;gap:3px;font-weight:600}

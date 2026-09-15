@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Icon, type IconName } from './Icon';
 import { useT } from '@/hooks/useT';
 import { useData } from '@/hooks/useData';
@@ -13,13 +13,15 @@ import type { DropTarget } from '@/domain/dnd';
 import type { TranslationKey } from '@/i18n';
 import { SyncStatus } from './SyncStatus';
 import { Droppable } from './dnd/Droppable';
+import { COFFEE_URL, FEEDBACK_URL } from '@/app-info';
 
 interface SidebarProps {
   route: Route;
   onAddTask: () => void;
   onSearch: () => void;
   onIssues: () => void;
-  onAddProject: () => void;
+  /** Carries the section that asked, so the project is created in that space. */
+  onAddProject: (workspaceId: string | null) => void;
   issuesCount: number;
 }
 
@@ -32,6 +34,7 @@ export function Sidebar({
   const setPrefs = useStore((s) => s.setPrefs);
   const disconnect = useStore((s) => s.disconnect);
   const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
   const [openFolders, setOpenFolders] = useState<Record<string, boolean>>({});
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
 
@@ -58,6 +61,24 @@ export function Sidebar({
       .sort((a, b) => a.child_order - b.child_order);
     return { labels, projects };
   }, [snapshot.labels, snapshot.projects]);
+
+  /* A menu that only closes by pressing its own button is a menu that follows
+     you around the app. Anywhere else, and Escape, put it away. */
+  useEffect(() => {
+    if (!menuOpen) return;
+    const dismiss = (event: MouseEvent) => {
+      if (!menuRef.current?.contains(event.target as Node)) setMenuOpen(false);
+    };
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMenuOpen(false);
+    };
+    document.addEventListener('mousedown', dismiss);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', dismiss);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [menuOpen]);
 
   const toggleGroup = (key: string) =>
     setOpenGroups((prev) => ({ ...prev, [key]: !(prev[key] ?? true) }));
@@ -172,7 +193,7 @@ export function Sidebar({
 
   return (
     <aside className="sidebar">
-      <div className="side-top">
+      <div className="side-top" ref={menuRef}>
         <button
           className="profile"
           aria-expanded={menuOpen}
@@ -215,6 +236,15 @@ export function Sidebar({
             <button onClick={() => { setMenuOpen(false); navigate('settings'); }}>
               <Icon name="settings" />
               {t('nav.settings')}
+            </button>
+            <hr />
+            <button onClick={() => window.open(FEEDBACK_URL, '_blank', 'noopener,noreferrer')}>
+              <Icon name="comment" />
+              {t('nav.feedback')}
+            </button>
+            <button onClick={() => window.open(COFFEE_URL, '_blank', 'noopener,noreferrer')}>
+              <Icon name="coffee" />
+              {t('nav.coffee')}
             </button>
             <hr />
             <button onClick={() => window.open('https://app.todoist.com', '_blank', 'noopener')}>
@@ -269,7 +299,7 @@ export function Sidebar({
               title={workspace.name ?? t('nav.myProjects')}
               open={openGroups[key] ?? true}
               onToggle={() => toggleGroup(key)}
-              onAdd={onAddProject}
+              onAdd={() => onAddProject(workspace.workspaceId)}
               addLabel={t('nav.addProject')}
             >
               {workspace.roots.map((node) => projectNode(node))}

@@ -28,15 +28,14 @@ export function EditableDescription({
 
   const html = useMemo(() => renderMarkdown(value), [value]);
 
-  /* The trigger shows one line of plain text: a button cannot legally contain
-     the links the description may carry, and a header is not the place to read
-     three paragraphs. The full text is in the panel below, on hover.
+  /* The trigger shows one line, formatted rather than stripped: bold reads as
+     bold and a link reads as a link, because what the header should never show
+     is the Markdown someone typed. The links are spans, not anchors — a button
+     cannot legally contain one — and the real, clickable text is in the panel
+     below, on hover, which is also where three paragraphs belong.
      Declared before the editor's early return: a hook after it runs on one
      render and not the next, which React answers by unmounting the page. */
-  const oneLine = useMemo(
-    () => renderInlineMarkdown(value).replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim(),
-    [value],
-  );
+  const oneLine = useMemo(() => renderInlineMarkdown(value, { anchors: false }), [value]);
 
   function commit() {
     setEditing(false);
@@ -78,7 +77,9 @@ export function EditableDescription({
         onClick={() => setEditing(true)}
         aria-label={placeholder}
       >
-        <span className="descline">{value ? oneLine : placeholder}</span>
+        {value
+          ? <span className="descline" dangerouslySetInnerHTML={{ __html: oneLine }} />
+          : <span className="descline">{placeholder}</span>}
       </button>
 
       {value && (

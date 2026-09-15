@@ -36,11 +36,15 @@ export function Overlay({
     };
     document.addEventListener('keydown', onKey);
 
-    // Move focus into the dialog so the keyboard follows the eye.
-    const focusable = sheetRef.current?.querySelector<HTMLElement>(
-      'input, textarea, button, [tabindex]:not([tabindex="-1"])',
-    );
-    focusable?.focus();
+    /* Move focus into the dialog so the keyboard follows the eye. A dialog
+       that names its own starting point gets it: otherwise the first focusable
+       thing wins, which in a sheet is the close button in its header. */
+    const target =
+      sheetRef.current?.querySelector<HTMLElement>('[data-autofocus]') ??
+      sheetRef.current?.querySelector<HTMLElement>(
+        'input, textarea, button, [tabindex]:not([tabindex="-1"])',
+      );
+    target?.focus();
 
     return () => {
       document.removeEventListener('keydown', onKey);
