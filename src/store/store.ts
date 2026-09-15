@@ -14,6 +14,7 @@ import {
 } from '@/domain/types';
 import { withEstimate } from '@/domain/estimates';
 import { detectLocale, translate, type Locale } from '@/i18n';
+import { dropMutation, type DropTarget } from '@/domain/dnd';
 import { buildDemoSnapshot } from '@/demo/demoData';
 import {
   defaultPreferences, hydratePreferences, viewPrefs as readViewPrefs,
@@ -74,6 +75,12 @@ interface AppState {
   removeTask: (id: string) => Promise<void>;
   createTask: (args: Record<string, unknown>) => Promise<void>;
   moveTask: (id: string, target: { project_id?: string; section_id?: string | null }) => Promise<void>;
+  /**
+   * Sends a task to a destination, by the same table drag and drop uses.
+   *
+   * One rule for "make this today" wherever it is asked for, and one undo.
+   */
+  sendTo: (id: string, target: DropTarget, destination: string) => Promise<void>;
   setTaskLabels: (id: string, labels: string[]) => Promise<void>;
   setTaskPriority: (id: string, priority: DisplayPriority) => Promise<void>;
   setLabelFavourite: (id: string, favourite: boolean) => Promise<void>;
@@ -425,6 +432,37 @@ export const useStore = create<AppState>((set, get) => ({
       delete items[id];
       return { ...snapshot, items };
     });
+  },
+
+  async sendTo(id, target, destination) {
+    const item = get().snapshot.items[id];
+    if (!item) return;
+    const mutation = dropMutation(item, target);
+    if (!mutation) return;
+
+    // Captured before the change so the undo can put every field back.
+    const before = {
+      due: item.due,
+      labels: item.labels,
+      project_id: item.project_id,
+      section_id: item.section_id,
+    };
+    const patch = (fields: Record<string, unknown>) => (snapshot: Snapshot): Snapshot => {
+      const current = snapshot.items[id];
+      if (!current) return snapshot;
+      return { ...snapshot, items: { ...snapshot.items, [id]: { ...current, ...fields } } };
+    };
+
+    if (mutation.update) {
+      await get().apply([updateItem(id, mutation.update)], patch(mutation.update));
+    } else if (mutation.move) {
+      await get().apply([moveItem(id, mutation.move)], patch(mutation.move));
+    }
+
+    get().toast(
+      translate(get().prefs.locale, 'task.movedTo', { destination }),
+      () => void get().apply([updateItem(id, before)], patch(before)),
+    );
   },
 
   async createTask(args) {

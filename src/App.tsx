@@ -18,6 +18,7 @@ import { SimpleListView } from './views/SimpleListView';
 import { ProjectView } from './views/ProjectView';
 import { LabelsView } from './views/LabelsView';
 import { InsightsView } from './views/InsightsView';
+import { ReviewView } from './views/ReviewView';
 import { SettingsView } from './views/SettingsView';
 import { ConnectView } from './views/ConnectView';
 import { useStore } from './store/store';
@@ -222,6 +223,8 @@ function AppShell({
         return { contextItems: weekItems(roots), contextLabel: t('nav.week') };
       case 'upcoming':
         return { contextItems: upcomingItems(roots), contextLabel: t('nav.upcoming') };
+      case 'review':
+        return { contextItems: weekItems(roots), contextLabel: t('nav.review') };
       case 'someday':
         return { contextItems: somedayItems(roots), contextLabel: t('nav.someday') };
       case 'inbox': {
@@ -313,6 +316,7 @@ function AppShell({
           {route.view === 'project' && route.id && (
             <ProjectView projectId={route.id} {...viewProps} />
           )}
+          {route.view === 'review' && <ReviewView onOpen={openTask} />}
           {route.view === 'insights' && <InsightsView />}
           {route.view === 'settings' && <SettingsView />}
         </section>

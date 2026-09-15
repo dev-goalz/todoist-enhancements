@@ -1494,3 +1494,172 @@
 .denscard.selected .denslabel{color:var(--accent-dark)}
 .denscard.selected .denslabel .ic{color:var(--accent)}
 .denscard:not(.selected) .denslabel .ic{display:none}
+
+/* ==========================================================================
+   Review
+   ==========================================================================
+   The page is the width every other page is. The frame inside it is fixed:
+   the question at the top, the answer below it, and the same two controls in
+   the same place on every step of both cadences. Only the content between
+   them changes.
+   ========================================================================== */
+.reviewhead{
+  display:flex;align-items:center;justify-content:space-between;gap:var(--s4);
+  flex-wrap:wrap;margin-bottom:var(--s4);
+}
+.reviewcadence{width:auto;grid-auto-columns:max-content}
+.reviewcadence button{padding:0 12px}
+
+/* ---------- The rail ---------- */
+.reviewrail{
+  display:flex;flex-wrap:wrap;gap:4px;
+  margin:0 0 var(--s5);padding:0;list-style:none;
+}
+.reviewpip{
+  display:inline-flex;align-items:center;gap:7px;
+  min-height:30px;padding:0 10px 0 6px;border-radius:var(--r-full);
+  color:var(--muted);font-size:var(--fs-12);font-weight:600;
+}
+.reviewpip:hover{background:var(--hover);color:var(--text)}
+.reviewpip-dot{
+  width:20px;height:20px;flex:0 0 auto;display:grid;place-items:center;
+  border-radius:var(--r-full);border:1px solid var(--border-strong);
+  background:var(--surface);font-size:10px;font-weight:700;
+}
+.reviewpip-dot .ic{width:11px;height:11px}
+.reviewpip.clear .reviewpip-dot{border-color:var(--ok);color:var(--ok)}
+.reviewpip:not(.clear) .reviewpip-dot{border-color:var(--accent);color:var(--accent)}
+.reviewpip.current{background:var(--accent-soft);color:var(--accent-dark)}
+.reviewpip.current .reviewpip-dot{border-color:var(--accent);background:var(--accent);color:#fff}
+.reviewpip.passed:not(.current){opacity:.75}
+
+/* ---------- The question ---------- */
+.reviewstep h2{font-size:var(--fs-20);font-weight:700;letter-spacing:-.015em}
+.reviewask{
+  max-width:62ch;margin:6px 0 var(--s4);
+  color:var(--muted);font-size:var(--fs-13);line-height:1.6;text-wrap:pretty;
+}
+/* A floor under the answer, so a step with two rows and a step with twenty do
+   not put the buttons in two different places. */
+.reviewbody{min-height:320px}
+
+/* ---------- The rows ---------- */
+.reviewtoolbar{
+  display:flex;align-items:center;justify-content:space-between;gap:var(--s3);
+  flex-wrap:wrap;margin-bottom:var(--s3);
+}
+.reviewlist{display:grid;border-top:1px solid var(--border)}
+/* A long record scrolls inside itself, so reading it never moves the question
+   above it or the button that leaves the step. */
+.reviewlist.scrolls{
+  max-height:min(52vh,440px);overflow-y:auto;
+  border-bottom:1px solid var(--border);
+}
+.reviewlist.scrolls .reviewrow:last-child{border-bottom:0}
+.reviewrow{
+  display:grid;grid-template-columns:18px minmax(0,1fr) auto;
+  gap:12px;align-items:center;padding:9px 0;
+  border-bottom:1px solid var(--border);
+}
+.reviewrow .check{margin-top:0}
+.reviewname{display:grid;gap:3px;min-width:0;text-align:left}
+.reviewname.as-text{cursor:default}
+/* A project is one line, not a title over a meta row. */
+.reviewname.as-row{display:flex;align-items:center;gap:8px}
+.reviewrow.project{grid-template-columns:minmax(0,1fr) auto}
+.reviewname .ttitle{
+  display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font-size:var(--fs-14);
+}
+.reviewname .meta{margin-top:0}
+.reviewrow .hash{flex:0 0 auto}
+
+/* A finished task keeps its words. The tick already says it is done, and a
+   review is no place to read your own week crossed out. */
+.reviewrow.done .check{color:#fff;border-color:var(--ok);background:var(--ok)}
+.reviewrow.done .ttitle{color:var(--text);text-decoration:none}
+.pflag{
+  flex:0 0 auto;padding:1px 6px;border-radius:var(--r-xs);
+  font-size:var(--fs-11);font-weight:700;
+}
+.pflag.p1{color:var(--p1);background:rgba(209,69,59,.1)}
+.pflag.p2{color:var(--p2);background:rgba(181,101,0,.1)}
+.pflag.p3{color:var(--p3);background:rgba(36,111,224,.1)}
+
+/* Always drawn, never revealed on hover: these buttons are the review, not a
+   secondary action on a row. The one the task is already in is marked and
+   inert — on the backlog that is what makes "leave it" an answer. */
+.reviewactions{display:flex;flex-wrap:wrap;gap:4px;justify-self:end}
+.reviewactions .btn{
+  min-height:28px;padding:0 9px;font-size:var(--fs-12);
+  border-color:var(--border);color:var(--muted);
+}
+.reviewrow:hover .reviewactions .btn,
+.reviewrow:focus-within .reviewactions .btn{border-color:var(--border-strong);color:var(--text)}
+.reviewactions .btn:hover:not(:disabled){border-color:var(--accent);color:var(--accent-dark)}
+.reviewactions .btn.on,
+.reviewrow:hover .reviewactions .btn.on{
+  border-color:var(--accent);background:var(--accent-soft);
+  color:var(--accent-dark);opacity:1;cursor:default;
+}
+.reviewest{justify-self:end}
+.reviewquiet{color:var(--faint);font-size:var(--fs-12);white-space:nowrap}
+.reviewtally{color:var(--muted);font-size:var(--fs-13);font-weight:600}
+
+/* ---------- Nothing to settle ----------
+   Worth more than a line of grey text: an empty step is the answer the review
+   was hoping for, and it should feel like one. */
+.reviewclear{
+  display:grid;justify-items:center;gap:6px;
+  padding:var(--s6) var(--s4);text-align:center;
+  border:1px dashed var(--border);border-radius:var(--r-lg);background:var(--subtle);
+}
+.reviewclear-mark{
+  width:34px;height:34px;display:grid;place-items:center;margin-bottom:2px;
+  border-radius:var(--r-full);background:var(--ok);
+}
+/* Set on the glyph, not inherited: a bare .ic rule elsewhere carries a colour
+   of its own, and an inherited one never reaches it. */
+.reviewclear-mark .ic,
+.reviewdone-mark .ic{color:#fff;width:18px;height:18px}
+.reviewclear strong{color:var(--text);font-size:var(--fs-15);font-weight:700}
+.reviewclear > span{max-width:44ch;color:var(--muted);font-size:var(--fs-13);line-height:1.5}
+
+/* ---------- The week in numbers ---------- */
+/* The dashboard's own pieces, so the two never describe the same week in two
+   different visual languages. */
+.reviewbento{margin-top:0}
+.reviewsummary{display:grid;gap:var(--s3)}
+.reviewsummary-figs{display:flex;flex-wrap:wrap;gap:var(--s5) var(--s6)}
+.reviewsummary-figs > span{display:grid;gap:2px}
+.reviewsummary-figs b{
+  font-size:var(--fs-26);font-weight:700;letter-spacing:-.02em;line-height:1.1;
+}
+.reviewsummary-figs small{color:var(--muted);font-size:var(--fs-12);font-weight:600}
+.reviewsummary .psub{margin:0}
+
+/* ---------- Moving through it ---------- */
+.reviewfoot{
+  position:sticky;bottom:0;z-index:2;
+  display:flex;align-items:center;gap:var(--s3);
+  margin-top:var(--s5);padding:var(--s3) 0 var(--s4);
+  border-top:1px solid var(--border);background:var(--surface);
+}
+.reviewcount{margin:0 auto;color:var(--faint);font-size:var(--fs-12)}
+
+/* ---------- The end ---------- */
+.reviewdone{display:grid;justify-items:center;gap:var(--s2);padding:var(--s6) 0;text-align:center}
+.reviewdone-mark{
+  width:44px;height:44px;display:grid;place-items:center;margin-bottom:var(--s2);
+  border-radius:var(--r-full);color:#fff;background:var(--ok);
+}
+.reviewdone h2{font-size:var(--fs-20);font-weight:700}
+.reviewdone p{max-width:48ch;color:var(--muted);font-size:var(--fs-14);line-height:1.6;text-wrap:pretty}
+.reviewdone-actions{display:flex;gap:var(--s2);margin-top:var(--s3)}
+
+@media (max-width:720px){
+  .reviewbody{min-height:0}
+  .reviewrow{grid-template-columns:18px minmax(0,1fr);row-gap:8px}
+  .reviewactions,.reviewest{grid-column:2;justify-self:start}
+  .reviewquiet{grid-column:2}
+}
