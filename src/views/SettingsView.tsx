@@ -6,7 +6,7 @@ import { useStore } from '@/store/store';
 import { avatarUrl } from '@/domain/colors';
 import { formatDuration, parseDurationInput } from '@/domain/estimates';
 import { defaultCapacity, weeklyCapacity, type DailyCapacity } from '@/domain/load';
-import { HOME_VIEWS, type HomeView } from '@/store/prefs';
+import { DENSITIES, HOME_VIEWS, type Density, type HomeView } from '@/store/prefs';
 import type { Locale, TranslationKey } from '@/i18n';
 import { APP_NAME, AUTHOR, COFFEE_URL, GITHUB_URL, SITE_URL, VERSION } from '@/app-info';
 
@@ -138,6 +138,13 @@ export function SettingsView() {
                   { value: '24', label: t('settings.time24') },
                   { value: '12', label: t('settings.time12') },
                 ]}
+              />
+            </Row>
+
+            <Row title={t('settings.density')} hint={t('settings.densityHint')} wide>
+              <DensityChoice
+                value={prefs.density}
+                onChange={(value) => setPrefs({ density: value })}
               />
             </Row>
 
@@ -288,15 +295,58 @@ export function SettingsView() {
 /* ------------------------------------------------------------------ */
 
 function Row({
-  title, hint, children,
-}: { title: string; hint?: string; children?: React.ReactNode }) {
+  title, hint, children, wide,
+}: { title: string; hint?: string; children?: React.ReactNode; wide?: boolean }) {
   return (
-    <div className="setrow">
+    <div className={`setrow${wide ? ' setrow-wide' : ''}`}>
       <div>
         <strong>{title}</strong>
         {hint && <span>{hint}</span>}
       </div>
       {children}
+    </div>
+  );
+}
+
+/**
+ * Choosing a density by looking at it.
+ *
+ * "Comfortable" and "compact" are words about a thing you can simply be shown:
+ * two boxes of the same height, one holding three rows and the other holding
+ * five. The picture is the explanation, and the label underneath is only there
+ * to name what you already understood.
+ */
+function DensityChoice({
+  value, onChange,
+}: { value: Density; onChange: (next: Density) => void }) {
+  const { t } = useT();
+  return (
+    <div className="denschoice" role="radiogroup" aria-label={t('settings.density')}>
+      {DENSITIES.map((option) => (
+        <button
+          key={option}
+          type="button"
+          role="radio"
+          aria-checked={value === option}
+          className={`denscard${value === option ? ' selected' : ''}`}
+          onClick={() => onChange(option)}
+        >
+          <span className={`denspreview ${option}`} aria-hidden="true">
+            {/* Comfortable fits three of these rows in the box; compact fits
+                five. Nothing about a row is smaller — there is just less air. */}
+            {Array.from({ length: option === 'compact' ? 5 : 3 }).map((_, index) => (
+              <span className="densrow" key={index}>
+                <i className="densdot" />
+                <i className="densbar" />
+              </span>
+            ))}
+          </span>
+          <span className="denslabel">
+            {t(`settings.density.${option}` as TranslationKey)}
+            {value === option && <Icon name="check" size="sm" />}
+          </span>
+        </button>
+      ))}
     </div>
   );
 }

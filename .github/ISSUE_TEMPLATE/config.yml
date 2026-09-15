@@ -1,0 +1,10 @@
+# GitHub is not the only way in. The form asks the few questions that make a
+# report useful and needs no account, which is most of the people who hit a bug.
+blank_issues_enabled: true
+contact_links:
+  - name: Submit a bug or an idea without a GitHub account
+    url: https://tally.so/r/WOLkVN
+    about: A short form. Use this if you would rather not open an issue here.
+  - name: Buy me a coffee
+    url: https://buymeacoffee.com/julesbertolino
+    about: If it saves you time.

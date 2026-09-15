@@ -1,9 +1,12 @@
-import { useMemo, Fragment } from 'react';
+import { useMemo, useState, Fragment } from 'react';
 import { PageHeader } from '@/components/PageHeader';
 import { DisplayMenu } from '@/components/DisplayMenu';
 import { TaskGroup } from '@/components/TaskGroup';
 import { ModeSurface } from '@/components/ModeSurface';
 import { EditableDescription } from '@/components/EditableDescription';
+import { EditableTitle } from '@/components/EditableTitle';
+import { ProjectMenu } from '@/components/ProjectMenu';
+import type { ProjectSheetTarget } from '@/components/overlays/ProjectSheet';
 import { AddSectionLine } from '@/components/AddSectionLine';
 import { useConfirm } from '@/components/overlays/Confirm';
 import { Icon } from '@/components/Icon';
@@ -21,6 +24,8 @@ interface ProjectViewProps {
   onUnestimated: () => void;
   /** Adds a task straight into a section of this project. */
   onAddTaskTo: (placement: { projectId: string; sectionId?: string }) => void;
+  /** Opens the project sheet, to edit this one or add one beside it. */
+  onProjectSheet: (target: ProjectSheetTarget) => void;
 }
 
 /**
@@ -31,8 +36,9 @@ interface ProjectViewProps {
  * available work stays available as an explicit grouping.
  */
 export function ProjectView({
-  projectId, onOpen, onInsights, onUnestimated, onAddTaskTo,
+  projectId, onOpen, onInsights, onUnestimated, onAddTaskTo, onProjectSheet,
 }: ProjectViewProps) {
+  const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
   const { t } = useT();
   const { snapshot, items, childrenOf } = useData();
   const prefs = useStore((s) => s.prefs);
@@ -151,7 +157,13 @@ export function ProjectView({
   return (
     <div className="page">
       <PageHeader
-        title={project.name}
+        title={
+          <EditableTitle
+            value={project.name}
+            label={t('project.rename')}
+            onCommit={(next) => void updateProjectFields(projectId, { name: next })}
+          />
+        }
         subtitle={
           <EditableDescription
             value={project.description ?? ''}
@@ -170,6 +182,35 @@ export function ProjectView({
               <Icon name="trend" />
               {t('toolbar.insights')}
             </button>
+            {/* The same menu the sidebar row carries, asked from the page it
+                is about. */}
+            <span className="pmenu-wrap">
+              <button
+                className="iconbtn"
+                aria-label={t('project.actions')}
+                title={t('project.actions')}
+                aria-expanded={menuAnchor !== null}
+                aria-haspopup="menu"
+                onClick={(event) => {
+                  /* Read out of the event now: a state updater runs after the
+                     handler returns, and React has emptied currentTarget by
+                     then, so the menu would open with nothing to hang from. */
+                  const button = event.currentTarget;
+                  setMenuAnchor((current) => (current ? null : button));
+                }}
+              >
+                <Icon name="more" />
+              </button>
+              {menuAnchor && (
+                <ProjectMenu
+                  project={project}
+                  align="right"
+                  anchor={menuAnchor}
+                  onClose={() => setMenuAnchor(null)}
+                  onEdit={() => onProjectSheet({ mode: 'edit', projectId })}
+                />
+              )}
+            </span>
           </>
         }
         load={load}

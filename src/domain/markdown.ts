@@ -20,10 +20,28 @@ function safeUrl(url: string): string | null {
   return /^https?:\/\//i.test(trimmed) ? trimmed : null;
 }
 
-/** Stand-in for a code span while the other inline rules run. */
+/** Stand-ins for the pieces lifted out while the other inline rules run. */
 const CODE_SLOT = (index: number) => `@@code${index}@@`;
+const LINK_SLOT = (index: number) => `@@link${index}@@`;
 
-function inline(text: string): string {
+/** Emphasis, applied only to text that carries no generated markup. */
+const emphasise = (text: string): string =>
+  text
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/__([^_]+)__/g, '<strong>$1</strong>')
+    .replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<em>$2</em>')
+    .replace(/(^|[^_])_([^_\n]+)_/g, '$1<em>$2</em>')
+    .replace(/~~([^~]+)~~/g, '<del>$1</del>');
+
+export interface InlineOptions {
+  /**
+   * False renders a link as its label alone. A one-line preview lives inside
+   * a button, and an anchor cannot legally sit there.
+   */
+  anchors?: boolean;
+}
+
+function inline(text: string, { anchors = true }: InlineOptions = {}): string {
   let out = escapeHtml(text);
 
   // Code spans are lifted out first so later rules cannot reach inside them.
@@ -33,26 +51,37 @@ function inline(text: string): string {
     return CODE_SLOT(codes.length - 1);
   });
 
+  /* Links are lifted out for the same reason. A rendered anchor carries
+     target="_blank", and leaving it in the string let the emphasis rules
+     below pair that underscore with another one further along the line and
+     tear the tag in half, which is what put raw attributes on screen. */
+  const links: string[] = [];
+  const slot = (html: string): string => {
+    links.push(html);
+    return LINK_SLOT(links.length - 1);
+  };
+  const link = (href: string, label: string): string =>
+    anchors
+      ? `<a href="${href}" target="_blank" rel="noopener noreferrer">${label}</a>`
+      : `<span class="mdlink">${label}</span>`;
+
   out = out.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (match, label: string, url: string) => {
     const href = safeUrl(url);
     if (!href) return match;
-    return `<a href="${href}" target="_blank" rel="noopener noreferrer">${label}</a>`;
+    return slot(link(href, emphasise(label)));
   });
 
-  // Bare links that were not already wrapped by the rule above.
+  /* Bare links that were not already wrapped by the rule above. The label is
+     the URL itself, so it is left exactly as typed: an address with
+     underscores in it is not emphasis. */
   out = out.replace(
     /(^|[\s(])(https?:\/\/[^\s<>"')]+)/g,
-    (_match, lead: string, url: string) =>
-      `${lead}<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`,
+    (_match, lead: string, url: string) => `${lead}${slot(link(url, url))}`,
   );
 
-  out = out
-    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-    .replace(/__([^_]+)__/g, '<strong>$1</strong>')
-    .replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<em>$2</em>')
-    .replace(/(^|[^_])_([^_\n]+)_/g, '$1<em>$2</em>')
-    .replace(/~~([^~]+)~~/g, '<del>$1</del>');
+  out = emphasise(out);
 
+  out = out.replace(/@@link(\d+)@@/g, (_match, index: string) => links[Number(index)]);
   out = out.replace(/@@code(\d+)@@/g, (_match, index: string) => `<code>${codes[Number(index)]}</code>`);
   return out;
 }
@@ -65,7 +94,7 @@ function inline(text: string): string {
  * remaining lines joined, which is what a reader scanning the list wants:
  * emphasis and links formatted, syntax gone.
  */
-export function renderInlineMarkdown(source: string): string {
+export function renderInlineMarkdown(source: string, options?: InlineOptions): string {
   if (!source.trim()) return '';
   const line = source
     .replace(/\r\n/g, '\n')
@@ -78,7 +107,7 @@ export function renderInlineMarkdown(source: string): string {
       .replace(/^\d+[.)]\s+/, '')
       .replace(/^>\s?/, ''))
     .join(' · ');
-  return inline(line);
+  return inline(line, options);
 }
 
 /** Renders a description to HTML that is safe to insert. */
@@ -104,7 +133,7 @@ export function renderMarkdown(source: string): string {
 
   const flushParagraph = () => {
     if (paragraph.length > 0) {
-      blocks.push(`<p>${paragraph.map(inline).join('<br>')}</p>`);
+      blocks.push(`<p>${paragraph.map((line) => inline(line)).join('<br>')}</p>`);
       paragraph = [];
     }
   };

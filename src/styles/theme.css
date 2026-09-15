@@ -454,10 +454,20 @@
   display:flex;align-items:flex-end;gap:2px;   /* 2px surface gap between fills */
   padding-top:4px;
 }
+.barslot{
+  position:relative;flex:1 1 0;min-width:3px;
+  display:flex;align-items:flex-end;align-self:stretch;
+}
 .bar{
   flex:1 1 0;min-width:3px;border-radius:4px 4px 0 0;   /* rounded data-end */
   background:var(--series-1,#2a78d6);opacity:.85;
   transition:opacity .12s ease-out;
+}
+/* The same day of the week before, drawn across the bar. A bar says how much;
+   a bar against this line says whether that is more or less than usual. */
+.barref{
+  position:absolute;left:-1px;right:-1px;height:0;
+  border-top:1.5px dotted var(--faint);pointer-events:none;
 }
 .bar:hover,.bar.hovered,.bar:focus-visible{opacity:1}
 .bar.current{background:var(--accent)}
@@ -606,6 +616,11 @@
 .page > .bento,
 .page > .logday,
 .page > .logbook,
+.page > .reviewhead,
+.page > .reviewrail,
+.page > .reviewstep,
+.page > .reviewfoot,
+.page > .reviewdone,
 .page > .empty{
   max-width:820px;
   margin-left:auto;
@@ -619,6 +634,11 @@
 .page.wide > .bento,
 .page.wide > .logday,
 .page.wide > .logbook,
+.page.wide > .reviewhead,
+.page.wide > .reviewrail,
+.page.wide > .reviewstep,
+.page.wide > .reviewfoot,
+.page.wide > .reviewdone,
 .page.wide > .empty{
   max-width:1160px;
 }
@@ -773,15 +793,20 @@
    palette slots need: identity never rests on hue alone. */
 .legend{display:grid;gap:5px;min-width:0}
 .legend li{
-  display:grid;grid-template-columns:9px minmax(0,1fr) auto auto;gap:8px;
+  display:grid;grid-template-columns:9px minmax(0,1fr) auto;gap:8px;
   align-items:center;font-size:var(--fs-12);color:var(--muted);
   transition:opacity .14s ease-out;
+}
+/* "4 tasks · 40%" is one reading. Three columns drifting apart across a wide
+   card was three. */
+.legendvalue{
+  display:inline-flex;align-items:baseline;gap:5px;white-space:nowrap;
 }
 .legend li.dim{opacity:.4}
 .legend i{width:9px;height:9px;border-radius:3px;flex:0 0 auto}
 .legendname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .legend b{color:var(--text);font-weight:600;font-variant-numeric:tabular-nums}
-.legendshare{color:var(--faint);font-variant-numeric:tabular-nums;min-width:30px;text-align:right}
+.legendshare{color:var(--faint);font-variant-numeric:tabular-nums}
 
 .legend.inline{display:flex;flex-wrap:wrap;gap:6px var(--s4)}
 .legend.inline li{display:inline-flex;gap:6px;grid-template-columns:none}
@@ -883,22 +908,18 @@
 .fselect{position:relative;display:grid;gap:4px;min-width:0}
 .fselect-label{font-size:var(--fs-11);font-weight:600;color:var(--faint)}
 .fselect-face{
-  display:flex;align-items:center;justify-content:space-between;gap:var(--s2);
-  min-width:0;max-width:100%;
-  min-height:34px;padding:0 10px;border:1px solid var(--border-strong);
-  border-radius:var(--r-ctl);background:var(--surface);
-  font-size:var(--fs-13);font-weight:600;letter-spacing:-.02em;color:var(--text);
-  transition:border-color .14s ease-out,background .14s ease-out;
+  width:100%;min-height:34px;padding:0 10px;display:flex;align-items:center;gap:8px;
+  border:1px solid var(--border);border-radius:var(--r-sm);
+  background:var(--surface);color:var(--text);font-size:var(--fs-13);font-weight:600;
+  text-align:left;cursor:pointer;
 }
 .fselect-face .ic{color:var(--muted);flex:0 0 auto}
+.fselect-face .hash{flex:0 0 auto;width:18px;height:18px;font-size:var(--fs-12)}
 .fselect-value{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.fselect:hover .fselect-face{border-color:var(--accent);background:var(--accent-tint)}
-/* The native control still runs the interaction; it is simply invisible. */
-.fselect select{
-  position:absolute;inset:0;width:100%;height:100%;
-  opacity:0;cursor:pointer;appearance:none;border:0;
-}
-.fselect:focus-within .fselect-face{outline:2px solid var(--accent);outline-offset:2px}
+.fselect-face:hover{border-color:var(--accent);background:var(--accent-tint)}
+.fselect-face:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.fselect-face.open{border-color:var(--accent);background:var(--accent-tint)}
+.fselect-face.empty .fselect-value{color:var(--faint);font-weight:400}
 .logbar .fselect{min-width:150px}
 
 /* Marks stay thin. Without a cap a seven-day chart draws seven blocks the
@@ -1202,6 +1223,14 @@
   max-width:100%;
 }
 .phead .descview{display:block;max-width:min(72ch,100%);text-align:left}
+/* A link in the collapsed line: it reads as one, and it is not one. Following
+   it means opening the panel below, where the real anchor lives. */
+.descline .mdlink{color:var(--accent-dark);text-decoration:underline;text-underline-offset:2px}
+.descline code{
+  padding:0 4px;border-radius:var(--r-xs);background:var(--subtle);
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.92em;
+}
+.descline strong{font-weight:700;color:var(--text)}
 
 .deschint{
   position:absolute;z-index:60;top:calc(100% + 4px);left:-6px;
@@ -1252,3 +1281,561 @@
 /* The ring stands a little off the rows rather than cutting through them. */
 .group.dropping{outline:2px solid var(--accent);outline-offset:8px;border-radius:var(--r-lg)}
 .col.dropping{box-shadow:inset 0 0 0 2px var(--accent);border-color:var(--accent)}
+
+/* ==========================================================================
+   Project actions
+   ==========================================================================
+   The count on a sidebar row gives up its place to a three-dot button under
+   the pointer, which is where Todoist puts it and where the hand already is.
+   Both live in the same slot so nothing moves when they swap.
+   ========================================================================== */
+.navrow{position:relative;display:flex;align-items:center}
+.navrow .navitem{padding-right:34px}
+/* The disclosure for a project that holds projects, in the left gutter where
+   a tree expects it rather than competing with the count on the right. */
+.navtwist{
+  position:absolute;left:-14px;top:50%;transform:translateY(-50%);
+  width:16px;height:16px;display:grid;place-items:center;
+  border-radius:var(--r-xs);color:var(--faint);
+}
+.navtwist:hover{background:var(--hover);color:var(--text)}
+.navtwist .ic{width:12px;height:12px}
+/* The gutter only exists where the sidebar has room for it. */
+.side-group{padding-left:14px}
+.side-group .side-head{margin-left:-14px}
+.navend{
+  position:absolute;right:6px;top:50%;transform:translateY(-50%);
+  display:grid;place-items:center;pointer-events:none;
+}
+.navend > *{grid-area:1/1}
+.navend .count{
+  color:var(--faint);font-size:var(--fs-12);font-variant-numeric:tabular-nums;
+}
+.navmore{
+  width:22px;height:22px;display:grid;place-items:center;
+  border-radius:var(--r-xs);color:var(--muted);opacity:0;pointer-events:none;
+}
+/* Swap them: on hover, on keyboard focus, and while the menu it opens is up. */
+.navrow:hover .navend .count,
+.navrow:focus-within .navend .count,
+.navrow.menuopen .navend .count{opacity:0}
+.navrow:hover .navmore,
+.navrow:focus-within .navmore,
+.navrow.menuopen .navmore{opacity:1;pointer-events:auto}
+.navmore:hover{background:var(--hover);color:var(--text)}
+.navrow.menuopen .navmore{background:var(--hover);color:var(--text)}
+
+/* A touch screen has no pointer to reveal anything with. */
+@media (hover:none){
+  .navend .count{opacity:0}
+  .navmore{opacity:1;pointer-events:auto}
+}
+
+/* ---------- The menu itself ---------- */
+/* Fixed and in the document, not in the sidebar: a scrolling box clips what
+   is drawn inside it, and this menu is taller than the row it belongs to. */
+.projectmenu{
+  position:fixed;z-index:90;
+  min-width:226px;max-width:min(260px,calc(100vw - 16px));padding:var(--s2);
+}
+/* An icon then its label, hard against the left. The shared option row pushes
+   its two halves apart, which is right for a setting with a value and wrong
+   for a verb with a glyph. */
+.projectmenu .opt{justify-content:flex-start;gap:10px}
+.projectmenu .opt > span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.projectmenu .opt .ic{flex:0 0 auto;color:var(--faint)}
+.projectmenu .opt:hover .ic{color:var(--muted)}
+.projectmenu .opt.danger{color:var(--accent)}
+.projectmenu .opt.danger .ic{color:var(--accent)}
+.projectmenu .opt.danger:hover{background:var(--accent-tint)}
+.pmenu-wrap{position:relative;display:inline-flex}
+
+/* ---------- Renaming a project from its own page ---------- */
+/* It reads as the heading it replaces, and is the field the whole time, so
+   nothing shifts under the pointer at the moment you aim at it. */
+.titlefield{
+  max-width:100%;padding:2px 6px;margin-left:-6px;
+  border:1px solid transparent;border-radius:var(--r-sm);background:transparent;
+  color:inherit;font:inherit;font-size:inherit;font-weight:inherit;
+  letter-spacing:inherit;line-height:inherit;
+}
+.titlefield:hover{border-color:var(--border)}
+.titlefield:focus{outline:none;border-color:var(--accent);background:var(--surface)}
+
+/* A description box in the project sheet, matching its text field. */
+.textfield.textarea{
+  min-height:0;padding:9px 12px;resize:vertical;line-height:1.5;
+}
+
+/* ---------- Making a tag ---------- */
+/* One line, on the page the tags are already on. A tag is a name and nothing
+   else; everything else about it is set on the card it becomes. */
+/* The same column the tag cards below it sit in, so the page reads as one
+   list with a way to add to it rather than as a banner over a list. */
+.tagadd{
+  display:flex;align-items:center;gap:10px;
+  margin-top:var(--s4);padding:6px 10px;min-height:38px;
+  border:1px solid var(--border);border-radius:var(--r-md);background:var(--surface);
+}
+.tagadd:focus-within{border-color:var(--accent)}
+.tagadd > .ic{flex:0 0 auto;color:var(--faint)}
+.tagadd input{
+  flex:1;min-width:0;border:0;background:transparent;color:var(--text);
+  font:inherit;font-size:var(--fs-13);
+}
+.tagadd input:focus{outline:none}
+.tagadd input::placeholder{color:var(--faint)}
+.tagadd .btn{flex:0 0 auto;min-height:28px;font-size:var(--fs-12)}
+
+/* The "new tag" line in the @ picker says what it will do. */
+.namepicker-new{
+  margin-left:auto;flex:0 0 auto;
+  color:var(--faint);font-size:var(--fs-11);font-weight:600;
+}
+
+/* ==========================================================================
+   Compact density
+   ==========================================================================
+   One setting, one rule: take away space, never information. Nothing here
+   changes a type size, hides a field, or drops a row's contents. It closes the
+   gaps — around the page, between the groups, above and below each row — so a
+   screen holds more of the list without holding less of any part of it.
+
+   A list of tasks at comfortable density shows about nine rows on a laptop.
+   The same list here shows fourteen, and every one of them still carries its
+   description, its estimate, its date and its tags.
+   ========================================================================== */
+
+/* ---------- The page frame ---------- */
+[data-density="compact"] .page,
+[data-density="compact"] .page.wide{padding:22px 40px 72px}
+[data-density="compact"] .ptitle{font-size:var(--fs-22)}
+[data-density="compact"] .phead{margin-bottom:2px}
+[data-density="compact"] .metrics{margin-bottom:var(--s3);gap:6px}
+
+/* ---------- Groups ---------- */
+[data-density="compact"] .group{margin-top:18px}
+[data-density="compact"] .group:first-of-type{margin-top:var(--s3)}
+[data-density="compact"] .ghead{min-height:28px}
+
+/* ---------- List rows ----------
+   The row keeps its full 18px control and its whole meta line; what goes is
+   the air above and below them. */
+[data-density="compact"] .task{padding-top:7px;padding-bottom:7px;min-height:0}
+[data-density="compact"] .meta{margin-top:3px;gap:3px 8px}
+[data-density="compact"] .tdesc{margin-top:1px}
+[data-density="compact"] .subtasks{margin-top:0}
+
+/* ---------- Board cards ----------
+   A board row is drawn flush inside its card and has no padding to give up.
+   The card around it does, and so does the space between the cards. */
+[data-density="compact"] .col .task{padding-top:0;padding-bottom:0}
+[data-density="compact"] .col .taskwrap{padding:7px 10px;margin-bottom:5px}
+[data-density="compact"] .col{padding:var(--s3)}
+[data-density="compact"] .tcard{margin-bottom:6px;padding:9px 10px 9px 32px}
+
+/* ---------- The sidebar ---------- */
+[data-density="compact"] .navitem{min-height:28px}
+[data-density="compact"] .side-group{margin-top:var(--s3)}
+
+/* A finger needs the same target whatever the setting says, so the row keeps
+   its height on a touch screen and only the page around it tightens. */
+@media (max-width:720px){
+  [data-density="compact"] .task{padding-top:10px;padding-bottom:10px;min-height:52px}
+  [data-density="compact"] .page{padding:var(--s3) var(--s4) 72px}
+}
+
+/* ==========================================================================
+   Browse — the sidebar as a page
+   ========================================================================== */
+/* A phone has no room for a column beside the app, so the column becomes a
+   page reached from the navigation bar. It is the same component: there is
+   one list of destinations in this product, not a second one kept in step
+   with the first by hand. */
+.browse{display:flex;flex-direction:column;height:100%;min-height:0}
+.browse-head{
+  flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;
+  padding:var(--s3) var(--s3) var(--s3) var(--s4);
+  border-bottom:1px solid var(--border);
+}
+.browse-head strong{font-size:var(--fs-15);font-weight:700}
+
+/* The rail is hidden below 720px; inside this page it is the whole point. */
+.browse .sidebar-sheet{
+  display:flex;flex:1;min-height:0;
+  border-right:0;background:var(--surface);
+}
+.browse .sidebar-sheet .side-scroll{flex:1;min-height:0;overflow-y:auto}
+/* Clear of the home indicator: this is the bottom of a full-height sheet. */
+.browse .sidebar-sheet .side-foot{padding-bottom:calc(var(--s3) + env(safe-area-inset-bottom))}
+
+/* A sheet that stands in for a page: a column on a wide screen, the whole
+   window on a phone, where it is the only thing that makes sense. */
+.sheet-full{
+  width:min(420px,100vw);height:100dvh;max-height:100dvh;
+  align-self:stretch;overflow:hidden;
+}
+@media (max-width:720px){
+  .sheet-full{width:100vw;border-radius:0}
+}
+
+/* ---------- Choosing a density by looking at it ---------- */
+/* Two boxes of the same height: one holds three rows, one holds five. That is
+   the whole setting, and it needs no adjective to explain it. */
+.setrow-wide{flex-wrap:wrap;align-items:flex-start}
+.setrow-wide > div:first-child{flex:1 1 100%}
+.denschoice{display:flex;gap:var(--s3);margin-top:var(--s3);flex-wrap:wrap}
+.denscard{
+  flex:0 1 190px;display:grid;gap:8px;padding:10px;
+  border:1px solid var(--border);border-radius:var(--r-md);
+  background:var(--surface);text-align:left;
+}
+.denscard:hover{border-color:var(--border-strong)}
+.denscard:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.denscard.selected{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+
+.denspreview{
+  display:flex;flex-direction:column;justify-content:center;
+  height:86px;padding:8px 10px;overflow:hidden;
+  border-radius:var(--r-sm);background:var(--subtle);
+}
+.denspreview.comfortable{gap:12px}
+.denspreview.compact{gap:5px}
+.densrow{display:flex;align-items:center;gap:7px}
+.densdot{
+  width:9px;height:9px;flex:0 0 auto;border-radius:var(--r-full);
+  border:1.5px solid var(--faint);
+}
+.densbar{height:5px;flex:1;border-radius:3px;background:var(--border-strong)}
+/* Every second row a little short, so it reads as text rather than as a chart. */
+.densrow:nth-child(even) .densbar{flex:0 1 62%}
+
+.denslabel{
+  display:flex;align-items:center;justify-content:space-between;gap:6px;
+  color:var(--text);font-size:var(--fs-13);font-weight:600;
+}
+.denscard.selected .denslabel{color:var(--accent-dark)}
+.denscard.selected .denslabel .ic{color:var(--accent)}
+.denscard:not(.selected) .denslabel .ic{display:none}
+
+/* ==========================================================================
+   Review
+   ==========================================================================
+   The page is the width every other page is. The frame inside it is fixed:
+   the question at the top, the answer below it, and the same two controls in
+   the same place on every step of both cadences. Only the content between
+   them changes.
+   ========================================================================== */
+.reviewhead{
+  display:flex;align-items:center;justify-content:space-between;gap:var(--s4);
+  flex-wrap:wrap;margin-bottom:var(--s4);
+}
+.reviewcadence{width:auto;grid-auto-columns:max-content}
+.reviewcadence button{padding:0 12px}
+
+/* ---------- The rail ---------- */
+.reviewrail{
+  display:flex;flex-wrap:wrap;gap:4px;
+  margin:0 0 var(--s5);padding:0;list-style:none;
+}
+.reviewpip{
+  display:inline-flex;align-items:center;gap:7px;
+  min-height:30px;padding:0 10px 0 6px;border-radius:var(--r-full);
+  color:var(--muted);font-size:var(--fs-12);font-weight:600;
+}
+.reviewpip:hover{background:var(--hover);color:var(--text)}
+.reviewpip-dot{
+  width:20px;height:20px;flex:0 0 auto;display:grid;place-items:center;
+  border-radius:var(--r-full);border:1px solid var(--border-strong);
+  background:var(--surface);font-size:10px;font-weight:700;
+}
+.reviewpip-dot .ic{width:11px;height:11px}
+/* Still to answer. */
+.reviewpip .reviewpip-dot{border-color:var(--accent);color:var(--accent)}
+/* Answered, or nothing in it to answer. */
+.reviewpip.done .reviewpip-dot{border-color:var(--ok);color:var(--ok)}
+/* Where you are. Filled, so the one you are on is never mistaken for one of
+   the others whatever state it is in. */
+.reviewpip.current{background:var(--accent-soft);color:var(--accent-dark)}
+.reviewpip.current .reviewpip-dot{border-color:var(--accent);background:var(--accent);color:#fff}
+
+/* ---------- The question ---------- */
+.reviewstep h2{font-size:var(--fs-20);font-weight:700;letter-spacing:-.015em}
+.reviewask{
+  max-width:62ch;margin:6px 0 var(--s4);
+  color:var(--muted);font-size:var(--fs-13);line-height:1.6;text-wrap:pretty;
+}
+/* A floor under the answer, so a step with two rows and a step with twenty do
+   not put the buttons in two different places. */
+.reviewbody{min-height:320px}
+
+/* ---------- The rows ---------- */
+.reviewtoolbar{
+  display:flex;align-items:center;justify-content:space-between;gap:var(--s3);
+  flex-wrap:wrap;margin-bottom:var(--s3);
+}
+.reviewlist{display:grid;border-top:1px solid var(--border)}
+/* A long record scrolls inside itself, so reading it never moves the question
+   above it or the button that leaves the step. */
+.reviewlist.scrolls{
+  max-height:min(52vh,440px);overflow-y:auto;
+  border-bottom:1px solid var(--border);
+}
+.reviewlist.scrolls .reviewrow:last-child{border-bottom:0}
+.reviewrow{
+  display:grid;grid-template-columns:18px minmax(0,1fr) auto;
+  gap:12px;align-items:center;padding:9px 0;
+  border-bottom:1px solid var(--border);
+}
+.reviewrow .check{margin-top:0}
+.reviewname{display:grid;gap:3px;min-width:0;text-align:left}
+.reviewname.as-text{cursor:default}
+/* A project is one line, not a title over a meta row. */
+.reviewname.as-row{display:flex;align-items:center;gap:8px}
+.reviewrow.project{grid-template-columns:minmax(0,1fr) auto}
+.reviewname .ttitle{
+  display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font-size:var(--fs-14);
+}
+.reviewname .meta{margin-top:0}
+.reviewrow .hash{flex:0 0 auto}
+
+/* A finished task keeps its words. The tick already says it is done, and a
+   review is no place to read your own week crossed out. */
+.reviewrow.done .check{color:#fff;border-color:var(--ok);background:var(--ok)}
+.reviewrow.done .check.p1{border-color:var(--p1);background:var(--p1)}
+.reviewrow.done .check.p2{border-color:var(--p2);background:var(--p2)}
+.reviewrow.done .check.p3{border-color:var(--p3);background:var(--p3)}
+.reviewrow.done .ttitle{color:var(--text);text-decoration:none}
+.pflag{
+  flex:0 0 auto;padding:1px 6px;border-radius:var(--r-xs);
+  font-size:var(--fs-11);font-weight:700;
+}
+.pflag.p1{color:var(--p1);background:rgba(209,69,59,.1)}
+.pflag.p2{color:var(--p2);background:rgba(181,101,0,.1)}
+.pflag.p3{color:var(--p3);background:rgba(36,111,224,.1)}
+
+/* Always drawn, never revealed on hover: these buttons are the review, not a
+   secondary action on a row. The one the task is already in is marked and
+   inert — on the backlog that is what makes "leave it" an answer. */
+.reviewactions{display:flex;flex-wrap:wrap;gap:4px;justify-self:end}
+.reviewactions .btn{
+  min-height:28px;padding:0 9px;font-size:var(--fs-12);
+  border-color:var(--border);color:var(--muted);
+}
+.reviewrow:hover .reviewactions .btn,
+.reviewrow:focus-within .reviewactions .btn{border-color:var(--border-strong);color:var(--text)}
+.reviewactions .btn:hover:not(:disabled){border-color:var(--accent);color:var(--accent-dark)}
+/* A choice you made, filled in the accent. Nothing else on the row is red, so
+   there is never any doubt which of the three you pressed. */
+.reviewactions .btn.on,
+.reviewrow:hover .reviewactions .btn.on,
+.reviewactions .btn.on:hover{
+  border-color:var(--accent);background:var(--accent);color:#fff;opacity:1;
+}
+.reviewest{justify-self:end}
+.reviewquiet{color:var(--faint);font-size:var(--fs-12);white-space:nowrap}
+.reviewtally{color:var(--muted);font-size:var(--fs-13);font-weight:600}
+
+/* ---------- Nothing to settle ----------
+   Worth more than a line of grey text: an empty step is the answer the review
+   was hoping for, and it should feel like one. */
+.reviewclear{
+  display:grid;justify-items:center;gap:6px;
+  padding:var(--s6) var(--s4);text-align:center;
+  border:1px dashed var(--border);border-radius:var(--r-lg);background:var(--subtle);
+}
+.reviewclear-mark{
+  width:34px;height:34px;display:grid;place-items:center;margin-bottom:2px;
+  border-radius:var(--r-full);background:var(--ok);
+}
+/* Set on the glyph, not inherited: a bare .ic rule elsewhere carries a colour
+   of its own, and an inherited one never reaches it. */
+.reviewclear-mark .ic,
+.reviewdone-mark .ic{color:#fff;width:18px;height:18px}
+.reviewclear strong{color:var(--text);font-size:var(--fs-15);font-weight:700}
+.reviewclear > span{max-width:44ch;color:var(--muted);font-size:var(--fs-13);line-height:1.5}
+
+/* ---------- The week in numbers ---------- */
+/* The dashboard's own pieces, so the two never describe the same week in two
+   different visual languages. */
+.reviewbento{margin-top:0}
+.reviewsummary{display:grid;gap:var(--s3)}
+.reviewsummary-figs{display:flex;flex-wrap:wrap;gap:var(--s5) var(--s6)}
+.reviewsummary-figs > span{display:grid;gap:2px}
+.reviewsummary-figs b{
+  font-size:var(--fs-26);font-weight:700;letter-spacing:-.02em;line-height:1.1;
+}
+.reviewsummary-figs small{color:var(--muted);font-size:var(--fs-12);font-weight:600}
+.reviewsummary .psub{margin:0}
+
+/* ---------- Moving through it ---------- */
+.reviewfoot{
+  position:sticky;bottom:0;z-index:2;
+  display:flex;align-items:center;gap:var(--s3);
+  margin-top:var(--s5);padding:var(--s3) 0 var(--s4);
+  border-top:1px solid var(--border);background:var(--surface);
+}
+.reviewcount{margin:0 auto;color:var(--faint);font-size:var(--fs-12)}
+
+/* ---------- The end ---------- */
+.reviewdone{display:grid;justify-items:center;gap:var(--s2);padding:var(--s6) 0;text-align:center}
+.reviewdone-mark{
+  width:44px;height:44px;display:grid;place-items:center;margin-bottom:var(--s2);
+  border-radius:var(--r-full);color:#fff;background:var(--ok);
+}
+.reviewdone h2{font-size:var(--fs-20);font-weight:700}
+.reviewdone p{max-width:48ch;color:var(--muted);font-size:var(--fs-14);line-height:1.6;text-wrap:pretty}
+.reviewdone-actions{display:flex;gap:var(--s2);margin-top:var(--s3)}
+
+@media (max-width:720px){
+  /* One under the next, where three across would be three narrow slivers. */
+  .reviewbento .reviewfig{grid-column:span 12}
+  .reviewfig{min-height:0}
+  .reviewbody{min-height:0}
+  .reviewrow{grid-template-columns:18px minmax(0,1fr);row-gap:8px}
+  .reviewactions,.reviewest{grid-column:2;justify-self:start}
+  .reviewquiet{grid-column:2}
+}
+
+/* ==========================================================================
+   The app's own pickers
+   ==========================================================================
+   A native select opens the operating system's list — its type, its size, its
+   idea of a dialog — in the middle of a sheet this app drew, and the seam is
+   the only thing you see. A native date input is a different control on every
+   platform it renders on. Both are ours now, and they are drawn into the
+   document so no scrolling box can clip them.
+   ========================================================================== */
+.listbox{
+  position:fixed;z-index:95;
+  max-width:min(340px,calc(100vw - 16px));max-height:min(320px,60vh);
+  overflow-y:auto;padding:var(--s2);
+}
+.listbox .opt{
+  width:100%;display:flex;align-items:center;gap:8px;justify-content:flex-start;
+  min-height:32px;padding:0 8px;border-radius:var(--r-sm);
+  font-size:var(--fs-13);color:var(--text);text-align:left;
+}
+.listbox .opt .hash{flex:0 0 auto;width:18px;height:18px;font-size:var(--fs-12)}
+.listbox-label{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* The highlight follows the keyboard and the pointer alike, so there is only
+   ever one row that looks like the one you are about to choose. */
+.listbox .opt.active{background:var(--hover)}
+.listbox .opt[aria-selected="true"]{color:var(--accent-dark);font-weight:600}
+.listbox .opt[aria-selected="true"] > .ic{color:var(--accent);margin-left:auto}
+
+/* ---------- The calendar ---------- */
+.datefield{display:grid;gap:4px;min-width:0}
+.datepanel{position:fixed;z-index:95;width:278px;padding:var(--s3)}
+.datepanel-quick{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:var(--s3)}
+.datepanel-quick button{
+  min-height:28px;padding:0 10px;border-radius:var(--r-full);
+  border:1px solid var(--border);background:var(--surface);
+  color:var(--muted);font-size:var(--fs-12);font-weight:600;
+}
+.datepanel-quick button:hover{border-color:var(--accent);color:var(--accent-dark);background:var(--accent-tint)}
+
+.datepanel-head{
+  display:flex;align-items:center;justify-content:space-between;gap:var(--s2);
+  margin-bottom:6px;
+}
+.datepanel-head strong{font-size:var(--fs-13);font-weight:700;text-transform:capitalize}
+.datepanel-head .iconbtn{width:26px;height:26px}
+
+.datepanel-week{
+  display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:2px;
+  color:var(--faint);font-size:var(--fs-11);font-weight:600;text-align:center;
+}
+.datepanel-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.dateday{
+  aspect-ratio:1;display:grid;place-items:center;border-radius:var(--r-sm);
+  color:var(--text);font-size:var(--fs-12);font-variant-numeric:tabular-nums;
+}
+.dateday:hover{background:var(--hover)}
+.dateday.outside{color:var(--faint)}
+/* Today is named by a ring; the chosen day is filled. The two can coincide. */
+.dateday.today{box-shadow:inset 0 0 0 1px var(--border-strong);font-weight:700}
+.dateday.chosen{background:var(--accent);color:#fff;font-weight:700;box-shadow:none}
+.dateday.chosen:hover{background:var(--accent-dark)}
+
+.datepanel-clear{
+  width:100%;margin-top:var(--s3);padding-top:var(--s2);
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  border-top:1px solid var(--border);
+  color:var(--muted);font-size:var(--fs-12);font-weight:600;min-height:30px;
+}
+.datepanel-clear:hover{color:var(--accent)}
+
+/* The property rows in a task's panel hold these too. */
+.prop .fselect,.prop .datefield{margin-top:4px}
+
+@media (max-width:720px){
+  .listbox{max-width:calc(100vw - 16px)}
+  .datepanel{width:min(300px,calc(100vw - 16px))}
+}
+
+/* ---------- Reordering projects in the sidebar ---------- */
+/* The row is its own handle: there is no grip to find, you just move the
+   project. The drag starts after a few pixels so a click still opens it. */
+.navrow.sortable{touch-action:none}
+.navrow.lifting{opacity:.4}
+/* The row you are about to drop onto says so with a line, not a gap: a gap
+   would push every row below it and the list would move under the pointer. */
+.navrow.landing::after{
+  content:"";position:absolute;left:4px;right:4px;bottom:-1px;height:2px;
+  border-radius:1px;background:var(--accent);
+}
+
+/* ---------- The review's three figures ---------- */
+/* One card each. Three numbers in one card read as a banner rather than as
+   three things you might weigh against each other. The three are the same
+   height whatever they carry, so the row reads as a row. */
+.reviewbento{gap:var(--s3)}
+.reviewfig{
+  display:grid;gap:3px;align-content:start;
+  padding:var(--s4);min-height:132px;
+}
+/* The card's own number, and only that one: a descendant selector here also
+   caught every bold figure in the split bar's legend and set it at 32px. */
+.reviewfig > b{
+  font-size:32px;font-weight:700;letter-spacing:-.03em;line-height:1;
+  font-variant-numeric:tabular-nums;
+}
+.reviewfig > span{
+  color:var(--muted);font-size:var(--fs-12);font-weight:600;letter-spacing:.01em;
+}
+/* Three across, and they stay three across: the shared bento collapses w4 to
+   half-width below 1080px, which is where two of these would sit above the
+   third for no reason — they are one row of three numbers. */
+.reviewbento .reviewfig{grid-column:span 4}
+.reviewfig small{margin-top:2px;color:var(--faint);font-size:var(--fs-11);line-height:1.4}
+
+/* The focus score is the bar and the bar is the score, so they sit together at
+   the foot of the card with the numbers spaced to be read rather than
+   squeezed between their own swatches. */
+.reviewfig .split{margin-top:auto;padding-top:var(--s3);display:grid;gap:8px}
+.reviewfig .splitbar{height:10px}
+.reviewfig .legend.inline{gap:4px 14px}
+.reviewfig .legend.inline li{gap:5px;font-size:var(--fs-11)}
+.reviewfig .legend.inline i{width:7px;height:7px;border-radius:2px}
+.reviewfig .legend.inline .legendname{color:var(--faint)}
+.reviewfig .legend.inline b{
+  margin-left:2px;font-size:var(--fs-12);font-weight:700;
+  font-variant-numeric:tabular-nums;color:var(--text);
+}
+
+/* The two charts beside them get the same air inside their own cards. */
+.reviewbento .chart-plot{padding-top:8px}
+.reviewbento .donut{grid-template-columns:120px minmax(0,1fr);gap:var(--s5);align-items:center}
+.reviewbento .legend{gap:8px}
+.reviewbento .chead-row{margin-bottom:var(--s3)}
+
+/* The project picker that files an Inbox task. It is the answer on that row,
+   so it is given a width it can actually show a project name in. */
+.reviewfile{justify-self:end;min-width:0}
+.reviewfile .fselect-face{min-width:170px;max-width:220px}
+@media (max-width:720px){
+  .reviewfile{grid-column:2;justify-self:stretch}
+  .reviewfile .fselect-face{min-width:0;max-width:none}
+}

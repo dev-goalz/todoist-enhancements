@@ -36,6 +36,22 @@ export async function ensureLabels(ctx: CommandContext, names: string[]): Promis
   }
 }
 
+const labelAdd: Handler = async (ctx, args, tempId) => {
+  const name = requireName(args);
+  const labels = await liveLabels(ctx);
+  if (labels.some((l) => l.name.toLowerCase() === name.toLowerCase())) throw invalidArgument('name');
+  const label: Label = {
+    id: newId(),
+    name,
+    color: optionalString(args, 'color') ?? 'charcoal',
+    item_order: optionalNumber(args, 'item_order') ?? nextOrder(labels.map((l) => l.item_order)),
+    is_deleted: false,
+    is_favorite: optionalBoolean(args, 'is_favorite') ?? false,
+  };
+  await ctx.repo.put(ctx.userId, 'labels', label, ctx.rev);
+  await ctx.mapTempId(tempId, label.id);
+};
+
 const labelUpdate: Handler = async (ctx, args) => {
   const label = await requireLabel(ctx, args.id);
   const next: Label = { ...label };
@@ -83,6 +99,7 @@ const labelUpdateOrders: Handler = async (ctx, args) => {
 };
 
 export const labelHandlers: Record<string, Handler> = {
+  label_add: labelAdd,
   label_update: labelUpdate,
   label_update_orders: labelUpdateOrders,
 };

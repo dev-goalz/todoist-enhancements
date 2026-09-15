@@ -7,7 +7,8 @@ interface OverlayProps {
   label: string;
   /** A side sheet slides in from the right; a sheet sits in the middle. */
   variant?: 'sheet' | 'side';
-  size?: 'sm' | 'md' | 'search';
+  /** 'full' fills the window, for a sheet that stands in for a whole page. */
+  size?: 'sm' | 'md' | 'search' | 'full';
 }
 
 /**
@@ -36,11 +37,15 @@ export function Overlay({
     };
     document.addEventListener('keydown', onKey);
 
-    // Move focus into the dialog so the keyboard follows the eye.
-    const focusable = sheetRef.current?.querySelector<HTMLElement>(
-      'input, textarea, button, [tabindex]:not([tabindex="-1"])',
-    );
-    focusable?.focus();
+    /* Move focus into the dialog so the keyboard follows the eye. A dialog
+       that names its own starting point gets it: otherwise the first focusable
+       thing wins, which in a sheet is the close button in its header. */
+    const target =
+      sheetRef.current?.querySelector<HTMLElement>('[data-autofocus]') ??
+      sheetRef.current?.querySelector<HTMLElement>(
+        'input, textarea, button, [tabindex]:not([tabindex="-1"])',
+      );
+    target?.focus();
 
     return () => {
       document.removeEventListener('keydown', onKey);
@@ -54,7 +59,12 @@ export function Overlay({
   const sheetClass =
     variant === 'side'
       ? 'side-sheet'
-      : `sheet${size === 'sm' ? ' sheet-sm' : size === 'search' ? ' sheet-search' : ''}`;
+      : `sheet${
+          size === 'sm' ? ' sheet-sm'
+            : size === 'search' ? ' sheet-search'
+              : size === 'full' ? ' sheet-full'
+                : ''
+        }`;
 
   return (
     <div className="overlay open" role="dialog" aria-modal="true" aria-label={label}>

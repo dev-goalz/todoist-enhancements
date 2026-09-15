@@ -430,7 +430,11 @@ ul{margin:0;padding:0;list-style:none}
 .meta .late{color:var(--accent)}
 .meta .deadline{color:#7a5cb9}
 .meta .at{color:var(--info)}
-.tag{padding:1px 6px;border-radius:var(--r-xs);background:var(--subtle);color:var(--muted);font-size:var(--fs-11)}
+/* A tag wears its own colour: the glyph in it, the chip a wash of it. Todoist
+   holds a colour for every tag and the row is where it earns its keep. */
+.tag{display:inline-flex;align-items:center;gap:4px;padding:1px 6px 1px 5px;border-radius:var(--r-xs);
+  background:var(--marker-soft,var(--subtle));color:var(--muted);font-size:var(--fs-11)}
+.tag .ic{width:11px;height:11px;color:var(--marker,var(--faint))}
 /* project reference: ONE treatment everywhere (v1 had 3: coloured inline,
    plain grey inline, and a right-hand grey column) */
 .proj{display:inline-flex;align-items:center;gap:3px;font-weight:600}
@@ -735,15 +739,13 @@ kbd{padding:2px 5px;border:1px solid var(--border-strong);border-radius:var(--r-
 .ilist{display:grid;gap:6px;color:var(--muted);font-size:var(--fs-12)}
 .ilist strong{color:var(--text);font-size:var(--fs-14)}
 
-/* toast */
-.toast{position:fixed;left:50%;bottom:26px;z-index:200;min-height:38px;padding:0 6px 0 var(--s4);display:flex;align-items:center;gap:var(--s3);
-  border-radius:var(--r-md);color:#fff;background:#2a2725;box-shadow:var(--sh-md);font-size:var(--fs-13);
-  opacity:0;pointer-events:none;transform:translate(-50%,8px);transition:opacity .18s ease-out,transform .18s ease-out}
-.toast.show{pointer-events:auto}
-.toast button{padding:6px 10px;border-radius:var(--r-sm);color:#fff;font-size:var(--fs-12);font-weight:600;
-  background:rgba(255,255,255,.14)}
-.toast button:hover{background:rgba(255,255,255,.24)}
-.toast.show{opacity:1;transform:translate(-50%,0)}
+/* toast
+   The visible rules live with the stack in additions.css. What stood here was
+   a single fixed toast that stayed at opacity:0 until a `show` class was added
+   — and nothing has ever added it, so every toast the product has raised has
+   been rendered, correct, and invisible. Deleted rather than overridden: an
+   override only holds while the stylesheets load in the order you expect. */
+.toast button{padding:6px 10px;border-radius:var(--r-sm);color:#fff;font-size:var(--fs-12);font-weight:600}
 
 .mobile-top,.mobile-nav{display:none}
 
@@ -766,16 +768,23 @@ kbd{padding:2px 5px;border:1px solid var(--border-strong);border-radius:var(--r-
   :root{--fs-26:22px}
   .protonote{height:30px;font-size:var(--fs-11)}
   .protonote span:last-child{display:none}
-  .app{height:calc(100vh - 30px);display:block}
+  /* A column, not a block. A banner above the workspace used to push the
+     bottom of the app past the bottom of the screen, which is where the
+     navigation bar went: 64px of it, permanently out of reach. */
+  .app{height:100dvh;display:flex;flex-direction:column}
   .sidebar{display:none}
-  .workspace{height:100%;padding-bottom:62px}
+  .workspace{flex:1;min-height:0;height:auto;padding-bottom:0;display:flex;flex-direction:column}
+  .screen.active{flex:1;min-height:0;height:auto}
   .expand-wrap{display:none!important}
 
-  .mobile-top{height:48px;padding:0 var(--s3);display:flex;align-items:center;justify-content:space-between;gap:var(--s2);
+  .mobile-top{flex:0 0 auto;height:auto;min-height:48px;
+    padding:env(safe-area-inset-top) var(--s3) 0;
+    display:flex;align-items:center;justify-content:space-between;gap:var(--s2);
     border-bottom:1px solid var(--border);background:var(--surface)}
-  .mobile-top strong{font-size:var(--fs-14)}
+  .mobile-top strong{font-size:var(--fs-14);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
-  .page{padding:var(--s4) var(--s4) 72px}
+  /* Room for the navigation bar and for whatever the phone puts below it. */
+  .page{padding:var(--s4) var(--s4) calc(80px + env(safe-area-inset-bottom))}
   /* compact header: the subtitle and the duplicated "+ Add" are desktop-only —
      on a phone the FAB already adds tasks, and the subtitle is orientation,
      not information you need every time you open the view. */
@@ -798,7 +807,8 @@ kbd{padding:2px 5px;border:1px solid var(--border-strong);border-radius:var(--r-
   .toolbar::-webkit-scrollbar{display:none}
   .tb-spacer{display:none}
   .chips{flex-wrap:nowrap}
-  .pop{position:fixed;top:auto;bottom:72px;left:var(--s3);right:var(--s3);width:auto;max-height:58vh;overflow:auto;transform-origin:bottom center}
+  .pop{position:fixed;top:auto;bottom:calc(76px + env(safe-area-inset-bottom));left:var(--s3);right:var(--s3);
+    width:auto;max-height:58vh;overflow:auto;transform-origin:bottom center}
 
   .task{width:100%;margin-left:0;padding:10px 8px;grid-template-columns:20px minmax(0,1fr)}
   .drag,.trow-actions{display:none}
@@ -830,10 +840,14 @@ kbd{padding:2px 5px;border:1px solid var(--border-strong);border-radius:var(--r-
 
   /* 5 destinations, 5 distinct icons, 5 labels.
      v1 had unlabelled icons where "My week" and "Upcoming" were both calendars. */
-  .mobile-nav{position:absolute;z-index:20;bottom:0;left:0;right:0;height:64px;
+  /* Fixed to the window, not to a container that something above can push
+     down, and padded for the home indicator so the last row of it is not
+     sitting under the phone's own furniture. */
+  .mobile-nav{position:fixed;z-index:20;bottom:0;left:0;right:0;height:auto;
+    padding-bottom:env(safe-area-inset-bottom);
     display:grid;grid-template-columns:repeat(5,1fr);align-items:center;
     background:var(--surface);border-top:1px solid var(--border)}
-  .mobile-nav button{height:100%;display:grid;justify-items:center;align-content:center;gap:3px;
+  .mobile-nav button{height:64px;display:grid;justify-items:center;align-content:center;gap:3px;
     color:var(--muted);font-size:10px;font-weight:600}
   .mobile-nav button[aria-current="page"]{color:var(--accent)}
   .mobile-nav .fab{color:#fff}

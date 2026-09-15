@@ -10,7 +10,7 @@ Both run the same queries through Kysely, and the test suite passes on both.
 | Call | Notes |
 | --- | --- |
 | `POST /api/v1/sync` (read) | `sync_token` `*` for everything, or the last token for changes since. |
-| `POST /api/v1/sync` (commands) | `item_add`, `item_update`, `item_move`, `item_reorder`, `item_complete`, `item_uncomplete`, `item_close`, `item_delete`, `project_add`, `project_update`, `section_add`, `section_update`, `section_delete`, `label_update`, `label_update_orders`. |
+| `POST /api/v1/sync` (commands) | `item_add`, `item_update`, `item_move`, `item_reorder`, `item_complete`, `item_uncomplete`, `item_close`, `item_delete`, `project_add`, `project_update`, `project_reorder`, `project_archive`, `project_delete`, `section_add`, `section_update`, `section_delete`, `label_add`, `label_update`, `label_update_orders`. |
 | `GET /api/v1/tasks/completed/by_completion_date` | `since`, `until`, `limit`, `cursor`. Days are UTC. |
 
 ## Recurring tasks

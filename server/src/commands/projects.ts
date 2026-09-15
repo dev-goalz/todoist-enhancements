@@ -1,8 +1,8 @@
 import { newId } from '../ids';
 import type { Project, Section } from '../wire';
 import {
-  invalidArgument, liveItems, nextOrder, optionalBoolean, optionalNumber, optionalString,
-  requireName, requireProject, requireSection, type Args, type Handler,
+  CommandError, invalidArgument, liveItems, nextOrder, optionalBoolean, optionalNumber, optionalString,
+  requireName, requireProject, requireSection, type Args, type CommandContext, type Handler,
 } from './context';
 import { deleteItemTree } from './items';
 
@@ -54,6 +54,57 @@ const projectAdd: Handler = async (ctx, args, tempId) => {
 const projectUpdate: Handler = async (ctx, args) => {
   const project = await requireProject(ctx, args.id);
   await ctx.repo.put(ctx.userId, 'projects', applyProjectFields(project, args), ctx.rev);
+};
+
+const projectReorder: Handler = async (ctx, args) => {
+  if (!Array.isArray(args.projects)) throw invalidArgument('projects');
+  for (const entry of args.projects as unknown[]) {
+    const { id, child_order: order } = (entry ?? {}) as { id?: unknown; child_order?: unknown };
+    if (typeof order !== 'number' || !Number.isFinite(order)) throw invalidArgument('projects');
+    const project = await requireProject(ctx, id);
+    await ctx.repo.put(ctx.userId, 'projects', { ...project, child_order: order }, ctx.rev);
+  }
+};
+
+/** A project and every project nested below it. */
+async function projectTree(ctx: CommandContext, root: Project): Promise<Project[]> {
+  const live = (await ctx.repo.list<Project>(ctx.userId, 'projects')).filter((p) => !p.is_deleted);
+  const tree = [root];
+  for (let i = 0; i < tree.length; i++) {
+    tree.push(...live.filter((p) => p.parent_id === tree[i].id));
+  }
+  return tree;
+}
+
+async function requireOwnProject(ctx: CommandContext, id: unknown): Promise<Project> {
+  const project = await requireProject(ctx, id);
+  // Todoist does not let the Inbox be archived or deleted either.
+  if (project.inbox_project) throw new CommandError(22, 'The Inbox cannot be archived or deleted');
+  return project;
+}
+
+/** Archived projects, with their subprojects, keep their tasks but drop out of view. */
+const projectArchive: Handler = async (ctx, args) => {
+  for (const project of await projectTree(ctx, await requireOwnProject(ctx, args.id))) {
+    await ctx.repo.put(ctx.userId, 'projects', { ...project, is_archived: true }, ctx.rev);
+  }
+};
+
+/** Deleting a project takes its subprojects, sections and tasks with it. */
+const projectDelete: Handler = async (ctx, args) => {
+  const tree = await projectTree(ctx, await requireOwnProject(ctx, args.id));
+  const ids = new Set(tree.map((p) => p.id));
+  for (const item of await liveItems(ctx)) {
+    if (ids.has(item.project_id)) await ctx.repo.put(ctx.userId, 'items', { ...item, is_deleted: true, updated_at: ctx.now }, ctx.rev);
+  }
+  for (const section of await ctx.repo.list<Section>(ctx.userId, 'sections')) {
+    if (!section.is_deleted && ids.has(section.project_id)) {
+      await ctx.repo.put(ctx.userId, 'sections', { ...section, is_deleted: true }, ctx.rev);
+    }
+  }
+  for (const project of tree) {
+    await ctx.repo.put(ctx.userId, 'projects', { ...project, is_deleted: true }, ctx.rev);
+  }
 };
 
 function applySectionFields(section: Section, args: Args): Section {
@@ -110,6 +161,9 @@ const sectionDelete: Handler = async (ctx, args) => {
 export const projectHandlers: Record<string, Handler> = {
   project_add: projectAdd,
   project_update: projectUpdate,
+  project_reorder: projectReorder,
+  project_archive: projectArchive,
+  project_delete: projectDelete,
   section_add: sectionAdd,
   section_update: sectionUpdate,
   section_delete: sectionDelete,

@@ -14,7 +14,7 @@ function parse(hash: string): Route {
   // The dashboard is a tab of the insights page; an old link still lands there.
   if (view === 'dashboard') return { view: 'insights' };
   const known: ViewId[] = [
-    'inbox', 'week', 'upcoming', 'someday',
+    'inbox', 'week', 'upcoming', 'someday', 'review',
     'settings', 'project', 'label', 'labels', 'insights',
   ];
   if (!known.includes(view as ViewId)) return { view: 'week' };

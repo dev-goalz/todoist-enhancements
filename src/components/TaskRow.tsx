@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Icon } from './Icon';
 import { TaskActions } from './TaskActions';
 import { useT } from '@/hooks/useT';
@@ -42,6 +42,14 @@ export function TaskRow({
 
   // Estimate labels are shown as a duration, never as an ordinary tag.
   const visibleLabels = item.labels.filter((l) => !l.toLowerCase().startsWith('est-'));
+
+  /* A tag carries a colour in Todoist, so it carries it here too. The task
+     stores names, and the colour lives on the label, which is the lookup. */
+  const labelColours = useMemo(() => {
+    const byName = new Map<string, string>();
+    for (const label of Object.values(snapshot.labels)) byName.set(label.name, label.color);
+    return byName;
+  }, [snapshot.labels]);
 
   return (
     <>
@@ -132,7 +140,10 @@ export function TaskRow({
             )}
 
             {visibleLabels.map((label) => (
-              <span className="tag" key={label}>{label}</span>
+              <span className="tag" key={label} style={markerStyle(labelColours.get(label))}>
+                <Icon name="tag" size="sm" />
+                {label}
+              </span>
             ))}
 
             {showProject && project && !project.inbox_project && (

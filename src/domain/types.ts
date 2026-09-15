@@ -216,6 +216,7 @@ export type ViewId =
   | 'week'
   | 'upcoming'
   | 'someday'
+  | 'review'
   | 'dashboard'
   | 'settings'
   | 'project'

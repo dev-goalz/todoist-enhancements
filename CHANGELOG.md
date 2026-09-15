@@ -2,6 +2,77 @@
 
 What changed in each version, newest first.
 
+## 1.1.0
+
+### Added
+
+- **Daily and weekly review.** One question at a time, in an order, with an
+  end. The daily pass asks what is late, what is sitting in the Inbox with no
+  project, what you committed to this week without naming a day, what has no
+  estimate, and what today holds. The weekly pass asks what you finished, what
+  the week amounted to in numbers, what slipped, what is unfiled, what has no
+  estimate, which projects have gone quiet, and what is parked in Someday.
+  Every answer is a change Todoist already understands, made through the same
+  rules a drag makes. The review stores nothing of its own.
+- **Project actions**, the ones Todoist gives them, from the sidebar row and
+  from the project's own page: add a project above or below, edit, favourite,
+  duplicate, archive, delete. A project also renames from its own title.
+- **Projects reorder by dragging** them in the sidebar, within their own list
+  of siblings.
+- **Tags can be created** — from the Tags page, or by typing a name after `@`
+  that does not exist yet.
+- **A density setting**, chosen by looking at two pictures rather than by
+  reading two adjectives. Compact closes the space around a row without taking
+  anything out of it: the same type, the same fields, a shorter page.
+- **Browse**, a fifth destination on the phone, holding everything a phone has
+  no room for: the profile and its menu, search, tags, favourites, projects.
+  It is the sidebar rendered as a page, not a second list kept in step by hand.
+- The app's **own date picker and own select**, everywhere a task is made or
+  edited. No operating-system list opening inside a sheet this app drew.
+- Filling in a page's missing estimates is **one pass and one request**: Tab
+  walks the column, the foot counts what is filled and what it adds up to, and
+  one button saves the lot.
+
+### Fixed
+
+- **Every toast in the product was invisible.** A leftover rule held them at
+  zero opacity waiting for a class nothing ever added, so no error and no undo
+  had ever reached anyone. This is why a refused change looked like a change
+  that never registered the click.
+- **Adding a task from the composer could create nothing at all.** Leaving the
+  project picker alone sent an empty project id, which Todoist refuses. The
+  Inbox was listed twice: once as that empty value, and once as the real
+  project it already is.
+- **A refusal is now reported rather than swallowed**, and the refused command
+  is dropped instead of going out again on every sync for ever — where it also
+  took everything queued behind it down with it.
+- **A 403 is no longer read as a bad token.** Todoist also answers 403 when a
+  command is against the rules of a plan, and reading that as an auth failure
+  hid the real reason and signed people out over it.
+- **A project nested under another project was never drawn** in the sidebar.
+  Only folders disclosed their children.
+- **A description with two links showed raw HTML.** The inline renderer ran
+  emphasis over a string that already carried generated anchors, so the
+  underscore in one `target="_blank"` paired with the next and tore both tags
+  in half.
+- The phone's navigation bar sat below the fold, behind the browser's own
+  furniture and anything above it in the app. It is fixed to the window and
+  padded for the phone's hardware.
+- The "open navigation" button on a phone opened My week. The "hide sidebar"
+  button did nothing at all; there is no column beside the app to hide.
+- A new section or tag could appear twice: only tasks and projects had their
+  placeholder cleared when the real record came back.
+
+### Changed
+
+- Tags carry their colour onto the task row.
+- The user menu gained the feedback form and the coffee link, and closes when
+  you click away from it.
+- Insights reads a year of history four windows at a time instead of one after
+  another.
+- Sending a task to a destination is one method in one place, rather than the
+  same fifteen lines written out wherever it was needed.
+
 ## 1.0.0
 
 ### Added

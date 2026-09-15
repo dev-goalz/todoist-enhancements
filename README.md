@@ -9,7 +9,8 @@ interface with one built around planning a week.
 affiliated with, or supported by Todoist.**
 
 [Open it](https://todoistenhanced.julesbertolino.fr) · [Features](#features) ·
-[Contributing](#contributing) · [Disclaimer and trademarks](#disclaimer-and-trademarks) ·
+[Contributing](#contributing) · [Report a bug or an idea](https://tally.so/r/WOLkVN) ·
+[Disclaimer and trademarks](#disclaimer-and-trademarks) ·
 [License](#license) · [Buy me a coffee](https://buymeacoffee.com/julesbertolino)
 
 ![Enhanced for Todoist, My week view](docs/screenshot-my-week.png)
@@ -103,6 +104,35 @@ and labelled for the week, a task carrying two estimates, a "quick" task
 estimated at forty minutes. These are listed with the options that match each
 possible intent, and nothing changes until you choose one.
 
+### Daily and weekly review
+
+A planning tool is only worth having if you look at it, and looking at
+everything at once is what stops people. The review asks one question at a
+time, in an order, with an end.
+
+The daily pass takes a few minutes: what is late, what is sitting in the
+Inbox, what you committed to this week without naming a day, what has no
+estimate yet, and what today holds. Each step asks the question that step is
+actually about — a task is in the Inbox because it has no project, so that
+step files it rather than dating it — and pressing an answer makes exactly the
+change dragging the task there would make. A row that has been answered leaves
+the list; the answers that leave it there are marked, because those are
+decisions rather than states.
+
+The weekly pass is longer: what you finished — in a list you can order by date
+or by priority, with nothing crossed out, because a review is no place to read
+your own week struck through — then the same week in numbers, then what
+slipped, what is still unfiled, what is in play with no estimate (with the
+field right there on the row), which projects have gone quiet, and what is
+parked in Someday. When the last question is answered it says so and stops.
+
+Any task in a review can be ticked off. Sometimes the answer is that you
+already did it.
+
+It stores nothing of its own. There is no per-project review interval here,
+because there is nowhere in Todoist to keep one, and a review that needs its
+own hidden state is a review that breaks the promise the rest of this makes.
+
 ### Also included
 
 - Upcoming, Someday and Inbox views, plus project and tag pages. Tags can be
@@ -155,6 +185,9 @@ the main thing it needs help with.
   most useful thing you can tell me is what you do that this app makes
   difficult.
 - Bug reports are welcome, with or without a fix attached.
+- No GitHub account, or would rather not open an issue? There is a short form:
+  **[submit a bug or an idea](https://tally.so/r/WOLkVN)**. It is the same form
+  the app links to from the user menu, and it reaches me just as well.
 - Pull requests are open. The rules live in `src/domain` and depend on nothing
   else, so most behaviour can be changed without touching the interface.
 

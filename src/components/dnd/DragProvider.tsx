@@ -6,6 +6,7 @@ import {
 import type { Modifier } from '@dnd-kit/core';
 import { useStore } from '@/store/store';
 import { decodeTarget, dropMutation } from '@/domain/dnd';
+import { siblingOrder } from '@/store/selectors';
 import { updateItem, moveItem } from '@/api/commands';
 import type { Item } from '@/domain/types';
 
@@ -58,6 +59,7 @@ export function DragProvider({ children }: { children: ReactNode }) {
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const setDragging = useStore((s) => s.setDragging);
   const moveSection = useStore((s) => s.moveSection);
+  const reorderProjects = useStore((s) => s.reorderProjects);
   const setDraggingSection = useStore((s) => s.setDraggingSection);
 
   // A short distance threshold keeps a plain click on a task from starting a drag.
@@ -68,9 +70,11 @@ export function DragProvider({ children }: { children: ReactNode }) {
   function onDragStart(event: DragStartEvent) {
     const id = String(event.active.id);
     const isSection = id.startsWith('section:');
+    const isProject = id.startsWith('project-row:');
     setDraggingId(id);
-    // Sections are not tasks, so the "a task is in flight" flag stays down.
-    setDragging(isSection ? null : id);
+    // Neither a section nor a sidebar project is a task, so the "a task is in
+    // flight" flag stays down and the empty drop zones stay closed.
+    setDragging(isSection || isProject ? null : id);
     setDraggingSection(isSection ? id.slice('section:'.length) : null);
   }
 
@@ -88,6 +92,32 @@ export function DragProvider({ children }: { children: ReactNode }) {
       const overId = String(event.over.id);
       if (!overId.startsWith('slot:')) return;
       await moveSection(activeId.slice('section:'.length), Number(overId.split(':')[2]));
+      return;
+    }
+
+    /* A project dragged in the sidebar is reordered among its own siblings.
+       It is not a destination for anything and it does not move between
+       workspaces: the ids come from one list and go back as that list. */
+    if (activeId.startsWith('project-row:')) {
+      const overId = String(event.over.id);
+      /* A sidebar row is two things at once: somewhere to file a task, and a
+         position in a list. While a project is in flight only the second
+         reading applies, so a landing on either id means the same place. */
+      const over = overId.startsWith('project-row:')
+        ? overId.slice('project-row:'.length)
+        : decodeTarget(overId)?.kind === 'project'
+          ? (decodeTarget(overId) as { kind: 'project'; projectId: string }).projectId
+          : null;
+      if (!over) return;
+      const from = activeId.slice('project-row:'.length);
+      if (from === over) return;
+      const siblings = siblingOrder(snapshot, from);
+      const at = siblings.indexOf(from);
+      const to = siblings.indexOf(over);
+      if (at < 0 || to < 0) return;
+      const next = [...siblings];
+      next.splice(to, 0, ...next.splice(at, 1));
+      await reorderProjects(next);
       return;
     }
 

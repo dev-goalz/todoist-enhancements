@@ -125,6 +125,59 @@ describe('completion', () => {
 });
 
 describe('projects and sections', () => {
+  it('adds a project at a position and reorders the others, as the project sheet does', async () => {
+    const first = await t.sendOk('1', [
+      cmd('project_add', { name: 'A', color: 'blue' }, 'a'),
+      cmd('project_add', { name: 'B', color: 'blue' }, 'b'),
+    ]);
+    const [a, b] = ['a', 'b'].map((k) => first.temp_id_mapping![k]);
+    const second = await t.sendOk(first.sync_token, [
+      cmd('project_add', { name: 'Between', color: 'red', child_order: 2, is_favorite: true, description: 'Mid' }, 'c'),
+      cmd('project_reorder', { projects: [{ id: b, child_order: 3 }] }),
+    ]);
+    const byName = Object.fromEntries((await t.sync('*')).projects!.map((p) => [p.name, p]));
+    expect(byName.A.child_order).toBe(1);
+    expect(byName.Between).toMatchObject({ child_order: 2, is_favorite: true, description: 'Mid' });
+    expect(byName.B.child_order).toBe(3);
+    const bad = cmd('project_reorder', { projects: [{ id: a, child_order: 'x' }] });
+    expect((await t.send(second.sync_token, [bad])).sync_status![bad.uuid]).toMatchObject({ error_code: 20 });
+  });
+
+  it('archives a project with its subprojects and keeps their tasks', async () => {
+    const first = await t.sendOk('1', [
+      cmd('project_add', { name: 'Old', color: 'blue' }, 'p'),
+      cmd('project_add', { name: 'Older', color: 'blue', parent_id: 'p' }, 'child'),
+      cmd('item_add', { content: 'Kept', project_id: 'child' }),
+    ]);
+    const archived = await t.sendOk(first.sync_token, [cmd('project_archive', { id: 'p' })]);
+    expect(archived.projects!.map((p) => [p.name, p.is_archived]).sort()).toEqual([['Old', true], ['Older', true]]);
+    expect((await t.sync('*')).items!.map((i) => i.content)).toEqual(['Kept']);
+  });
+
+  it('deletes a project with its subprojects, sections and tasks', async () => {
+    const first = await t.sendOk('1', [
+      cmd('project_add', { name: 'Gone', color: 'blue' }, 'p'),
+      cmd('project_add', { name: 'Also gone', color: 'blue', parent_id: 'p' }, 'child'),
+      cmd('section_add', { name: 'S', project_id: 'p' }, 's'),
+      cmd('item_add', { content: 'In section', section_id: 's' }),
+      cmd('item_add', { content: 'In child', project_id: 'child' }),
+      cmd('item_add', { content: 'Stays in inbox' }),
+    ]);
+    await t.sendOk(first.sync_token, [cmd('project_delete', { id: 'p' })]);
+    const full = await t.sync('*');
+    expect(full.projects!.map((p) => p.name)).toEqual(['Inbox']);
+    expect(full.sections).toEqual([]);
+    expect(full.items!.map((i) => i.content)).toEqual(['Stays in inbox']);
+  });
+
+  it('refuses to archive or delete the Inbox', async () => {
+    const archive = cmd('project_archive', { id: t.user.inbox_project_id });
+    const remove = cmd('project_delete', { id: t.user.inbox_project_id });
+    const response = await t.send('1', [archive, remove]);
+    expect(response.sync_status![archive.uuid]).toMatchObject({ error_code: 22 });
+    expect(response.sync_status![remove.uuid]).toMatchObject({ error_code: 22 });
+  });
+
   it('adds and updates a project', async () => {
     const first = await t.sendOk('1', [cmd('project_add', { name: 'Home', color: 'blue' }, 'tmp-p')]);
     const project = first.projects!.find((p) => p.id === first.temp_id_mapping!['tmp-p'])!;
@@ -165,6 +218,13 @@ describe('projects and sections', () => {
 });
 
 describe('labels', () => {
+  it('adds a label with a temp id and refuses a duplicate name', async () => {
+    const first = await t.sendOk('1', [cmd('label_add', { name: 'errands', color: 'green' }, 'tmp-l')]);
+    expect(first.labels![0]).toMatchObject({ id: first.temp_id_mapping!['tmp-l'], name: 'errands', color: 'green', item_order: 1 });
+    const dup = cmd('label_add', { name: 'Errands' });
+    expect((await t.send(first.sync_token, [dup])).sync_status![dup.uuid]).toMatchObject({ error_code: 20 });
+  });
+
   it('favourites and reorders labels', async () => {
     const first = await t.sendOk('1', [cmd('item_add', { content: 'x', labels: ['home', 'work'] }, 'tmp-1')]);
     const [home, work] = ['home', 'work'].map((n) => first.labels!.find((l) => l.name === n)!.id);
