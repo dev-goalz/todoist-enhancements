@@ -1,9 +1,14 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <rect width="32" height="32" rx="3.9" fill="#e44232"/>
-  <g fill="none" stroke="#fff" stroke-width="2.7"
-     stroke-linecap="round" stroke-linejoin="round">
-    <path d="M0.2 9.4 6.3 15.0 19.4 6.3"/>
-    <path d="M0.2 15.0 6.3 20.6 19.4 11.9"/>
-    <path d="M0.2 20.6 6.3 26.2 19.4 17.5"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img"
+     aria-label="Enhanced for Todoist">
+  <!--
+    Three capsules of different heights on one baseline: a week, read as the
+    load it carries. The app's own accent, and its own mark: nothing here is
+    borrowed from Todoist's branding.
+  -->
+  <rect width="512" height="512" rx="115" fill="#d1453b"/>
+  <g fill="#fff">
+    <rect x="104" y="234" width="74" height="150" rx="37"/>
+    <rect x="219" y="130" width="74" height="254" rx="37"/>
+    <rect x="334" y="188" width="74" height="196" rx="37"/>
   </g>
 </svg>

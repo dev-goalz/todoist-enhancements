@@ -402,7 +402,7 @@ export const fr: Record<TranslationKey, string> = {
   'connect.github': 'Voir le code sur GitHub',
   'connect.apiKey': 'Obtenir votre clé API dans Todoist',
   'connect.demoInstead': 'Explorer avec des données de démonstration',
-  'connect.legal': 'Enhanced for Todoist est un projet indépendant de {author}. Il n’est ni créé, ni affilié, ni soutenu par Todoist. « Todoist » est une marque de Doist Inc.',
+  'connect.legal': 'Enhanced for Todoist est un projet indépendant de {author}. Il n’est ni créé, ni affilié, ni soutenu par Todoist. « Todoist » est une marque de Todoist Inc.',
 
   'insights.per_day': 'Achevées par jour',
   'insights.per_week': 'Achevées par semaine',

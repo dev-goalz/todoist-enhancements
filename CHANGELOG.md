@@ -21,9 +21,15 @@ What changed in each version, newest first.
 
 ### Changed
 
-- The app is named "Enhanced for Todoist" everywhere, which is the form Doist's
+- The app is named "Enhanced for Todoist" everywhere, which is the form Todoist's
   brand guidelines ask of a third-party app, and every description of it now
   states that it is not created by, affiliated with, or supported by Todoist.
+- The icon is the app's own: three capsules of different heights on one
+  baseline, a week read as the load it carries. It replaces Todoist's mark,
+  which a project that is not theirs had no business wearing. The browser and
+  install colour is the app's own accent rather than Todoist's red.
+- Installed on a phone, the icon has a full-bleed version of its own, so the
+  system's mask no longer eats its rounded corners.
 - A task tagged quick but estimated at more than five minutes is left out of
   the Quick group. The tag is a claim and the estimate is the fact.
 - The add-task line at the end of a section takes no room until the section

@@ -171,22 +171,25 @@ with a ready-to-host build attached.
 
 Enhanced for Todoist is an independent project. **It is not created by,
 affiliated with, or supported by Todoist.** It is not an official Todoist
-product and it is not endorsed by Doist.
+product and it carries no endorsement.
 
-"Todoist" is a trademark of Doist Inc. Any reference to it here is descriptive,
+"Todoist" is a trademark of Todoist Inc. Any reference to it here is descriptive,
 to say what this connects to, and implies no association. The project is named
-in the `x for Todoist` form that Doist's
+in the `x for Todoist` form that Todoist's
 [brand usage guidelines](https://developer.todoist.com/api/v1/#section/Developing-with-Todoist/Brand-usage)
 ask of third-party apps, and the same statement appears on the sign-in screen
 and under Settings, About, inside the app itself.
+
+The app's icon, name and interface are its own work. No Todoist logo, icon or
+other brand asset is used or reproduced anywhere in this project.
 
 This project uses the public Todoist API as any account holder may. It asks for
 your own personal API token, stores it in your own browser, and sends it to
 nobody but Todoist. It is provided as is, with no warranty, and it is not a
 support channel for Todoist: if something is wrong with your account or with
-Todoist itself, ask Doist, not me.
+Todoist itself, ask Todoist, not me.
 
-If anyone at Doist would like something here changed, open an issue and I will
+If anyone at Todoist would like something here changed, open an issue and I will
 change it.
 
 ## License

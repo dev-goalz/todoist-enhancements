@@ -18,7 +18,7 @@ export default defineConfig({
         name: 'Enhanced for Todoist',
         short_name: 'Enhanced',
         description: 'An independent project, not created by, affiliated with, or supported by Todoist. A local-first client built around planning a week.',
-        theme_color: '#e44232',
+        theme_color: '#d1453b',
         background_color: '#ffffff',
         display: 'standalone',
         start_url: './',
@@ -26,7 +26,15 @@ export default defineConfig({
         icons: [
           { src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png' },
-          { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+          /* A maskable icon is cropped to whatever shape the system likes, so
+             it needs its own full-bleed square. The rounded one was losing its
+             corners to the mask. */
+          {
+            src: 'icons/icon-maskable-512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable',
+          },
         ],
       },
       workbox: {

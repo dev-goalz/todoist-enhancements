@@ -400,7 +400,7 @@ export const en = {
   'connect.github': 'Check the code on GitHub',
   'connect.apiKey': 'Get your API key in Todoist',
   'connect.demoInstead': 'Explore with demo data instead',
-  'connect.legal': 'Enhanced for Todoist is an independent project from {author}. It is not created by, affiliated with, or supported by Todoist. “Todoist” is a trademark of Doist Inc.',
+  'connect.legal': 'Enhanced for Todoist is an independent project from {author}. It is not created by, affiliated with, or supported by Todoist. “Todoist” is a trademark of Todoist Inc.',
 
   'insights.per_day': 'Completed per day',
   'insights.per_week': 'Completed per week',
