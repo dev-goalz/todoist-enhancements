@@ -85,6 +85,32 @@ export function WeekView({ onOpen, onInsights, onUnestimated, onAddTaskTo }: Wee
 
   const sortedGroup = (list: typeof scoped) => sortItems(list, current.sort, childrenOf);
 
+  /* The board shows the same five buckets the list does. Without this it fell
+     back to the generic grouping, which for "no grouping" is a single column
+     holding the whole week: a board with one column in it.
+
+     An empty bucket stays as long as it is somewhere you can drop work, since
+     an empty column is still a destination; Behind schedule and Scheduled
+     today are neither, so an empty one is just noise. */
+  const weekColumns = useMemo(() => {
+    const columns = [
+      { id: 'overdue', title: t('group.overdue'), items: groups.overdue },
+      ...(prefs.showQuickGroup
+        ? [{ id: 'quick', title: t('group.quick'), items: groups.quick,
+            dropTarget: { kind: 'quick' as const } }]
+        : []),
+      { id: 'untimed', title: t('group.untimed'), items: groups.untimed,
+        dropTarget: { kind: 'today' as const } },
+      { id: 'timed', title: t('group.timed'), items: groups.timed },
+      { id: 'anytime', title: t('group.anytime'), items: groups.anytime,
+        dropTarget: { kind: 'anytime' as const } },
+    ];
+    return columns
+      .filter((column) => column.items.length > 0 || column.dropTarget)
+      .map((column) => ({ ...column, items: sortItems(column.items, current.sort, childrenOf) }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [groups, prefs.showQuickGroup, current.sort, childrenOf, t]);
+
   return (
     <div className="page">
       <PageHeader
@@ -175,6 +201,11 @@ export function WeekView({ onOpen, onInsights, onUnestimated, onAddTaskTo }: Wee
           group={current.group}
           sort={current.sort}
           onOpen={onOpen}
+          /* Only when nothing else was asked for: a board grouped by project
+             is a board of projects, not of the week's buckets. */
+          boardColumns={
+            current.mode === 'board' && current.group === 'none' ? weekColumns : undefined
+          }
         />
       )}
     </div>

@@ -15,9 +15,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg'],
       manifest: {
-        name: 'Enhancements for Todoist',
-        short_name: 'Enhancements',
-        description: 'An alternative, local-first client for Todoist.',
+        name: 'Enhanced for Todoist',
+        short_name: 'Enhanced',
+        description: 'An alternative, local-first client for Todoist, built around planning a week.',
         theme_color: '#e44232',
         background_color: '#ffffff',
         display: 'standalone',
@@ -31,6 +31,9 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+        // The share card is fetched by link scrapers, never by the app. There
+        // is no reason to spend a fifth of the offline cache on it.
+        globIgnores: ['og-image.png'],
         // A new build takes effect on the next reload instead of sitting behind
         // the old one until every tab has been closed.
         skipWaiting: true,

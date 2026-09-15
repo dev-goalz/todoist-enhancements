@@ -26,6 +26,14 @@ What changed in each version, newest first.
 - The logbook grouped by priority reads P1 first.
 - Upcoming's board uses the same arrows as every other board.
 
+- A link to the app unfurls with a title, a description and a picture of My
+  week.
+
+### Fixed
+
+- My week in board mode showed one column holding the whole week. It shows the
+  same five buckets the list does.
+
 ### Removed
 
 - Behind schedule no longer accepts drops. Dropping there dated the task

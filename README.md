@@ -5,7 +5,7 @@
 A different front end for Todoist. Todoist stays the backend; this replaces the
 interface with one built around planning a week.
 
-[Demo](#try-it-without-an-account) · [Features](#features) ·
+[Open it](https://todoistenhanced.julesbertolino.fr) · [Features](#features) ·
 [Contributing](#contributing) · [License](#license) ·
 [Buy me a coffee](https://buymeacoffee.com/julesbertolino)
 
@@ -33,6 +33,7 @@ Not affiliated with Doist. Todoist is a trademark of Doist Inc.
 
 ## Try it without an account
 
+It runs at **[todoistenhanced.julesbertolino.fr](https://todoistenhanced.julesbertolino.fr)**.
 The connect screen has an "Explore with demo data" button. It loads a made-up
 workspace so you can look around without a token. Nothing is sent anywhere.
 
