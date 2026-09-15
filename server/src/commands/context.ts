@@ -11,8 +11,6 @@ export class CommandError extends Error {
 export const unknownCommand = (type: string) => new CommandError(10, `Unknown command: ${type}`);
 export const invalidArgument = (name: string) => new CommandError(20, `Invalid argument value: ${name}`);
 export const notFound = (what: string) => new CommandError(21, `${what} not found`);
-export const unsupportedRecurring = () =>
-  new CommandError(30, 'Recurring tasks are not supported by this server yet');
 
 export interface CommandContext {
   readonly repo: Repo;

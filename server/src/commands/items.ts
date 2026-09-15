@@ -1,7 +1,8 @@
 import { newId } from '../ids';
 import type { Item, TodoistDeadline, TodoistDue, TodoistDuration } from '../wire';
+import { firstDueDate, parseRecurrence } from '../recurrence';
 import {
-  descendants, invalidArgument, liveItems, nextOrder, requireItem, requireProject,
+  CommandError, descendants, invalidArgument, liveItems, nextOrder, requireItem, requireProject,
   requireSection, type Args, type CommandContext, type Handler,
 } from './context';
 import { ensureLabels, parseLabelNames } from './labels';
@@ -14,22 +15,44 @@ function isObject(value: unknown): value is Record<string, unknown> {
 }
 
 /**
- * A due date must carry its `date`. Todoist would also parse phrases such as
- * "tomorrow"; the app always sends a worked-out date, so this server does not.
+ * A due date as the task will keep it.
+ *
+ * Whether it recurs is decided by its string, as in Todoist, not by the
+ * `is_recurring` flag a client sends. A recurring string may come without a
+ * date, and then starts today or on its next occurrence. Any other due date
+ * must carry its `date`: phrases such as "tomorrow" are Todoist's own parser,
+ * and the app always sends a worked-out date.
  */
-export function parseDue(value: unknown): TodoistDue | null {
+function parseDue(ctx: CommandContext, value: unknown, current: TodoistDue | null): TodoistDue | null {
   if (value === null) return null;
-  if (!isObject(value) || typeof value.date !== 'string'
-    || !(DATE.test(value.date) || DATE_TIME.test(value.date))) {
-    throw invalidArgument('due');
+  if (!isObject(value)) throw invalidArgument('due');
+
+  const hasDate = typeof value.date === 'string' && (DATE.test(value.date) || DATE_TIME.test(value.date));
+  if (value.date !== undefined && !hasDate) throw invalidArgument('due');
+  const text = typeof value.string === 'string' && value.string.trim() ? value.string.trim() : null;
+  const lang = typeof value.lang === 'string' ? value.lang : ctx.user.lang ?? 'en';
+  const timezone = typeof value.timezone === 'string' ? value.timezone : null;
+
+  const recurrence = text ? parseRecurrence(text, lang) : { kind: 'not-recurring' as const };
+  // A task that already carries a string this server cannot read may still be
+  // moved to another date, as long as the string is sent back unchanged.
+  if (recurrence.kind === 'unsupported' && hasDate && current?.is_recurring && current.string === text) {
+    return { ...current, date: value.date as string, timezone };
   }
-  return {
-    date: value.date,
-    timezone: typeof value.timezone === 'string' ? value.timezone : null,
-    string: typeof value.string === 'string' && value.string ? value.string : value.date,
-    lang: typeof value.lang === 'string' ? value.lang : 'en',
-    is_recurring: value.is_recurring === true,
-  };
+  if (recurrence.kind === 'unsupported') {
+    throw new CommandError(20, `This recurring due date is not supported: "${text}"`);
+  }
+
+  if (recurrence.kind === 'recurring') {
+    const date = hasDate
+      ? value.date as string
+      : firstDueDate(text!, lang, ctx.user.tz_info.timezone, new Date(ctx.now));
+    if (!date) throw invalidArgument('due');
+    return { date, timezone, string: text!, lang, is_recurring: true };
+  }
+
+  if (!hasDate) throw invalidArgument('due');
+  return { date: value.date as string, timezone, string: text ?? (value.date as string), lang, is_recurring: false };
 }
 
 function parseDeadline(value: unknown): TodoistDeadline | null {
@@ -65,7 +88,7 @@ async function applyFields(ctx: CommandContext, item: Item, args: Args): Promise
     if (p !== 1 && p !== 2 && p !== 3 && p !== 4) throw invalidArgument('priority');
     next.priority = p;
   }
-  if ('due' in args) next.due = parseDue(args.due);
+  if ('due' in args) next.due = parseDue(ctx, args.due, item.due);
   if ('deadline' in args) next.deadline = parseDeadline(args.deadline);
   if ('duration' in args) next.duration = parseDuration(args.duration);
   if ('labels' in args) {

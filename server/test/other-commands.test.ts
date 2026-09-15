@@ -5,7 +5,11 @@ let t: Awaited<ReturnType<typeof setup>>;
 beforeEach(async () => { t = await setup(); });
 afterEach(async () => { await t.close(); });
 
-const recurringDue = { date: '2026-09-21', timezone: null, string: 'every monday', lang: 'en', is_recurring: true };
+/** A date relative to today (UTC, the test user's timezone), so these tests do not age. */
+const offsetDate = (days: number) => new Date(Date.now() + days * 86_400_000).toISOString().slice(0, 10);
+const recurringDue = (days: number, string: string) => ({
+  date: offsetDate(days), timezone: null, string, lang: 'en', is_recurring: true,
+});
 
 describe('completion', () => {
   it('completes a task with its subtasks and records the history', async () => {
@@ -36,14 +40,81 @@ describe('completion', () => {
     expect(await t.repo.listCompletions(t.user.id, '2026-01-01T00:00:00.000Z', '2027-01-01T00:00:00.000Z', 0, 10)).toEqual([]);
   });
 
-  it('refuses to complete or close a recurring task', async () => {
-    const first = await t.sendOk('1', [cmd('item_add', { content: 'Weekly review', due: recurringDue }, 'tmp-1')]);
-    const complete = cmd('item_complete', { id: 'tmp-1' });
-    const close = cmd('item_close', { id: 'tmp-1' });
-    const response = await t.send(first.sync_token, [complete, close]);
-    expect(response.sync_status![complete.uuid]).toMatchObject({ error_code: 30 });
-    expect(response.sync_status![close.uuid]).toMatchObject({ error_code: 30 });
-    expect((await t.sync('*')).items).toHaveLength(1);
+  it('closing a recurring task moves it on, keeps it open and records the occurrence', async () => {
+    const first = await t.sendOk('1', [
+      cmd('item_add', { content: 'Water plants', due: recurringDue(-5, 'every day') }, 'tmp-1'),
+      cmd('item_add', { content: 'Done already', parent_id: 'tmp-1' }, 'tmp-sub'),
+      cmd('item_add', { content: 'Still open', parent_id: 'tmp-1' }, 'tmp-sub2'),
+    ]);
+    const subDone = await t.sendOk(first.sync_token, [cmd('item_complete', { id: 'tmp-sub' })]);
+    const closed = await t.sendOk(subDone.sync_token, [cmd('item_close', { id: 'tmp-1' })]);
+
+    const item = closed.items!.find((i) => i.content === 'Water plants')!;
+    // Overdue by five days: it skips to the first date after today.
+    expect(item).toMatchObject({ checked: false, completed_at: null, due: recurringDue(1, 'every day') });
+    // Subtasks keep their state.
+    expect(closed.items!.map((i) => i.content)).toEqual(['Water plants']);
+    const open = (await t.sync('*')).items!.map((i) => i.content).sort();
+    expect(open).toEqual(['Still open', 'Water plants']);
+
+    const history = await t.repo.listCompletions(t.user.id, '2000-01-01T00:00:00.000Z', '3000-01-01T00:00:00.000Z', 0, 10);
+    expect(history.map((h) => h.content).sort()).toEqual(['Done already', 'Water plants']);
+  });
+
+  it('completing a recurring task archives it, as item_complete does in Todoist', async () => {
+    const first = await t.sendOk('1', [cmd('item_add', { content: 'Weekly review', due: recurringDue(3, 'every week') }, 'tmp-1')]);
+    await t.sendOk(first.sync_token, [cmd('item_complete', { id: 'tmp-1' })]);
+    expect((await t.sync('*')).items).toEqual([]);
+  });
+
+  it('completes the last occurrence of a series that has ended', async () => {
+    const until = offsetDate(0);
+    const first = await t.sendOk('1', [cmd('item_add', { content: 'Course', due: recurringDue(0, `every day until ${until}`) }, 'tmp-1')]);
+    const closed = await t.sendOk(first.sync_token, [cmd('item_close', { id: 'tmp-1' })]);
+    expect(closed.items![0].checked).toBe(true);
+  });
+
+  it('refuses to close a recurring task it cannot read, and keeps it', async () => {
+    // Stored directly: the API would not accept this string in the first place.
+    const add = await t.sendOk('1', [cmd('item_add', { content: 'Stretch' }, 'tmp-1')]);
+    const id = add.temp_id_mapping!['tmp-1'];
+    const stored = (await t.sync('*')).items![0];
+    await t.repo.put(t.user.id, 'items', {
+      ...stored, due: { ...recurringDue(0, 'every hour'), is_recurring: true },
+    }, 100);
+    const close = cmd('item_close', { id });
+    const response = await t.send(add.sync_token, [close]);
+    expect(response.sync_status![close.uuid]).toEqual({
+      error_code: 30, error: 'This recurring due date is not supported: "every hour"',
+    });
+    expect((await t.sync('*')).items![0].due?.date).toBe(offsetDate(0));
+
+    // It can still be moved to another date when its string is sent back unchanged.
+    const move = cmd('item_update', { id, due: { date: offsetDate(4), string: 'every hour', is_recurring: true } });
+    const moved = await t.send(response.sync_token, [move]);
+    expect(moved.sync_status![move.uuid]).toBe('ok');
+    expect(moved.items![0].due).toMatchObject({ date: offsetDate(4), string: 'every hour', is_recurring: true });
+  });
+
+  it('decides from the string whether a due date recurs', async () => {
+    const response = await t.sendOk('1', [
+      // The app sends the old flag along when it reschedules; a plain date does not recur.
+      cmd('item_add', { content: 'A', due: { date: offsetDate(2), string: offsetDate(2), is_recurring: true } }),
+      cmd('item_add', { content: 'B', due: { date: offsetDate(2), string: 'every 2 days', is_recurring: false } }),
+      cmd('item_add', { content: 'C', due: { string: 'every day' } }),
+    ]);
+    const byContent = Object.fromEntries(response.items!.map((i) => [i.content, i.due]));
+    expect(byContent.A).toMatchObject({ is_recurring: false });
+    expect(byContent.B).toMatchObject({ is_recurring: true, string: 'every 2 days' });
+    expect(byContent.C).toMatchObject({ is_recurring: true, date: offsetDate(0) });
+  });
+
+  it('refuses a recurring string it cannot read', async () => {
+    const add = cmd('item_add', { content: 'x', due: { date: offsetDate(0), string: 'every 2nd monday' } });
+    const response = await t.send('1', [add]);
+    expect(response.sync_status![add.uuid]).toEqual({
+      error_code: 20, error: 'This recurring due date is not supported: "every 2nd monday"',
+    });
   });
 
   it('closes a plain task like completing it', async () => {
