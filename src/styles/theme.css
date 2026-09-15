@@ -1368,6 +1368,7 @@
 .namepicker-new{
   margin-left:auto;flex:0 0 auto;
   color:var(--faint);font-size:var(--fs-11);font-weight:600;
+}
 
 /* ==========================================================================
    Compact density
@@ -1419,6 +1420,7 @@
 @media (max-width:720px){
   [data-density="compact"] .task{padding-top:10px;padding-bottom:10px;min-height:52px}
   [data-density="compact"] .page{padding:var(--s3) var(--s4) 72px}
+}
 
 /* ==========================================================================
    Browse — the sidebar as a page
@@ -1453,3 +1455,42 @@
 @media (max-width:720px){
   .sheet-full{width:100vw;border-radius:0}
 }
+
+/* ---------- Choosing a density by looking at it ---------- */
+/* Two boxes of the same height: one holds three rows, one holds five. That is
+   the whole setting, and it needs no adjective to explain it. */
+.setrow-wide{flex-wrap:wrap;align-items:flex-start}
+.setrow-wide > div:first-child{flex:1 1 100%}
+.denschoice{display:flex;gap:var(--s3);margin-top:var(--s3);flex-wrap:wrap}
+.denscard{
+  flex:0 1 190px;display:grid;gap:8px;padding:10px;
+  border:1px solid var(--border);border-radius:var(--r-md);
+  background:var(--surface);text-align:left;
+}
+.denscard:hover{border-color:var(--border-strong)}
+.denscard:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.denscard.selected{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+
+.denspreview{
+  display:flex;flex-direction:column;justify-content:center;
+  height:86px;padding:8px 10px;overflow:hidden;
+  border-radius:var(--r-sm);background:var(--subtle);
+}
+.denspreview.comfortable{gap:12px}
+.denspreview.compact{gap:5px}
+.densrow{display:flex;align-items:center;gap:7px}
+.densdot{
+  width:9px;height:9px;flex:0 0 auto;border-radius:var(--r-full);
+  border:1.5px solid var(--faint);
+}
+.densbar{height:5px;flex:1;border-radius:3px;background:var(--border-strong)}
+/* Every second row a little short, so it reads as text rather than as a chart. */
+.densrow:nth-child(even) .densbar{flex:0 1 62%}
+
+.denslabel{
+  display:flex;align-items:center;justify-content:space-between;gap:6px;
+  color:var(--text);font-size:var(--fs-13);font-weight:600;
+}
+.denscard.selected .denslabel{color:var(--accent-dark)}
+.denscard.selected .denslabel .ic{color:var(--accent)}
+.denscard:not(.selected) .denslabel .ic{display:none}
