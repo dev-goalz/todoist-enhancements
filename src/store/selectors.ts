@@ -265,6 +265,9 @@ export function projectTree(snapshot: Snapshot): WorkspaceGroup[] {
     else groups.set(key, [node]);
   }
 
+  // "My projects" is always there, even empty: it is where a first project is created.
+  if (!groups.has('personal')) groups.set('personal', []);
+
   const byOrder = (a: ProjectNode, b: ProjectNode) =>
     a.project.child_order - b.project.child_order;
   for (const node of nodes.values()) node.children.sort(byOrder);

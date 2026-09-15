@@ -394,6 +394,17 @@ export function Sidebar({
               addLabel={t('nav.addProject')}
             >
               {workspace.roots.map((node) => projectNode(node))}
+              {workspace.roots.length === 0 && (
+                /* The header's add button only shows on hover, which is easy to
+                   miss when there is nothing else in the group. */
+                <button
+                  className="navitem"
+                  onClick={() => onProjectSheet({ mode: 'create', workspaceId: workspace.workspaceId })}
+                >
+                  <Icon name="plus" />
+                  <span className="label">{t('nav.addProject')}</span>
+                </button>
+              )}
             </SideGroup>
           );
         })}
