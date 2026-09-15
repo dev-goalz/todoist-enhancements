@@ -80,7 +80,7 @@ interface AppState {
    *
    * One rule for "make this today" wherever it is asked for, and one undo.
    */
-  sendTo: (id: string, target: DropTarget, destination: string) => Promise<void>;
+  sendTo: (id: string, target: DropTarget, destination: string | null) => Promise<void>;
   setTaskLabels: (id: string, labels: string[]) => Promise<void>;
   setTaskPriority: (id: string, priority: DisplayPriority) => Promise<void>;
   setLabelFavourite: (id: string, favourite: boolean) => Promise<void>;
@@ -469,6 +469,10 @@ export const useStore = create<AppState>((set, get) => ({
       await get().apply([moveItem(id, mutation.move)], patch(mutation.move));
     }
 
+    /* A null destination asks for no toast. In a review the row answering the
+       question is the feedback — it leaves the list, or its button lights up —
+       and a message about a change you can see is a message in the way. */
+    if (destination === null) return;
     get().toast(
       translate(get().prefs.locale, 'task.movedTo', { destination }),
       () => void get().apply([updateItem(id, before)], patch(before)),

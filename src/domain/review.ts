@@ -32,7 +32,7 @@ export type ReviewStepId =
   | 'slipped'
   | 'unestimated'
   | 'quiet'
-  | 'backlog';
+  | 'someday';
 
 /** What a row in a step can be sent to. The drop table does the work. */
 export type ReviewAction = 'today' | 'anytime' | 'someday';
@@ -49,6 +49,8 @@ export interface ReviewStep {
   actions: ReviewAction[];
   /** True where the missing thing is an estimate, so the field belongs on the row. */
   estimable: boolean;
+  /** True where the missing thing is a project, so the row files rather than schedules. */
+  fileable: boolean;
   /**
    * True when the step has nothing to settle. It is still shown — being told
    * the inbox is empty is the point of asking — but it is shown as settled.
@@ -70,7 +72,7 @@ export interface ReviewInput {
 
 const STEPS: Record<ReviewCadence, ReviewStepId[]> = {
   daily: ['overdue', 'inbox', 'anytime', 'unestimated', 'today'],
-  weekly: ['done', 'stats', 'slipped', 'inbox', 'unestimated', 'quiet', 'backlog'],
+  weekly: ['done', 'stats', 'slipped', 'inbox', 'unestimated', 'quiet', 'someday'],
 };
 
 /** The steps a cadence walks through, in order. */
@@ -163,7 +165,7 @@ function contentOf(
     case 'quiet':
       return { ...empty, projects: quietProjects(input) };
 
-    case 'backlog':
+    case 'someday':
       return { ...empty, items: roots.filter((i) => bucketOf(i, now) === 'someday') };
 
     case 'stats':
@@ -180,11 +182,13 @@ function contentOf(
 const ACTIONS: Record<ReviewStepId, ReviewAction[]> = {
   overdue: ['today', 'anytime', 'someday'],
   slipped: ['today', 'anytime', 'someday'],
-  inbox: ['today', 'anytime', 'someday'],
-  anytime: ['today', 'someday'],
-  /* The backlog offers all three and marks the one the task is already in, so
-     leaving it where it is reads as a choice rather than as not answering. */
-  backlog: ['today', 'anytime', 'someday'],
+  /* The Inbox is not about when. A task is in it because it has no project,
+     so what it is missing is a project — see `files` below. */
+  inbox: [],
+  /* Already committed to the week: the only question left is whether it is
+     today, and saying it is not is an answer too. */
+  anytime: ['today', 'anytime'],
+  someday: ['today', 'anytime', 'someday'],
   unestimated: [],
   today: [],
   done: [],
@@ -194,6 +198,9 @@ const ACTIONS: Record<ReviewStepId, ReviewAction[]> = {
 
 /** The step where the thing missing is an estimate, not a destination. */
 const ESTIMABLE: ReviewStepId[] = ['unestimated'];
+
+/** The step where the thing missing is a project, not a date. */
+const FILEABLE: ReviewStepId[] = ['inbox'];
 
 /**
  * Steps that only report.
@@ -214,15 +221,17 @@ export function buildReview(cadence: ReviewCadence, input: ReviewInput): ReviewS
       content.completed.length === 0;
 
     const estimable = ESTIMABLE.includes(id);
+    const fileable = FILEABLE.includes(id);
     return {
       id,
       ...content,
       actions: ACTIONS[id],
       estimable,
+      fileable,
       /* A step that only reports is never "to settle": there is nothing to do
          about it, so it reads as settled whatever it contains. The backlog is
          the same — reading it is the point, and a backlog is not a problem. */
-      clear: nothing || REPORT_ONLY.includes(id) || id === 'backlog',
+      clear: nothing || REPORT_ONLY.includes(id) || id === 'someday',
     };
   });
 }

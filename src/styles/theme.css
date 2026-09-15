@@ -1603,6 +1603,9 @@
 /* A finished task keeps its words. The tick already says it is done, and a
    review is no place to read your own week crossed out. */
 .reviewrow.done .check{color:#fff;border-color:var(--ok);background:var(--ok)}
+.reviewrow.done .check.p1{border-color:var(--p1);background:var(--p1)}
+.reviewrow.done .check.p2{border-color:var(--p2);background:var(--p2)}
+.reviewrow.done .check.p3{border-color:var(--p3);background:var(--p3)}
 .reviewrow.done .ttitle{color:var(--text);text-decoration:none}
 .pflag{
   flex:0 0 auto;padding:1px 6px;border-radius:var(--r-xs);
@@ -1623,10 +1626,12 @@
 .reviewrow:hover .reviewactions .btn,
 .reviewrow:focus-within .reviewactions .btn{border-color:var(--border-strong);color:var(--text)}
 .reviewactions .btn:hover:not(:disabled){border-color:var(--accent);color:var(--accent-dark)}
+/* A choice you made, filled in the accent. Nothing else on the row is red, so
+   there is never any doubt which of the three you pressed. */
 .reviewactions .btn.on,
-.reviewrow:hover .reviewactions .btn.on{
-  border-color:var(--accent);background:var(--accent-soft);
-  color:var(--accent-dark);opacity:1;cursor:default;
+.reviewrow:hover .reviewactions .btn.on,
+.reviewactions .btn.on:hover{
+  border-color:var(--accent);background:var(--accent);color:#fff;opacity:1;
 }
 .reviewest{justify-self:end}
 .reviewquiet{color:var(--faint);font-size:var(--fs-12);white-space:nowrap}
@@ -1684,6 +1689,9 @@
 .reviewdone-actions{display:flex;gap:var(--s2);margin-top:var(--s3)}
 
 @media (max-width:720px){
+  /* One under the next, where three across would be three narrow slivers. */
+  .reviewbento .reviewfig{grid-column:span 12}
+  .reviewfig{min-height:0}
   .reviewbody{min-height:0}
   .reviewrow{grid-template-columns:18px minmax(0,1fr);row-gap:8px}
   .reviewactions,.reviewest{grid-column:2;justify-self:start}
@@ -1781,14 +1789,53 @@
 
 /* ---------- The review's three figures ---------- */
 /* One card each. Three numbers in one card read as a banner rather than as
-   three things you might weigh against each other. */
-.reviewfig{display:grid;gap:4px;align-content:start}
-.reviewfig b{
-  font-size:var(--fs-26);font-weight:700;letter-spacing:-.025em;line-height:1.1;
+   three things you might weigh against each other. The three are the same
+   height whatever they carry, so the row reads as a row. */
+.reviewbento{gap:var(--s3)}
+.reviewfig{
+  display:grid;gap:3px;align-content:start;
+  padding:var(--s4);min-height:132px;
 }
-.reviewfig > span{color:var(--muted);font-size:var(--fs-12);font-weight:600}
-.reviewfig small{color:var(--faint);font-size:var(--fs-11);line-height:1.4}
-.reviewfig .splitbar{margin-top:6px}
-/* The donut card gets the same inner rhythm as the two beside it. */
-.reviewbento .donut{gap:var(--s5);align-items:start}
-.reviewbento .legend{gap:7px}
+/* The card's own number, and only that one: a descendant selector here also
+   caught every bold figure in the split bar's legend and set it at 32px. */
+.reviewfig > b{
+  font-size:32px;font-weight:700;letter-spacing:-.03em;line-height:1;
+  font-variant-numeric:tabular-nums;
+}
+.reviewfig > span{
+  color:var(--muted);font-size:var(--fs-12);font-weight:600;letter-spacing:.01em;
+}
+/* Three across, and they stay three across: the shared bento collapses w4 to
+   half-width below 1080px, which is where two of these would sit above the
+   third for no reason — they are one row of three numbers. */
+.reviewbento .reviewfig{grid-column:span 4}
+.reviewfig small{margin-top:2px;color:var(--faint);font-size:var(--fs-11);line-height:1.4}
+
+/* The focus score is the bar and the bar is the score, so they sit together at
+   the foot of the card with the numbers spaced to be read rather than
+   squeezed between their own swatches. */
+.reviewfig .split{margin-top:auto;padding-top:var(--s3);display:grid;gap:8px}
+.reviewfig .splitbar{height:10px}
+.reviewfig .legend.inline{gap:4px 14px}
+.reviewfig .legend.inline li{gap:5px;font-size:var(--fs-11)}
+.reviewfig .legend.inline i{width:7px;height:7px;border-radius:2px}
+.reviewfig .legend.inline .legendname{color:var(--faint)}
+.reviewfig .legend.inline b{
+  margin-left:2px;font-size:var(--fs-12);font-weight:700;
+  font-variant-numeric:tabular-nums;color:var(--text);
+}
+
+/* The two charts beside them get the same air inside their own cards. */
+.reviewbento .chart-plot{padding-top:8px}
+.reviewbento .donut{grid-template-columns:120px minmax(0,1fr);gap:var(--s5);align-items:center}
+.reviewbento .legend{gap:8px}
+.reviewbento .chead-row{margin-bottom:var(--s3)}
+
+/* The project picker that files an Inbox task. It is the answer on that row,
+   so it is given a width it can actually show a project name in. */
+.reviewfile{justify-self:end;min-width:0}
+.reviewfile .fselect-face{min-width:170px;max-width:220px}
+@media (max-width:720px){
+  .reviewfile{grid-column:2;justify-self:stretch}
+  .reviewfile .fselect-face{min-width:0;max-width:none}
+}

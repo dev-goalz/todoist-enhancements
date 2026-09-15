@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Icon } from '@/components/Icon';
 import { EstimateField } from '@/components/EstimateField';
+import { Select } from '@/components/Select';
 import { useT } from '@/hooks/useT';
 import { useData } from '@/hooks/useData';
 import { useCompleted } from '@/hooks/useCompleted';
@@ -17,7 +18,6 @@ import {
 } from '@/components/charts';
 import { rangeFor } from '@/domain/periods';
 import { format, startOfDay } from 'date-fns';
-import { bucketOf } from '@/domain/views';
 import { toDisplayPriority, type CompletedItem, type Item } from '@/domain/types';
 import {
   buildReview, type ReviewAction, type ReviewCadence, type ReviewStep,
@@ -59,11 +59,21 @@ export function ReviewView({ onOpen }: ReviewViewProps) {
   const sendTo = useStore((s) => s.sendTo);
   const toggleTask = useStore((s) => s.toggleTask);
   const updateTask = useStore((s) => s.updateTask);
+  const moveTask = useStore((s) => s.moveTask);
 
   const [cadence, setCadence] = useState<ReviewCadence>('daily');
   const [index, setIndex] = useState(0);
   const [finished, setFinished] = useState(false);
   const [doneOrder, setDoneOrder] = useState<DoneOrder>('date');
+  /**
+   * What you chose for a row during this pass.
+   *
+   * Not where the task already is: most answers take the row out of the list,
+   * and the ones that leave it there — "stay in the week", "leave it in
+   * Someday" — are the ones worth marking, because they are decisions you
+   * made rather than states the data happened to be in.
+   */
+  const [chosen, setChosen] = useState<Record<string, ReviewAction>>({});
 
   /* The weekly pass reports what was finished, which is history and is read
      on demand. The daily pass never asks, so it never fetches. */
@@ -76,6 +86,19 @@ export function ReviewView({ onOpen }: ReviewViewProps) {
   const { data: completed, previous, loading } = useCompleted(weekRange, cadence === 'weekly');
 
   const roots = useMemo(() => rootItems(items), [items]);
+
+  /** Where an Inbox task can be filed: every project, the Inbox included. */
+  const fileDestinations = useMemo(
+    () => Object.values(snapshot.projects)
+      .filter((p) => !p.is_archived && !p.is_deleted && !p.is_folder)
+      .sort((a, b) => a.child_order - b.child_order)
+      .map((p) => ({
+        value: p.id,
+        label: p.inbox_project ? t('nav.inbox') : p.name,
+        marker: p.color,
+      })),
+    [snapshot.projects, t],
+  );
 
   const steps = useMemo(
     () => buildReview(cadence, {
@@ -93,6 +116,7 @@ export function ReviewView({ onOpen }: ReviewViewProps) {
   useEffect(() => {
     setIndex(0);
     setFinished(false);
+    setChosen({});
   }, [cadence]);
 
   const step = steps[index];
@@ -212,17 +236,7 @@ export function ReviewView({ onOpen }: ReviewViewProps) {
     const project = snapshot.projects[item.project_id];
     const { minutes } = effectiveEstimate(item, childrenOf);
     const due = dueDate(item);
-
-    /* Where the task is now, so the row can mark it. On the backlog step this
-       is what makes "leave it here" read as an answer rather than as silence. */
-    const bucket = bucketOf(item);
-    /* The Inbox marks nothing. A task sitting there has not been filed
-       anywhere yet, so "backlog" is a place it happens to fall out of the
-       rules rather than a decision anyone made about it. */
-    const current: ReviewAction | null = s.id === 'inbox' ? null
-      : bucket === 'today' ? 'today'
-        : bucket === 'anytime' ? 'anytime'
-          : bucket === 'someday' ? 'someday' : null;
+    const current = chosen[item.id] ?? null;
 
     return (
       <div className="reviewrow">
@@ -255,7 +269,18 @@ export function ReviewView({ onOpen }: ReviewViewProps) {
           </span>
         </button>
 
-        {s.estimable ? (
+        {s.fileable ? (
+          /* What an Inbox task is missing is a project. Filing it is the whole
+             answer, and the row leaves the list once it has one. */
+          <span className="reviewfile">
+            <Select
+              value={item.project_id}
+              ariaLabel={t('detail.project')}
+              onChange={(next) => void moveTask(item.id, { project_id: next })}
+              options={fileDestinations}
+            />
+          </span>
+        ) : s.estimable ? (
           /* The thing missing here is a number, so the field is on the row and
              the row leaves the list the moment it has one. */
           <span className="reviewest">
@@ -280,12 +305,10 @@ export function ReviewView({ onOpen }: ReviewViewProps) {
                 key={action}
                 className={`btn quiet${current === action ? ' on' : ''}`}
                 aria-pressed={current === action}
-                disabled={current === action}
-                onClick={() => void sendTo(
-                  item.id,
-                  TARGETS[action],
-                  t(`review.to.${action}` as TranslationKey),
-                )}
+                onClick={() => {
+                  setChosen((prev) => ({ ...prev, [item.id]: action }));
+                  void sendTo(item.id, TARGETS[action], null);
+                }}
               >
                 {t(`review.to.${action}` as TranslationKey)}
               </button>
@@ -364,7 +387,6 @@ export function ReviewView({ onOpen }: ReviewViewProps) {
             )}
           </span>
         </span>
-        {priority < 4 && <span className={`pflag p${priority}`}>P{priority}</span>}
       </div>
     );
   }
