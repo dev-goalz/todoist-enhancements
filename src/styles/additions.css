@@ -384,3 +384,20 @@
 .setrow .btn,
 .setrow .estinput,
 .setrow .setvalue{max-width:100%}
+
+/* ==========================================================================
+   Settings — About
+   ========================================================================== */
+/* The unaffiliated notice, stated plainly rather than tucked into small print:
+   someone reading it should be able to read it. */
+.setlegal{
+  max-width:60ch;margin:0 0 var(--s4);
+  color:var(--muted);font-size:var(--fs-13);line-height:1.6;text-wrap:pretty;
+}
+.setlinks{display:flex;flex-wrap:wrap;gap:var(--s2) var(--s4)}
+.setlinks a{
+  display:inline-flex;align-items:center;gap:6px;
+  color:var(--accent);font-size:var(--fs-13);font-weight:600;
+}
+.setlinks a:hover{color:var(--accent-dark);text-decoration:underline}
+.setlinks .ic{color:currentColor}

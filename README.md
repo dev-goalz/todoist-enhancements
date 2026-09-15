@@ -5,9 +5,12 @@
 A different front end for Todoist. Todoist stays the backend; this replaces the
 interface with one built around planning a week.
 
+**Enhanced for Todoist is an independent project. It is not created by,
+affiliated with, or supported by Todoist.**
+
 [Open it](https://todoistenhanced.julesbertolino.fr) · [Features](#features) ·
-[Contributing](#contributing) · [License](#license) ·
-[Buy me a coffee](https://buymeacoffee.com/julesbertolino)
+[Contributing](#contributing) · [Disclaimer and trademarks](#disclaimer-and-trademarks) ·
+[License](#license) · [Buy me a coffee](https://buymeacoffee.com/julesbertolino)
 
 ![Enhanced for Todoist, My week view](docs/screenshot-my-week.png)
 
@@ -29,7 +32,9 @@ sections, priorities and dates. Open the official app afterwards and nothing
 will look unusual. If this project stopped working tomorrow your data would be
 unaffected, because it never lived anywhere else.
 
-Not affiliated with Doist. Todoist is a trademark of Doist Inc.
+> This is an independent project. It is not created by, affiliated with, or
+> supported by Todoist, and it is not an official Todoist product. See
+> [Disclaimer and trademarks](#disclaimer-and-trademarks).
 
 ## Try it without an account
 
@@ -162,6 +167,28 @@ coffee](https://buymeacoffee.com/julesbertolino).
 is also a [release](https://github.com/julesvbertolino/todoist-enhancements/releases)
 with a ready-to-host build attached.
 
+## Disclaimer and trademarks
+
+Enhanced for Todoist is an independent project. **It is not created by,
+affiliated with, or supported by Todoist.** It is not an official Todoist
+product and it is not endorsed by Doist.
+
+"Todoist" is a trademark of Doist Inc. Any reference to it here is descriptive,
+to say what this connects to, and implies no association. The project is named
+in the `x for Todoist` form that Doist's
+[brand usage guidelines](https://developer.todoist.com/api/v1/#section/Developing-with-Todoist/Brand-usage)
+ask of third-party apps, and the same statement appears on the sign-in screen
+and under Settings, About, inside the app itself.
+
+This project uses the public Todoist API as any account holder may. It asks for
+your own personal API token, stores it in your own browser, and sends it to
+nobody but Todoist. It is provided as is, with no warranty, and it is not a
+support channel for Todoist: if something is wrong with your account or with
+Todoist itself, ask Doist, not me.
+
+If anyone at Doist would like something here changed, open an issue and I will
+change it.
+
 ## License
 
-[MIT](LICENSE). Not affiliated with Doist; Todoist is a trademark of Doist Inc.
+[MIT](LICENSE).

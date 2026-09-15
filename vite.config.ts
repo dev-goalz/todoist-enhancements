@@ -17,7 +17,7 @@ export default defineConfig({
       manifest: {
         name: 'Enhanced for Todoist',
         short_name: 'Enhanced',
-        description: 'An alternative, local-first client for Todoist, built around planning a week.',
+        description: 'An independent project, not created by, affiliated with, or supported by Todoist. A local-first client built around planning a week.',
         theme_color: '#e44232',
         background_color: '#ffffff',
         display: 'standalone',

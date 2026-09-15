@@ -13,9 +13,17 @@ What changed in each version, newest first.
 - Tags can be dragged into a new order on the Tags page. The order is
   Todoist's own, so the sidebar's favourites follow it.
 - A board with more columns than fit scrolls sideways, with arrows above it.
+- A link to the app unfurls with a title, a description and a picture of My
+  week.
+- An About section in settings, carrying the version, the statement that this
+  is not an official Todoist product, and links to the site, the code, this
+  changelog and the coffee.
 
 ### Changed
 
+- The app is named "Enhanced for Todoist" everywhere, which is the form Doist's
+  brand guidelines ask of a third-party app, and every description of it now
+  states that it is not created by, affiliated with, or supported by Todoist.
 - A task tagged quick but estimated at more than five minutes is left out of
   the Quick group. The tag is a claim and the estimate is the fact.
 - The add-task line at the end of a section takes no room until the section
@@ -25,9 +33,6 @@ What changed in each version, newest first.
 - Tags are listed one per row.
 - The logbook grouped by priority reads P1 first.
 - Upcoming's board uses the same arrows as every other board.
-
-- A link to the app unfurls with a title, a description and a picture of My
-  week.
 
 ### Fixed
 

@@ -8,8 +8,9 @@ import { formatDuration, parseDurationInput } from '@/domain/estimates';
 import { defaultCapacity, weeklyCapacity, type DailyCapacity } from '@/domain/load';
 import { HOME_VIEWS, type HomeView } from '@/store/prefs';
 import type { Locale, TranslationKey } from '@/i18n';
+import { APP_NAME, AUTHOR, COFFEE_URL, GITHUB_URL, SITE_URL, VERSION } from '@/app-info';
 
-const SECTIONS = ['account', 'general', 'week', 'conflicts'] as const;
+const SECTIONS = ['account', 'general', 'week', 'conflicts', 'about'] as const;
 type Section = (typeof SECTIONS)[number];
 
 /**
@@ -223,7 +224,7 @@ export function SettingsView() {
           </section>
 
           {/* ------------------------------------------------- Conflicts */}
-          <section className="setsection last" id="conflicts">
+          <section className="setsection" id="conflicts">
             <h2>{t('settings.conflicts')}</h2>
             {(
               [
@@ -242,6 +243,41 @@ export function SettingsView() {
                 />
               </Row>
             ))}
+          </section>
+
+          {/* Todoist asks a third-party app to say, in its description, that
+              it is not one of theirs. The sign-in screen carries that line
+              for anyone who has not connected yet; this carries it for
+              everyone who has. */}
+          <section className="setsection last" id="about">
+            <h2>{t('settings.about')}</h2>
+            <div className="setrow">
+              <div>
+                <strong>{APP_NAME}</strong>
+                <span>{t('connect.version', { version: VERSION })}</span>
+              </div>
+            </div>
+            <p className="setlegal">
+              {t('connect.legal', { author: AUTHOR })}
+            </p>
+            <div className="setlinks">
+              <a href={SITE_URL} target="_blank" rel="noreferrer noopener">
+                <Icon name="external" size="sm" />
+                {t('settings.aboutSite')}
+              </a>
+              <a href={GITHUB_URL} target="_blank" rel="noreferrer noopener">
+                <Icon name="external" size="sm" />
+                {t('settings.aboutCode')}
+              </a>
+              <a href={`${GITHUB_URL}/blob/main/CHANGELOG.md`} target="_blank" rel="noreferrer noopener">
+                <Icon name="external" size="sm" />
+                {t('settings.aboutChangelog')}
+              </a>
+              <a href={COFFEE_URL} target="_blank" rel="noreferrer noopener">
+                <Icon name="external" size="sm" />
+                {t('settings.aboutCoffee')}
+              </a>
+            </div>
           </section>
         </div>
       </div>

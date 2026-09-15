@@ -6,7 +6,7 @@
     "node": ">=20"
   },
   "type": "module",
-  "description": "A different front end for Todoist, built around planning a week.",
+  "description": "An independent project, not created by, affiliated with, or supported by Todoist. A different front end built around planning a week.",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",

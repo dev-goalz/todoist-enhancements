@@ -3,11 +3,8 @@ import { Icon } from '@/components/Icon';
 import { useT } from '@/hooks/useT';
 import { useStore } from '@/store/store';
 import { looksLikeToken } from '@/api/auth';
+import { AUTHOR, GITHUB_URL, TODOIST_DEVELOPER_URL, VERSION } from '@/app-info';
 
-const GITHUB_URL = 'https://github.com/julesvbertolino/todoist-enhancements';
-const TODOIST_DEVELOPER_URL = 'https://app.todoist.com/app/settings/integrations/developer';
-const AUTHOR = 'julesbertolino';
-const VERSION = '1.0';
 
 /**
  * The first screen: connecting the account.
