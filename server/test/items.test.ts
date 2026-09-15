@@ -30,6 +30,11 @@ describe('item_add', () => {
     expect(response.labels!.map((l) => l.name).sort()).toEqual(['est-15', 'home']);
   });
 
+  it('reads an empty project_id as the inbox', async () => {
+    const response = await t.sendOk('1', [cmd('item_add', { content: 'Buy milk', project_id: '' }, 'tmp-1')]);
+    expect(response.items![0].project_id).toBe(t.user.inbox_project_id);
+  });
+
   it('creates subtasks pointing at a parent temp id in the same batch', async () => {
     const { sectionId } = await addProjectWithSection();
     const response = await t.sendOk('2', [

@@ -1,7 +1,8 @@
 import { defineConfig } from 'vitest/config';
 import { fileURLToPath, URL } from 'node:url';
 
-export const CONTRACT_PORT = 18787;
+/** Where test/contract.test.ts listens; keep the two in step. */
+const CONTRACT_PORT = 18787;
 
 export default defineConfig({
   resolve: {

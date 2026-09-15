@@ -60,7 +60,8 @@ interface AppState {
   setLocale: (locale: Locale) => void;
 
   /* Mutations */
-  apply: (commands: Command[], optimistic: (snapshot: Snapshot) => Snapshot) => Promise<void>;
+  /** Resolves to the real ids the server gave any temp ids, once it has answered. */
+  apply: (commands: Command[], optimistic: (snapshot: Snapshot) => Snapshot) => Promise<Record<string, string>>;
   updateTask: (id: string, args: Record<string, unknown>) => Promise<void>;
   toggleTask: (id: string) => Promise<void>;
   removeTask: (id: string) => Promise<void>;
@@ -262,7 +263,7 @@ export const useStore = create<AppState>((set, get) => ({
     if (get().demo) {
       // A demo account is a sandbox: changes show, and stop there.
       set({ snapshot: after });
-      return;
+      return {};
     }
 
     set({ snapshot: after });
@@ -273,7 +274,7 @@ export const useStore = create<AppState>((set, get) => ({
 
     if (!navigator.onLine) {
       set({ syncState: 'offline' });
-      return;
+      return {};
     }
 
     try {
@@ -287,11 +288,13 @@ export const useStore = create<AppState>((set, get) => ({
       if (tempIds.length > 0) {
         const items = { ...merged.items };
         const projects = { ...merged.projects };
+        const sections = { ...merged.sections };
         for (const tempId of tempIds) {
           delete items[tempId];
           delete projects[tempId];
+          delete sections[tempId];
         }
-        merged = { ...merged, items, projects };
+        merged = { ...merged, items, projects, sections };
       }
 
       set({ snapshot: merged, syncState: 'idle' });
@@ -305,6 +308,7 @@ export const useStore = create<AppState>((set, get) => ({
         schedulePersist(before);
         get().toast(failures[0].error);
       }
+      return mapping;
     } catch (error) {
       if (navigator.onLine && error instanceof ApiError && !error.isAuthError) {
         // Todoist refused the change outright, so the screen must not keep it.
@@ -316,6 +320,7 @@ export const useStore = create<AppState>((set, get) => ({
         // Network trouble: the change stays queued and goes out on the next sync.
         set({ syncState: 'offline' });
       }
+      return {};
     }
   },
 
@@ -508,7 +513,7 @@ export const useStore = create<AppState>((set, get) => ({
         command('section_update', { id: section.id, section_order: index + offset + 1 })),
     ];
 
-    await get().apply(commands, (snapshot) => {
+    const mapping = await get().apply(commands, (snapshot) => {
       const sections = { ...snapshot.sections };
       shifted.forEach((section, offset) => {
         sections[section.id] = { ...section, section_order: index + offset + 1 };
@@ -520,7 +525,8 @@ export const useStore = create<AppState>((set, get) => ({
       return { ...snapshot, sections };
     });
 
-    return tempId;
+    // Once the server has answered, the placeholder is gone and the real id is the one on screen.
+    return mapping[tempId] ?? tempId;
   },
 
   async moveSection(id, index) {

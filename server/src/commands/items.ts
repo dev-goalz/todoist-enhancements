@@ -155,7 +155,8 @@ const itemAdd: Handler = async (ctx, args, tempId) => {
   if (typeof args.content !== 'string' || !args.content.trim()) throw invalidArgument('content');
 
   const place = await placement(ctx, {
-    project_id: args.project_id ?? ctx.user.inbox_project_id,
+    // The composer sends an empty project for "Inbox"; Todoist reads that as the inbox too.
+    project_id: args.project_id || ctx.user.inbox_project_id,
     section_id: args.section_id,
     parent_id: args.parent_id,
   });
@@ -193,7 +194,7 @@ const itemUpdate: Handler = async (ctx, args) => {
   // Todoist only moves a task through item_move, but the app's task detail
   // changes the project through item_update, so it is honoured as a move.
   if ('project_id' in args) {
-    await moveTo(ctx, item, { project_id: args.project_id });
+    await moveTo(ctx, item, { project_id: args.project_id || ctx.user.inbox_project_id });
     item = await requireItem(ctx, item.id);
   }
   await ctx.repo.put(ctx.userId, 'items', await applyFields(ctx, item, args), ctx.rev);
