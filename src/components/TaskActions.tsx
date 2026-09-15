@@ -10,6 +10,7 @@ import { toApiDate } from '@/domain/dates';
 import { markerStyle } from '@/domain/colors';
 import { dropMutation, type DropTarget } from '@/domain/dnd';
 import { updateItem, moveItem } from '@/api/commands';
+import { IS_SELF_HOSTED } from '@/api/client';
 import type { Item, Snapshot } from '@/domain/types';
 
 interface TaskActionsProps {
@@ -222,16 +223,20 @@ export function TaskActions({ item, childrenOf, onOpen }: TaskActionsProps) {
           <button className="opt" onClick={() => { setMenu('none'); onOpen(item.id); }}>
             <span><Icon name="edit" size="sm" /> {t('detail.title')}</span>
           </button>
-          <button
-            className="opt"
-            onClick={() => {
-              setMenu('none');
-              window.open(`https://app.todoist.com/app/task/${item.id}`, '_blank', 'noopener');
-            }}
-          >
-            <span><Icon name="external" size="sm" /> {t('task.openInTodoist')}</span>
-          </button>
-          <hr />
+          {!IS_SELF_HOSTED && (
+            <>
+              <button
+                className="opt"
+                onClick={() => {
+                  setMenu('none');
+                  window.open(`https://app.todoist.com/app/task/${item.id}`, '_blank', 'noopener');
+                }}
+              >
+                <span><Icon name="external" size="sm" /> {t('task.openInTodoist')}</span>
+              </button>
+              <hr />
+            </>
+          )}
           <button
             className="opt danger"
             onClick={() => {

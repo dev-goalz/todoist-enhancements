@@ -42,16 +42,58 @@ export class Repo {
 
   /* ---------- Users ---------- */
 
-  async insertUser(id: string, tokenHash: string, data: TodoistUser): Promise<void> {
+  async insertUser(
+    id: string, tokenHash: string, data: TodoistUser, passwordHash: string | null,
+  ): Promise<void> {
     await this.db.insertInto('users')
-      .values({ id, token_hash: tokenHash, rev: 0, user_rev: 0, data: JSON.stringify(data) })
+      .values({
+        id,
+        token_hash: tokenHash,
+        email: data.email.trim().toLowerCase(),
+        password_hash: passwordHash,
+        rev: 0,
+        user_rev: 0,
+        data: JSON.stringify(data),
+      })
       .execute();
+    await this.addToken(id, tokenHash);
   }
 
   async findUserByTokenHash(tokenHash: string): Promise<UserRecord | null> {
-    const row = await this.db.selectFrom('users').selectAll()
-      .where('token_hash', '=', tokenHash).executeTakeFirst();
+    const row = await this.db.selectFrom('api_tokens')
+      .innerJoin('users', 'users.id', 'api_tokens.user_id')
+      .select(['users.id', 'users.rev', 'users.user_rev', 'users.data'])
+      .where('api_tokens.token_hash', '=', tokenHash)
+      .executeTakeFirst();
     return row ? toUser(row) : null;
+  }
+
+  async findUserByEmail(email: string): Promise<(UserRecord & { passwordHash: string | null }) | null> {
+    const row = await this.db.selectFrom('users')
+      .select(['id', 'rev', 'user_rev', 'data', 'password_hash'])
+      .where('email', '=', email.trim().toLowerCase())
+      .executeTakeFirst();
+    return row ? { ...toUser(row), passwordHash: row.password_hash } : null;
+  }
+
+  async setPasswordHash(userId: string, passwordHash: string): Promise<void> {
+    await this.db.updateTable('users').set({ password_hash: passwordHash }).where('id', '=', userId).execute();
+  }
+
+  /* ---------- API tokens, one per signed-in device ---------- */
+
+  async addToken(userId: string, tokenHash: string): Promise<void> {
+    await this.db.insertInto('api_tokens')
+      .values({ token_hash: tokenHash, user_id: userId, created_at: new Date().toISOString() })
+      .execute();
+  }
+
+  async revokeToken(tokenHash: string): Promise<void> {
+    await this.db.deleteFrom('api_tokens').where('token_hash', '=', tokenHash).execute();
+  }
+
+  async revokeAllTokens(userId: string): Promise<void> {
+    await this.db.deleteFrom('api_tokens').where('user_id', '=', userId).execute();
   }
 
   async getUser(id: string): Promise<UserRecord> {

@@ -1,4 +1,5 @@
 import { hashToken, newId, newToken } from './ids';
+import { hashPassword } from './passwords';
 import type { Repo } from './repo';
 import type { Project, TodoistUser } from './wire';
 
@@ -9,6 +10,8 @@ export interface NewUserInput {
   /** 1 = Monday .. 7 = Sunday. */
   startDay?: number;
   lang?: string;
+  /** Without one the account can only be used with its token. */
+  password?: string;
 }
 
 /** The offset of an IANA timezone right now, in the shape Todoist's `tz_info` uses. */
@@ -70,8 +73,10 @@ export async function createUser(
     karma_trend: null,
   };
 
+  const passwordHash = input.password === undefined ? null : await hashPassword(input.password);
+
   await repo.transaction(async (trx) => {
-    await trx.insertUser(user.id, hashToken(token), user);
+    await trx.insertUser(user.id, hashToken(token), user, passwordHash);
     const rev = await trx.bumpRev(user.id);
     await trx.put(user.id, 'projects', inbox, rev);
     await trx.setUserData(user.id, user, rev);

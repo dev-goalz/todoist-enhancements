@@ -7,6 +7,7 @@ import { navigate, type Route } from '@/hooks/useRoute';
 import { projectCounts, projectTree, rootItems, type ProjectNode } from '@/store/selectors';
 import { hasLabel, somedayItems, upcomingItems, weekItems } from '@/domain/views';
 import { markerStyle, avatarUrl } from '@/domain/colors';
+import { IS_SELF_HOSTED } from '@/api/client';
 import { firstName, karmaStanding } from '@/domain/karma';
 import type { ViewId } from '@/domain/types';
 import type { DropTarget } from '@/domain/dnd';
@@ -217,10 +218,12 @@ export function Sidebar({
               {t('nav.settings')}
             </button>
             <hr />
-            <button onClick={() => window.open('https://app.todoist.com', '_blank', 'noopener')}>
-              <Icon name="external" />
-              {t('nav.openTodoist')}
-            </button>
+            {!IS_SELF_HOSTED && (
+              <button onClick={() => window.open('https://app.todoist.com', '_blank', 'noopener')}>
+                <Icon name="external" />
+                {t('nav.openTodoist')}
+              </button>
+            )}
             <button onClick={() => { setMenuOpen(false); void disconnect(); }}>
               <Icon name="logout" />
               {t('nav.signOut')}

@@ -52,11 +52,8 @@ Node 22 or later.
 ```sh
 cd server
 npm install
-npm run create-user -- --email alice@example.com --name "Alice" --timezone Europe/Amsterdam
 npm run dev
 ```
-
-`create-user` prints the API token once. Paste it into the app's connect screen.
 
 Then start the app pointed at the server:
 
@@ -66,6 +63,43 @@ VITE_API_BASE=/api/v1 npm run dev
 
 The Vite dev server hands `/api` to `http://127.0.0.1:8787`
 (override with `API_PROXY_TARGET`).
+
+## Accounts
+
+Built with `VITE_API_BASE`, the app opens on a sign-in screen instead of
+asking for a Todoist token. Anyone who can reach the server can create an
+account with a name, email and password (at least 10 characters). Set
+`ALLOW_SIGNUP=false` to close sign-up once your accounts exist.
+
+Each sign-in gets its own token, so signing out on one device leaves the others
+signed in. After 10 failed sign-ins for one email from one address within 15
+minutes, further attempts are refused for a while.
+
+Accounts can also be made, and passwords reset, from the command line:
+
+```sh
+npm run create-user -- --email alice@example.com --name "Alice" --password "a long password"
+npm run reset-password -- --email alice@example.com
+```
+
+`create-user` prints an API token once. `reset-password` prints a new
+password once and signs the account out everywhere.
+
+Run the server behind HTTPS whenever it is reached over a network: passwords
+and tokens travel with the requests, and the app keeps its token in the
+browser's local storage.
+
+The sign-in routes are this server's own, not part of the Todoist API:
+
+| Route | |
+| --- | --- |
+| `GET /api/v1/auth/config` | `{ "signup": true }` when sign-up is open. |
+| `POST /api/v1/auth/signup` | `full_name`, `email`, `password`, optional `timezone` and `lang`. Returns `{ "token" }`. |
+| `POST /api/v1/auth/login` | `email`, `password`. Returns `{ "token" }`. |
+| `POST /api/v1/auth/logout` | Revokes the bearer token it is called with. |
+
+Refusals carry a `code`: `invalid_email`, `invalid_name`, `weak_password`,
+`email_taken`, `invalid_credentials`, `signup_closed` or `rate_limited`.
 
 ## Production
 
@@ -84,6 +118,7 @@ STATIC_DIR=../dist HOST=0.0.0.0 npm start
 | `DB_PATH` | `data/tasks.db` | SQLite file, created on first start. |
 | `STATIC_DIR` | unset | Built app to serve at `/`. |
 | `CORS_ORIGIN` | unset | Comma-separated origins, when the app is hosted elsewhere. |
+| `ALLOW_SIGNUP` | `true` | `false` stops new accounts from signing up. |
 
 ## Tests
 

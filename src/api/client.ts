@@ -6,6 +6,9 @@ import { auth } from './auth';
  */
 export const API_BASE: string = import.meta.env.VITE_API_BASE || 'https://api.todoist.com/api/v1';
 
+/** True when the app runs against its own server rather than Todoist's cloud. */
+export const IS_SELF_HOSTED = !/^https:\/\/api\.todoist\.com\//.test(API_BASE);
+
 export class ApiError extends Error {
   constructor(
     message: string,

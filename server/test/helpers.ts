@@ -6,6 +6,9 @@ import { Repo } from '../src/repo';
 import { createUser } from '../src/users';
 import type { SyncResponse, WireCommand } from '../src/wire';
 
+/** Tests may share one Postgres database, where emails must be unique. */
+export const uniqueEmail = (name: string) => `${name}.${randomUUID().slice(0, 8)}@example.com`;
+
 /**
  * The database tests run on: in-memory SQLite, or Postgres when
  * TEST_DATABASE_URL is set. Every test creates its own user, and all data is
@@ -23,7 +26,7 @@ export async function setup() {
   const db = await openTestDb();
   const repo = new Repo(db);
   const { user, token } = await createUser(repo, {
-    email: 'alice@example.com',
+    email: uniqueEmail('alice'),
     fullName: 'Alice Example',
     timezone: 'UTC',
   });

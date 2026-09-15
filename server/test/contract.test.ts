@@ -8,13 +8,14 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import { auth } from '@/api/auth';
+import { fetchAccountConfig, signIn, signOutRemote, signUp } from '@/api/account';
 import { addItem, completeItem, sendCommands, command } from '@/api/commands';
 import { fetchCompleted } from '@/api/completed';
 import { applySync, sync } from '@/api/sync';
 import { emptySnapshot, type Snapshot } from '@/domain/types';
 import { buildApp } from '../src/app';
 import type { Db } from '../src/db';
-import { openTestDb } from './helpers';
+import { openTestDb, uniqueEmail } from './helpers';
 import { Repo } from '../src/repo';
 import { createUser } from '../src/users';
 
@@ -27,7 +28,7 @@ let snapshot: Snapshot;
 beforeAll(async () => {
   db = await openTestDb();
   const { token } = await createUser(new Repo(db), {
-    email: 'alice@example.com', fullName: 'Alice Example', timezone: 'UTC',
+    email: uniqueEmail('alice'), fullName: 'Alice Example', timezone: 'UTC',
   });
   app = await buildApp({ db });
   await app.listen({ port: PORT, host: '127.0.0.1' });
@@ -80,6 +81,25 @@ describe('frontend client against the server', () => {
     const now = new Date();
     const history = await fetchCompleted(new Date(now.getTime() - 60 * 86_400_000), now);
     expect(history.map((h) => h.content).sort()).toEqual(['Buy milk', 'Oat']);
+  });
+
+  it('signs up, syncs, signs out and signs back in the way the account screen does', async () => {
+    const email = uniqueEmail('bob');
+    expect(await fetchAccountConfig()).toEqual({ signup: true });
+
+    const token = await signUp({ fullName: 'Bob Example', email, password: 'correct horse battery', lang: 'en' });
+    await auth.set(token);
+    const fresh = applySync(emptySnapshot(), await sync('*'));
+    expect(fresh.user?.email).toBe(email);
+
+    await signOutRemote(token);
+    await expect(sync('*')).rejects.toMatchObject({ isAuthError: true });
+
+    await expect(signIn(email, 'wrong password!')).rejects.toMatchObject({ code: 'invalid_credentials' });
+    await expect(signUp({ fullName: 'Bob', email, password: 'correct horse battery', lang: 'en' }))
+      .rejects.toMatchObject({ code: 'email_taken' });
+    await auth.set(await signIn(email, 'correct horse battery'));
+    expect(applySync(emptySnapshot(), await sync('*')).user?.email).toBe(email);
   });
 
   it('answers a wrong token with an auth error', async () => {

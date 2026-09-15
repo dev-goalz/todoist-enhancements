@@ -38,6 +38,11 @@
 }
 .connect-card input::placeholder{color:#757575}
 .connect-card input:focus{outline:2px solid var(--accent);outline-offset:1px}
+/* On the sign-in screen the fields follow each other closely. */
+.connect-modes{display:flex;gap:var(--s2);margin-top:var(--s5)}
+.connect-modes + input,.connect-modes + .sr + input{margin-top:var(--s4)}
+.connect-card input + .sr + input{margin-top:var(--s2)}
+.connect-hint{margin-top:var(--s4);text-align:center;color:var(--muted);font-size:var(--fs-12);line-height:1.5}
 
 /* The privacy note sits between the field and the button, where it is read. */
 .connect-privacy{

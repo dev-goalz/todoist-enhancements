@@ -11,7 +11,8 @@
     "start": "tsx src/main.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "create-user": "tsx src/cli/create-user.ts"
+    "create-user": "tsx src/cli/create-user.ts",
+    "reset-password": "tsx src/cli/reset-password.ts"
   },
   "dependencies": {
     "@fastify/cors": "^11.3.0",

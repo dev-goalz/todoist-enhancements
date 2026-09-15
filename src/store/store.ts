@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { auth } from '@/api/auth';
-import { ApiError, NotConnectedError } from '@/api/client';
+import { ApiError, IS_SELF_HOSTED, NotConnectedError } from '@/api/client';
+import { signOutRemote } from '@/api/account';
 import { applySync, sync } from '@/api/sync';
 import {
   sendCommands, command, type Command,
@@ -162,6 +163,9 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   async disconnect() {
+    // A self-hosted server keeps a token per device, so it is told this one is done.
+    const token = IS_SELF_HOSTED && !get().demo ? await auth.getToken() : null;
+    if (token) await signOutRemote(token);
     await auth.disconnect();
     await idb.clearAll();
     set({

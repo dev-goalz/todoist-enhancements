@@ -19,6 +19,8 @@ import { LabelsView } from './views/LabelsView';
 import { InsightsView } from './views/InsightsView';
 import { SettingsView } from './views/SettingsView';
 import { ConnectView } from './views/ConnectView';
+import { AccountView } from './views/AccountView';
+import { IS_SELF_HOSTED } from './api/client';
 import { useStore } from './store/store';
 import { useT } from './hooks/useT';
 import { useData } from './hooks/useData';
@@ -97,7 +99,7 @@ export function App() {
     return (
       <>
         <IconSprite />
-        <ConnectView />
+        {IS_SELF_HOSTED ? <AccountView /> : <ConnectView />}
       </>
     );
   }

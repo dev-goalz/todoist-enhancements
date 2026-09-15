@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { Db } from '../src/db';
-import { openTestDb } from './helpers';
+import { openTestDb, uniqueEmail } from './helpers';
 import { Repo } from '../src/repo';
 import { createUser, tzInfo } from '../src/users';
 import { hashToken } from '../src/ids';
@@ -20,7 +20,7 @@ afterEach(async () => {
 describe('users', () => {
   it('creates a user with an inbox and finds them by token', async () => {
     const { user, token } = await createUser(repo, {
-      email: 'alice@example.com', fullName: 'Alice Example', timezone: 'UTC',
+      email: uniqueEmail('alice'), fullName: 'Alice Example', timezone: 'UTC',
     });
     const found = await repo.findUserByTokenHash(hashToken(token));
     expect(found?.id).toBe(user.id);
@@ -32,7 +32,7 @@ describe('users', () => {
 
   it('rejects a start day outside 1..7 and an unknown timezone', async () => {
     await expect(createUser(repo, {
-      email: 'a@example.com', fullName: 'A', timezone: 'UTC', startDay: 0,
+      email: uniqueEmail('a'), fullName: 'A', timezone: 'UTC', startDay: 0,
     })).rejects.toThrow(RangeError);
     expect(() => tzInfo('Not/AZone')).toThrow(RangeError);
   });
@@ -46,7 +46,7 @@ describe('users', () => {
 describe('resources', () => {
   it('stamps revisions and returns only what changed', async () => {
     const { user } = await createUser(repo, {
-      email: 'alice@example.com', fullName: 'Alice', timezone: 'UTC',
+      email: uniqueEmail('alice'), fullName: 'Alice', timezone: 'UTC',
     });
     const rev = await repo.bumpRev(user.id);
     expect(rev).toBe(2);
@@ -62,7 +62,7 @@ describe('resources', () => {
 
   it('undoes a failed savepoint but keeps the rest of the transaction', async () => {
     const { user } = await createUser(repo, {
-      email: 'alice@example.com', fullName: 'Alice', timezone: 'UTC',
+      email: uniqueEmail('alice'), fullName: 'Alice', timezone: 'UTC',
     });
     await repo.transaction(async (trx) => {
       await trx.put(user.id, 'labels', { id: 'kept' }, 5);
@@ -76,7 +76,7 @@ describe('resources', () => {
 
   it('keeps temp ids, applied commands and completions', async () => {
     const { user } = await createUser(repo, {
-      email: 'alice@example.com', fullName: 'Alice', timezone: 'UTC',
+      email: uniqueEmail('alice'), fullName: 'Alice', timezone: 'UTC',
     });
     await repo.recordTempId(user.id, 'tmp', 'real');
     expect(await repo.resolveTempId(user.id, 'tmp')).toBe('real');

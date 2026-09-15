@@ -5,7 +5,9 @@ import formbody from '@fastify/formbody';
 import fastifyStatic from '@fastify/static';
 import type { Db } from './db';
 import { hashToken } from './ids';
+import { FailureLimiter } from './rateLimit';
 import { Repo } from './repo';
+import { authRoutes } from './routes/auth';
 import { completedRoutes } from './routes/completed';
 import { syncRoutes } from './routes/sync';
 
@@ -15,6 +17,10 @@ export interface AppOptions {
   corsOrigin?: string;
   /** A built frontend (`dist/`) to serve next to the API. */
   staticDir?: string;
+  /** Whether anyone who reaches the server may create an account. Defaults to true. */
+  allowSignup?: boolean;
+  /** Counts failed sign-ins; tests pass their own. */
+  limiter?: FailureLimiter;
   logger?: boolean;
 }
 
@@ -57,6 +63,13 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
     await api.register(syncRoutes(repo));
     await api.register(completedRoutes(repo));
   }, { prefix: '/api/v1' });
+
+  // Sign-in routes are reached before there is a token, so they sit outside the hook above.
+  await app.register(authRoutes({
+    repo,
+    allowSignup: options.allowSignup ?? true,
+    limiter: options.limiter ?? new FailureLimiter(),
+  }), { prefix: '/api/v1/auth' });
 
   if (options.staticDir) {
     await app.register(fastifyStatic, { root: resolve(options.staticDir) });

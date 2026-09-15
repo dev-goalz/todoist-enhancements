@@ -5,6 +5,7 @@ export interface Config {
   database: string;
   corsOrigin?: string;
   staticDir?: string;
+  allowSignup: boolean;
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv): Config {
@@ -14,5 +15,6 @@ export function loadConfig(env: NodeJS.ProcessEnv): Config {
     database: env.DATABASE_URL || env.DB_PATH || 'data/tasks.db',
     corsOrigin: env.CORS_ORIGIN || undefined,
     staticDir: env.STATIC_DIR || undefined,
+    allowSignup: env.ALLOW_SIGNUP !== 'false',
   };
 }

@@ -10,6 +10,7 @@ const app = await buildApp({
   db,
   corsOrigin: config.corsOrigin,
   staticDir: config.staticDir,
+  allowSignup: config.allowSignup,
   logger: true,
 });
 
