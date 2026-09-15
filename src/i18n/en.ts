@@ -409,6 +409,10 @@ export const en = {
 
   'composer.subtaskPlaceholder': 'Add a subtask, then press Enter',
   'composer.reads': 'Read from the name',
+  'settings.density': 'Density',
+  'settings.densityHint': 'How much room a list gives each task. Compact closes the space around a row without taking anything out of it.',
+  'settings.density.comfortable': 'Comfortable',
+  'settings.density.compact': 'Compact',
   'settings.naturalDates': 'Read dates from the task name',
   'settings.naturalDatesHint': 'Turns “call Marc tomorrow at 9h” into a dated task. #project, p1 and @tag always apply.',
 

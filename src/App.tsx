@@ -184,6 +184,7 @@ function AppShell({
   const conflictSettings = useStore((s) => s.prefs.conflicts);
   const demo = useStore((s) => s.demo);
   const sidebarCollapsed = useStore((s) => s.prefs.sidebarCollapsed);
+  const density = useStore((s) => s.prefs.density);
   const leaveDemo = useStore((s) => s.disconnect);
 
   const roots = useMemo(() => rootItems(items), [items]);
@@ -249,7 +250,10 @@ function AppShell({
   };
 
   return (
-    <div className={`app${demo ? ' demo' : ''}${sidebarCollapsed ? ' collapsed' : ''}`}>
+    <div
+      className={`app${demo ? ' demo' : ''}${sidebarCollapsed ? ' collapsed' : ''}`}
+      data-density={density}
+    >
       {demo && (
         <div className="demobanner" role="status">
           <Icon name="warning" size="sm" />
