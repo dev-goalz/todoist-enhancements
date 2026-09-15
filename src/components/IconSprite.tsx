@@ -16,6 +16,7 @@ export function IconSprite() {
 <symbol id="i-sidebar" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M9.5 4v16"/></symbol>
 <symbol id="i-caret" viewBox="0 0 24 24"><path d="m6 9.5 6 6 6-6"/></symbol>
 <symbol id="i-caret-up" viewBox="0 0 24 24"><path d="m6 14.5 6-6 6 6"/></symbol>
+<symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 6.5h16M4 12h16M4 17.5h16"/></symbol>
 <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
 <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></symbol>
 <symbol id="i-coffee" viewBox="0 0 24 24"><path d="M4 9.5h13V15a4.5 4.5 0 0 1-4.5 4.5h-4A4.5 4.5 0 0 1 4 15z"/><path d="M17 11h1.5a2.5 2.5 0 0 1 0 5H17"/><path d="M8 2.5c0 1.6 1.4 1.6 1.4 3.2M12.6 2.5c0 1.6 1.4 1.6 1.4 3.2"/></symbol>

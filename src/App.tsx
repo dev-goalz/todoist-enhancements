@@ -11,6 +11,7 @@ import { InsightsPanel } from './components/overlays/InsightsPanel';
 import { ProjectSheet, type ProjectSheetTarget } from './components/overlays/ProjectSheet';
 import { Unestimated } from './components/overlays/Unestimated';
 import { ConfirmProvider } from './components/overlays/Confirm';
+import { Overlay } from './components/overlays/Overlay';
 import { WeekView } from './views/WeekView';
 import { UpcomingView } from './views/UpcomingView';
 import { SimpleListView } from './views/SimpleListView';
@@ -50,6 +51,8 @@ export function App() {
      that one — is carried by the open state itself. */
   const [projectSheet, setProjectSheet] = useState<ProjectSheetTarget>(null);
   const [unestimatedOpen, setUnestimatedOpen] = useState(false);
+  /** The sidebar, shown as a page. There is no room for a column on a phone. */
+  const [browseOpen, setBrowseOpen] = useState(false);
   /** Where a newly composed task should land, when it was added from a section. */
   const [placement, setPlacement] = useState<ComposerPlacement>({});
 
@@ -125,6 +128,8 @@ export function App() {
             setProjectSheet={setProjectSheet}
             unestimatedOpen={unestimatedOpen}
             setUnestimatedOpen={setUnestimatedOpen}
+            browseOpen={browseOpen}
+            setBrowseOpen={setBrowseOpen}
             placement={placement}
             setPlacement={setPlacement}
           />
@@ -165,6 +170,8 @@ interface ShellProps {
   setProjectSheet: (target: ProjectSheetTarget) => void;
   unestimatedOpen: boolean;
   setUnestimatedOpen: (open: boolean) => void;
+  browseOpen: boolean;
+  setBrowseOpen: (open: boolean) => void;
   placement: ComposerPlacement;
   setPlacement: (placement: ComposerPlacement) => void;
 }
@@ -179,7 +186,8 @@ function AppShell({
   route, openTaskId, setOpenTaskId, composerOpen, setComposerOpen,
   searchOpen, setSearchOpen, issuesOpen, setIssuesOpen,
   insightsOpen, setInsightsOpen, projectSheet, setProjectSheet,
-  unestimatedOpen, setUnestimatedOpen, placement, setPlacement,
+  unestimatedOpen, setUnestimatedOpen, browseOpen, setBrowseOpen,
+  placement, setPlacement,
 }: ShellProps) {
   const { t } = useT();
   const { snapshot, items, childrenOf } = useData();
@@ -233,6 +241,10 @@ function AppShell({
     [contextItems, childrenOf],
   );
 
+  /* Every way out of the browse page is a navigation, so one effect closes it
+     rather than each of its thirty buttons remembering to. */
+  useEffect(() => setBrowseOpen(false), [route.view, route.id, setBrowseOpen]);
+
   const openTask = (id: string) => setOpenTaskId(id);
   const addTask = () => {
     setPlacement(route.view === 'project' && route.id ? { projectId: route.id } : {});
@@ -275,8 +287,13 @@ function AppShell({
 
       <main className="workspace">
         <header className="mobile-top">
-          <button className="iconbtn" aria-label={t('nav.openNavigation')} onClick={() => navigate('week')}>
-            <Icon name="sidebar" />
+          {/* This opened My week, whatever it said. It opens the navigation. */}
+          <button
+            className="iconbtn"
+            aria-label={t('nav.openNavigation')}
+            onClick={() => setBrowseOpen(true)}
+          >
+            <Icon name="menu" />
           </button>
           <strong>{contextLabel}</strong>
           <button className="iconbtn" aria-label={t('nav.search')} onClick={() => setSearchOpen(true)}>
@@ -326,12 +343,15 @@ function AppShell({
             <Icon name="upcoming" size="lg" />
             {t('nav.upcoming')}
           </button>
+          {/* The fifth slot is everything a phone has no room for: the profile
+              and its menu, search, tags, favourites, projects, Someday. The
+              four destinations beside it are the ones opened every day. */}
           <button
-            aria-current={route.view === 'someday' ? 'page' : undefined}
-            onClick={() => navigate('someday')}
+            aria-expanded={browseOpen}
+            onClick={() => setBrowseOpen(true)}
           >
-            <Icon name="someday" size="lg" />
-            {t('nav.someday')}
+            <Icon name="menu" size="lg" />
+            {t('nav.browse')}
           </button>
         </nav>
       </main>
@@ -351,6 +371,37 @@ function AppShell({
       <Issues open={issuesOpen} onClose={() => setIssuesOpen(false)} onOpen={openTask} />
       <Search open={searchOpen} onClose={() => setSearchOpen(false)} onOpen={openTask} />
       <ProjectSheet target={projectSheet} onClose={() => setProjectSheet(null)} />
+
+      {/* The same sidebar, as a page. One list of destinations, not two that
+          have to be kept in step. */}
+      <Overlay
+        open={browseOpen}
+        onClose={() => setBrowseOpen(false)}
+        label={t('nav.browse')}
+        size="full"
+      >
+        <div className="browse">
+          <div className="browse-head">
+            <strong>{t('nav.browse')}</strong>
+            <button
+              className="iconbtn"
+              aria-label={t('common.close')}
+              onClick={() => setBrowseOpen(false)}
+            >
+              <Icon name="close" />
+            </button>
+          </div>
+          <Sidebar
+            route={route}
+            variant="sheet"
+            onAddTask={() => { setBrowseOpen(false); addTask(); }}
+            onSearch={() => { setBrowseOpen(false); setSearchOpen(true); }}
+            onIssues={() => { setBrowseOpen(false); setIssuesOpen(true); }}
+            onProjectSheet={(target) => { setBrowseOpen(false); setProjectSheet(target); }}
+            issuesCount={conflictCount}
+          />
+        </div>
+      </Overlay>
       <Unestimated
         open={unestimatedOpen}
         onClose={() => setUnestimatedOpen(false)}

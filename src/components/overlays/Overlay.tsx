@@ -7,7 +7,8 @@ interface OverlayProps {
   label: string;
   /** A side sheet slides in from the right; a sheet sits in the middle. */
   variant?: 'sheet' | 'side';
-  size?: 'sm' | 'md' | 'search';
+  /** 'full' fills the window, for a sheet that stands in for a whole page. */
+  size?: 'sm' | 'md' | 'search' | 'full';
 }
 
 /**
@@ -58,7 +59,12 @@ export function Overlay({
   const sheetClass =
     variant === 'side'
       ? 'side-sheet'
-      : `sheet${size === 'sm' ? ' sheet-sm' : size === 'search' ? ' sheet-search' : ''}`;
+      : `sheet${
+          size === 'sm' ? ' sheet-sm'
+            : size === 'search' ? ' sheet-search'
+              : size === 'full' ? ' sheet-full'
+                : ''
+        }`;
 
   return (
     <div className="overlay open" role="dialog" aria-modal="true" aria-label={label}>

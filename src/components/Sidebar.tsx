@@ -25,14 +25,22 @@ interface SidebarProps {
   /** Opens the project sheet, to create one here or to edit that one. */
   onProjectSheet: (target: ProjectSheetTarget) => void;
   issuesCount: number;
+  /**
+   * 'rail' is the column beside the app. 'sheet' is the same thing shown as a
+   * page on a phone, where there is no room for a column: it ignores the
+   * collapsed preference, which belongs to the rail, and drops the control
+   * that sets it.
+   */
+  variant?: 'rail' | 'sheet';
 }
 
 export function Sidebar({
-  route, onAddTask, onSearch, onIssues, onProjectSheet, issuesCount,
+  route, onAddTask, onSearch, onIssues, onProjectSheet, issuesCount, variant = 'rail',
 }: SidebarProps) {
   const { t } = useT();
   const { snapshot, items } = useData();
-  const collapsed = useStore((s) => s.prefs.sidebarCollapsed);
+  const sheet = variant === 'sheet';
+  const collapsed = useStore((s) => s.prefs.sidebarCollapsed) && !sheet;
   const setPrefs = useStore((s) => s.setPrefs);
   const disconnect = useStore((s) => s.disconnect);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -260,7 +268,7 @@ export function Sidebar({
   };
 
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar${sheet ? ' sidebar-sheet' : ''}`}>
       <div className="side-top" ref={menuRef}>
         <button
           className="profile"
@@ -399,14 +407,16 @@ export function Sidebar({
                 <span className="badge">{issuesCount > 99 ? '99+' : issuesCount}</span>
               )}
             </button>
-            <button
-              className="iconbtn"
-              aria-label={t('nav.collapseSidebar')}
-              title={t('nav.collapseSidebar')}
-              onClick={() => setPrefs({ sidebarCollapsed: true })}
-            >
-              <Icon name="sidebar" />
-            </button>
+            {!sheet && (
+              <button
+                className="iconbtn"
+                aria-label={t('nav.collapseSidebar')}
+                title={t('nav.collapseSidebar')}
+                onClick={() => setPrefs({ sidebarCollapsed: true })}
+              >
+                <Icon name="sidebar" />
+              </button>
+            )}
           </div>
         </div>
       </div>

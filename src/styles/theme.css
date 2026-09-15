@@ -1419,4 +1419,37 @@
 @media (max-width:720px){
   [data-density="compact"] .task{padding-top:10px;padding-bottom:10px;min-height:52px}
   [data-density="compact"] .page{padding:var(--s3) var(--s4) 72px}
+
+/* ==========================================================================
+   Browse — the sidebar as a page
+   ========================================================================== */
+/* A phone has no room for a column beside the app, so the column becomes a
+   page reached from the navigation bar. It is the same component: there is
+   one list of destinations in this product, not a second one kept in step
+   with the first by hand. */
+.browse{display:flex;flex-direction:column;height:100%;min-height:0}
+.browse-head{
+  flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;
+  padding:var(--s3) var(--s3) var(--s3) var(--s4);
+  border-bottom:1px solid var(--border);
+}
+.browse-head strong{font-size:var(--fs-15);font-weight:700}
+
+/* The rail is hidden below 720px; inside this page it is the whole point. */
+.browse .sidebar-sheet{
+  display:flex;flex:1;min-height:0;
+  border-right:0;background:var(--surface);
+}
+.browse .sidebar-sheet .side-scroll{flex:1;min-height:0;overflow-y:auto}
+/* Clear of the home indicator: this is the bottom of a full-height sheet. */
+.browse .sidebar-sheet .side-foot{padding-bottom:calc(var(--s3) + env(safe-area-inset-bottom))}
+
+/* A sheet that stands in for a page: a column on a wide screen, the whole
+   window on a phone, where it is the only thing that makes sense. */
+.sheet-full{
+  width:min(420px,100vw);height:100dvh;max-height:100dvh;
+  align-self:stretch;overflow:hidden;
+}
+@media (max-width:720px){
+  .sheet-full{width:100vw;border-radius:0}
 }

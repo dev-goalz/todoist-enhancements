@@ -17,6 +17,7 @@ export const en = {
   'nav.collapseSidebar': 'Collapse sidebar',
   'nav.showSidebar': 'Show sidebar',
   'nav.openNavigation': 'Open navigation',
+  'nav.browse': 'Browse',
   'nav.projects': 'Projects',
   'karma.beginner': 'Beginner',
   'karma.novice': 'Novice',
