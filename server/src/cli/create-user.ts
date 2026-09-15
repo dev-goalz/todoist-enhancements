@@ -1,6 +1,6 @@
 import { parseArgs } from 'node:util';
 import { loadConfig } from '../config';
-import { migrate, openSqlite } from '../db';
+import { migrate, openDatabase } from '../db';
 import { Repo } from '../repo';
 import { createUser } from '../users';
 
@@ -23,7 +23,7 @@ if (!values.email || !values.name) {
 }
 
 const config = loadConfig(process.env);
-const db = openSqlite(config.dbPath);
+const db = openDatabase(config.database);
 await migrate(db);
 
 const { user, token } = await createUser(new Repo(db), {
@@ -35,5 +35,5 @@ const { user, token } = await createUser(new Repo(db), {
 });
 await db.destroy();
 
-console.log(`Created ${user.email} (${user.id}) in ${config.dbPath}.`);
+console.log(`Created ${user.email} (${user.id}) in the database.`);
 console.log(`API token, shown once: ${token}`);

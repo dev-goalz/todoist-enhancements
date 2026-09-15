@@ -13,7 +13,8 @@ import { fetchCompleted } from '@/api/completed';
 import { applySync, sync } from '@/api/sync';
 import { emptySnapshot, type Snapshot } from '@/domain/types';
 import { buildApp } from '../src/app';
-import { migrate, openSqlite, type Db } from '../src/db';
+import type { Db } from '../src/db';
+import { openTestDb } from './helpers';
 import { Repo } from '../src/repo';
 import { createUser } from '../src/users';
 
@@ -24,8 +25,7 @@ let db: Db;
 let snapshot: Snapshot;
 
 beforeAll(async () => {
-  db = openSqlite(':memory:');
-  await migrate(db);
+  db = await openTestDb();
   const { token } = await createUser(new Repo(db), {
     email: 'alice@example.com', fullName: 'Alice Example', timezone: 'UTC',
   });

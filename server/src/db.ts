@@ -1,7 +1,8 @@
 import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import SQLite from 'better-sqlite3';
-import { Kysely, SqliteDialect } from 'kysely';
+import { Kysely, PostgresDialect, SqliteDialect } from 'kysely';
+import pg from 'pg';
 
 /**
  * The database, behind Kysely so the same queries run on SQLite and Postgres.
@@ -59,6 +60,16 @@ export interface Database {
 }
 
 export type Db = Kysely<Database>;
+
+/** A `postgres://` or `postgresql://` URL opens Postgres; anything else is a SQLite file path. */
+export function openDatabase(location: string): Db {
+  if (/^postgres(ql)?:\/\//.test(location)) {
+    return new Kysely<Database>({
+      dialect: new PostgresDialect({ pool: new pg.Pool({ connectionString: location }) }),
+    });
+  }
+  return openSqlite(location);
+}
 
 export function openSqlite(path: string): Db {
   if (path !== ':memory:') mkdirSync(dirname(path), { recursive: true });

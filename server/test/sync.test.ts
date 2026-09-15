@@ -87,6 +87,14 @@ describe('commands', () => {
     expect((await t.sync('*')).items).toHaveLength(1);
   });
 
+  it('gives concurrent batches their own revisions', async () => {
+    const responses = await Promise.all(
+      Array.from({ length: 10 }, (_, i) => t.send('1', [cmd('item_add', { content: `Task ${i}` })])),
+    );
+    expect(new Set(responses.map((r) => r.sync_token)).size).toBe(10);
+    expect((await t.sync('1')).items).toHaveLength(10);
+  });
+
   it('refuses more than 100 commands', async () => {
     const commands = Array.from({ length: 101 }, () => cmd('item_add', { content: 'x' }));
     const res = await t.post({ sync_token: '1', commands: JSON.stringify(commands) });

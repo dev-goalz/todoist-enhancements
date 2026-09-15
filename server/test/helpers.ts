@@ -1,15 +1,26 @@
 import { randomUUID } from 'node:crypto';
 import { expect } from 'vitest';
 import { buildApp } from '../src/app';
-import { migrate, openSqlite } from '../src/db';
+import { migrate, openDatabase, openSqlite, type Db } from '../src/db';
 import { Repo } from '../src/repo';
 import { createUser } from '../src/users';
 import type { SyncResponse, WireCommand } from '../src/wire';
 
-/** A fresh in-memory server with one user, and shortcuts for talking to it. */
-export async function setup() {
-  const db = openSqlite(':memory:');
+/**
+ * The database tests run on: in-memory SQLite, or Postgres when
+ * TEST_DATABASE_URL is set. Every test creates its own user, and all data is
+ * scoped by user, so tests sharing one Postgres database do not see each other.
+ */
+export async function openTestDb(): Promise<Db> {
+  const url = process.env.TEST_DATABASE_URL;
+  const db = url ? openDatabase(url) : openSqlite(':memory:');
   await migrate(db);
+  return db;
+}
+
+/** A fresh server with one user, and shortcuts for talking to it. */
+export async function setup() {
+  const db = await openTestDb();
   const repo = new Repo(db);
   const { user, token } = await createUser(repo, {
     email: 'alice@example.com',

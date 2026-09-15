@@ -2,7 +2,8 @@
 
 A server that answers the part of the Todoist API v1 the app uses, so the app
 can run against your own machine instead of Todoist's cloud. Data is kept in
-SQLite. Queries go through Kysely and stick to SQL that Postgres also accepts.
+SQLite by default, or in Postgres when `DATABASE_URL` is a `postgres://` URL.
+Both run the same queries through Kysely, and the test suite passes on both.
 
 ## What it supports
 
@@ -50,6 +51,7 @@ STATIC_DIR=../dist HOST=0.0.0.0 npm start
 | --- | --- | --- |
 | `PORT` | `8787` | |
 | `HOST` | `127.0.0.1` | |
+| `DATABASE_URL` | unset | `postgres://user:pass@host/db`. Takes precedence over `DB_PATH`. |
 | `DB_PATH` | `data/tasks.db` | SQLite file, created on first start. |
 | `STATIC_DIR` | unset | Built app to serve at `/`. |
 | `CORS_ORIGIN` | unset | Comma-separated origins, when the app is hosted elsewhere. |
@@ -59,7 +61,11 @@ STATIC_DIR=../dist HOST=0.0.0.0 npm start
 ```sh
 npm test
 npm run typecheck
+TEST_DATABASE_URL=postgres://user:pass@localhost/test_db npm test
 ```
+
+With `TEST_DATABASE_URL` set the same tests run against Postgres. Use an empty
+database meant for testing; tests leave their rows behind.
 
 `test/contract.test.ts` runs the app's own API client (`src/api`) against a
 live server, so a change that would break the app fails here.

@@ -11,6 +11,8 @@ export default defineConfig({
   },
   test: {
     environment: 'node',
+    // Test files would race to create the same Postgres tables.
+    fileParallelism: !process.env.TEST_DATABASE_URL,
     env: { VITE_API_BASE: `http://127.0.0.1:${CONTRACT_PORT}/api/v1` },
   },
 });

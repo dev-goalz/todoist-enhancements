@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { migrate, openSqlite, type Db } from '../src/db';
+import type { Db } from '../src/db';
+import { openTestDb } from './helpers';
 import { Repo } from '../src/repo';
 import { createUser, tzInfo } from '../src/users';
 import { hashToken } from '../src/ids';
@@ -9,8 +10,7 @@ let db: Db;
 let repo: Repo;
 
 beforeEach(async () => {
-  db = openSqlite(':memory:');
-  await migrate(db);
+  db = await openTestDb();
   repo = new Repo(db);
 });
 afterEach(async () => {

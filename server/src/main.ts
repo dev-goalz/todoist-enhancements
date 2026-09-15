@@ -1,9 +1,9 @@
 import { buildApp } from './app';
 import { loadConfig } from './config';
-import { migrate, openSqlite } from './db';
+import { migrate, openDatabase } from './db';
 
 const config = loadConfig(process.env);
-const db = openSqlite(config.dbPath);
+const db = openDatabase(config.database);
 await migrate(db);
 
 const app = await buildApp({
