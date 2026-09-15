@@ -71,7 +71,9 @@ export function ReviewView({ onOpen }: ReviewViewProps) {
     () => rangeFor('week', 0, null, snapshot.user?.start_day ?? 1),
     [snapshot.user?.start_day],
   );
-  const { data: completed, loading } = useCompleted(weekRange, cadence === 'weekly');
+  /* `previous` is the week before, which is what turns a bar chart into a
+     comparison: the same seven days, one week back, drawn as a dotted line. */
+  const { data: completed, previous, loading } = useCompleted(weekRange, cadence === 'weekly');
 
   const roots = useMemo(() => rootItems(items), [items]);
 
@@ -120,22 +122,32 @@ export function ReviewView({ onOpen }: ReviewViewProps) {
       {/* Where you are, and how much is left. A review with no visible end is
           the thing people stop doing. */}
       <ol className="reviewrail">
-        {steps.map((s, i) => (
-          <li key={s.id}>
-            <button
-              className={`reviewpip${i === index && !finished ? ' current' : ''}${
-                i < index || finished ? ' passed' : ''
-              }${s.clear ? ' clear' : ''}`}
-              aria-current={i === index && !finished ? 'step' : undefined}
-              onClick={() => { setIndex(i); setFinished(false); }}
-            >
-              <span className="reviewpip-dot" aria-hidden="true">
-                {s.clear ? <Icon name="check" size="sm" /> : <b>{countOf(s)}</b>}
-              </span>
-              <span className="reviewpip-label">{t(`review.step.${s.id}` as TranslationKey)}</span>
-            </button>
-          </li>
-        ))}
+        {steps.map((s, i) => {
+          const current = i === index && !finished;
+          /* Three states, and only three: the one you are on, the ones you
+             have been through or that had nothing in them, and the ones still
+             waiting. A step you walked past is done even if you left things
+             in it — you answered it by deciding not to. */
+          const done = s.clear || finished || i < index;
+          return (
+            <li key={s.id}>
+              <button
+                className={`reviewpip${current ? ' current' : ''}${done ? ' done' : ''}`}
+                aria-current={current ? 'step' : undefined}
+                onClick={() => { setIndex(i); setFinished(false); }}
+              >
+                <span className="reviewpip-dot" aria-hidden="true">
+                  {done && !current
+                    ? <Icon name="check" size="sm" />
+                    : <b>{countOf(s)}</b>}
+                </span>
+                <span className="reviewpip-label">
+                  {t(`review.step.${s.id}` as TranslationKey)}
+                </span>
+              </button>
+            </li>
+          );
+        })}
       </ol>
 
       {finished || !step ? (
@@ -386,21 +398,29 @@ export function ReviewView({ onOpen }: ReviewViewProps) {
     );
 
     /* The seven days of the week under review, in order, including the ones
-       nothing was finished on — a gap is part of the shape. */
+       nothing was finished on — a gap is part of the shape — each carrying the
+       same weekday of the week before as its reference. */
     const byDay: BarDatum[] = useMemo(() => {
       const counts = new Map(summary.byDay.map((d) => [d.date, d.count]));
+      const before = new Map<string, number>();
+      for (const done of previous) {
+        const key = format(new Date(done.completed_at), 'yyyy-MM-dd');
+        before.set(key, (before.get(key) ?? 0) + 1);
+      }
       const todayKey = format(startOfDay(new Date()), 'yyyy-MM-dd');
       return Array.from({ length: 7 }, (_, offset) => {
         const day = new Date(weekRange.since.getTime() + offset * 86_400_000);
         const key = format(day, 'yyyy-MM-dd');
+        const lastWeek = format(new Date(day.getTime() - 7 * 86_400_000), 'yyyy-MM-dd');
         return {
           key,
           label: new Intl.DateTimeFormat(locale, { weekday: 'narrow' }).format(day),
           value: counts.get(key) ?? 0,
           current: key === todayKey,
+          reference: before.get(lastWeek) ?? 0,
         };
       });
-    }, [summary.byDay]);
+    }, [summary.byDay, previous]);
 
     if (loading && summary.completedCount === 0) {
       return <p className="reviewquiet">{t('common.loading')}</p>;
@@ -408,24 +428,28 @@ export function ReviewView({ onOpen }: ReviewViewProps) {
 
     return (
       <div className="bento reviewbento">
-        {/* What the week amounted to, and where the effort went inside it. */}
-        <section className="card w12 reviewsummary">
-          <div className="reviewsummary-figs">
-            <span>
-              <b>{summary.completedCount}</b>
-              <small>{t('review.fig.finished')}</small>
-            </span>
-            <span>
-              <b>{formatDuration(summary.completedMinutes, locale)}</b>
-              <small>{t('review.fig.time')}</small>
-            </span>
-            <span>
-              <b>{summary.focusScore}%</b>
-              <small>{t('review.fig.focus')}</small>
-            </span>
-          </div>
+        {/* Three numbers, three cards. One card holding all three read as a
+            banner rather than as three things you could compare. */}
+        <section className="card w4 reviewfig">
+          <b>{summary.completedCount}</b>
+          <span>{t('review.fig.finished')}</span>
+        </section>
+
+        <section className="card w4 reviewfig">
+          <b>{formatDuration(summary.completedMinutes, locale)}</b>
+          <span>{t('review.fig.time')}</span>
+          {summary.completedWithoutEstimate > 0 && (
+            <small>
+              {t('review.fig.timeNote', { count: summary.completedWithoutEstimate })}
+            </small>
+          )}
+        </section>
+
+        {/* The bars belong to the focus score: they are what it is made of. */}
+        <section className="card w4 reviewfig">
+          <b>{summary.focusScore}%</b>
+          <span>{t('review.fig.focus')}</span>
           <SplitBar data={byPriority} />
-          <p className="psub">{t('review.fig.focusNote')}</p>
         </section>
 
         <ChartCard
@@ -437,6 +461,7 @@ export function ReviewView({ onOpen }: ReviewViewProps) {
             data={byDay}
             height={140}
             emptyLabel={t('review.doneNone')}
+            referenceLabel={t('review.chart.lastWeek')}
             format={(value) => t('metrics.tasks', { count: value })}
           />
         </ChartCard>
@@ -449,6 +474,7 @@ export function ReviewView({ onOpen }: ReviewViewProps) {
             total={summary.completedCount}
             caption={t('insights.tasks')}
             emptyLabel={t('review.doneNone')}
+            format={(value) => t('metrics.tasks', { count: value })}
           />
         </ChartCard>
       </div>

@@ -454,10 +454,20 @@
   display:flex;align-items:flex-end;gap:2px;   /* 2px surface gap between fills */
   padding-top:4px;
 }
+.barslot{
+  position:relative;flex:1 1 0;min-width:3px;
+  display:flex;align-items:flex-end;align-self:stretch;
+}
 .bar{
   flex:1 1 0;min-width:3px;border-radius:4px 4px 0 0;   /* rounded data-end */
   background:var(--series-1,#2a78d6);opacity:.85;
   transition:opacity .12s ease-out;
+}
+/* The same day of the week before, drawn across the bar. A bar says how much;
+   a bar against this line says whether that is more or less than usual. */
+.barref{
+  position:absolute;left:-1px;right:-1px;height:0;
+  border-top:1.5px dotted var(--faint);pointer-events:none;
 }
 .bar:hover,.bar.hovered,.bar:focus-visible{opacity:1}
 .bar.current{background:var(--accent)}
@@ -606,6 +616,11 @@
 .page > .bento,
 .page > .logday,
 .page > .logbook,
+.page > .reviewhead,
+.page > .reviewrail,
+.page > .reviewstep,
+.page > .reviewfoot,
+.page > .reviewdone,
 .page > .empty{
   max-width:820px;
   margin-left:auto;
@@ -619,6 +634,11 @@
 .page.wide > .bento,
 .page.wide > .logday,
 .page.wide > .logbook,
+.page.wide > .reviewhead,
+.page.wide > .reviewrail,
+.page.wide > .reviewstep,
+.page.wide > .reviewfoot,
+.page.wide > .reviewdone,
 .page.wide > .empty{
   max-width:1160px;
 }
@@ -773,15 +793,20 @@
    palette slots need: identity never rests on hue alone. */
 .legend{display:grid;gap:5px;min-width:0}
 .legend li{
-  display:grid;grid-template-columns:9px minmax(0,1fr) auto auto;gap:8px;
+  display:grid;grid-template-columns:9px minmax(0,1fr) auto;gap:8px;
   align-items:center;font-size:var(--fs-12);color:var(--muted);
   transition:opacity .14s ease-out;
+}
+/* "4 tasks · 40%" is one reading. Three columns drifting apart across a wide
+   card was three. */
+.legendvalue{
+  display:inline-flex;align-items:baseline;gap:5px;white-space:nowrap;
 }
 .legend li.dim{opacity:.4}
 .legend i{width:9px;height:9px;border-radius:3px;flex:0 0 auto}
 .legendname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .legend b{color:var(--text);font-weight:600;font-variant-numeric:tabular-nums}
-.legendshare{color:var(--faint);font-variant-numeric:tabular-nums;min-width:30px;text-align:right}
+.legendshare{color:var(--faint);font-variant-numeric:tabular-nums}
 
 .legend.inline{display:flex;flex-wrap:wrap;gap:6px var(--s4)}
 .legend.inline li{display:inline-flex;gap:6px;grid-template-columns:none}
@@ -1345,16 +1370,18 @@
 /* ---------- Making a tag ---------- */
 /* One line, on the page the tags are already on. A tag is a name and nothing
    else; everything else about it is set on the card it becomes. */
+/* The same column the tag cards below it sit in, so the page reads as one
+   list with a way to add to it rather than as a banner over a list. */
 .tagadd{
   display:flex;align-items:center;gap:10px;
-  margin:var(--s4) 0 0;padding:8px 12px;
+  margin-top:var(--s4);padding:6px 10px;min-height:38px;
   border:1px solid var(--border);border-radius:var(--r-md);background:var(--surface);
 }
 .tagadd:focus-within{border-color:var(--accent)}
 .tagadd > .ic{flex:0 0 auto;color:var(--faint)}
 .tagadd input{
   flex:1;min-width:0;border:0;background:transparent;color:var(--text);
-  font:inherit;font-size:var(--fs-14);
+  font:inherit;font-size:var(--fs-13);
 }
 .tagadd input:focus{outline:none}
 .tagadd input::placeholder{color:var(--faint)}
@@ -1523,11 +1550,14 @@
   background:var(--surface);font-size:10px;font-weight:700;
 }
 .reviewpip-dot .ic{width:11px;height:11px}
-.reviewpip.clear .reviewpip-dot{border-color:var(--ok);color:var(--ok)}
-.reviewpip:not(.clear) .reviewpip-dot{border-color:var(--accent);color:var(--accent)}
+/* Still to answer. */
+.reviewpip .reviewpip-dot{border-color:var(--accent);color:var(--accent)}
+/* Answered, or nothing in it to answer. */
+.reviewpip.done .reviewpip-dot{border-color:var(--ok);color:var(--ok)}
+/* Where you are. Filled, so the one you are on is never mistaken for one of
+   the others whatever state it is in. */
 .reviewpip.current{background:var(--accent-soft);color:var(--accent-dark)}
 .reviewpip.current .reviewpip-dot{border-color:var(--accent);background:var(--accent);color:#fff}
-.reviewpip.passed:not(.current){opacity:.75}
 
 /* ---------- The question ---------- */
 .reviewstep h2{font-size:var(--fs-20);font-weight:700;letter-spacing:-.015em}
@@ -1748,3 +1778,17 @@
   content:"";position:absolute;left:4px;right:4px;bottom:-1px;height:2px;
   border-radius:1px;background:var(--accent);
 }
+
+/* ---------- The review's three figures ---------- */
+/* One card each. Three numbers in one card read as a banner rather than as
+   three things you might weigh against each other. */
+.reviewfig{display:grid;gap:4px;align-content:start}
+.reviewfig b{
+  font-size:var(--fs-26);font-weight:700;letter-spacing:-.025em;line-height:1.1;
+}
+.reviewfig > span{color:var(--muted);font-size:var(--fs-12);font-weight:600}
+.reviewfig small{color:var(--faint);font-size:var(--fs-11);line-height:1.4}
+.reviewfig .splitbar{margin-top:6px}
+/* The donut card gets the same inner rhythm as the two beside it. */
+.reviewbento .donut{gap:var(--s5);align-items:start}
+.reviewbento .legend{gap:7px}

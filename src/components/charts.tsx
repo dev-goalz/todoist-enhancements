@@ -50,6 +50,14 @@ export interface BarDatum {
   value: number;
   /** Marks the current period, drawn in the accent colour. */
   current?: boolean;
+  /**
+   * The same day of the period before, drawn as a dotted line across the bar.
+   *
+   * A bar on its own says how much; a bar against last week's line says
+   * whether that is more or less than usual, which is the question a review
+   * is actually asking.
+   */
+  reference?: number;
 }
 
 interface BarsProps {
@@ -60,34 +68,50 @@ interface BarsProps {
   /** Only some labels are printed, so the axis never collides with itself. */
   labelEvery?: number;
   emptyLabel?: string;
+  /** Names the dotted line in the readout, when the data carries one. */
+  referenceLabel?: string;
 }
 
 /** Change over time. One series, so no legend: the card title names it. */
 export function Bars({
-  data, height = 120, format, labelEvery = 1, emptyLabel,
+  data, height = 120, format, labelEvery = 1, emptyLabel, referenceLabel,
 }: BarsProps) {
   const [hover, setHover] = useState<number | null>(null);
   const id = useId();
 
   if (data.length === 0) return <p className="chart-empty">{emptyLabel}</p>;
 
-  const max = Math.max(1, ...data.map((d) => d.value));
+  /* The scale has to hold the reference too, or a quiet week draws its own
+     bars tall and last week's line off the top of the plot. */
+  const max = Math.max(
+    1,
+    ...data.map((d) => d.value),
+    ...data.map((d) => d.reference ?? 0),
+  );
   const shown = hover === null ? null : data[hover];
 
   return (
     <div className="chart">
       <div className="chart-plot" style={{ height }} role="img" aria-labelledby={id}>
         {data.map((datum, index) => (
-          <button
-            key={datum.key}
-            className={`bar${datum.current ? ' current' : ''}${hover === index ? ' hovered' : ''}`}
-            style={{ height: `${Math.max(2, (datum.value / max) * 100)}%` }}
-            onMouseEnter={() => setHover(index)}
-            onMouseLeave={() => setHover(null)}
-            onFocus={() => setHover(index)}
-            onBlur={() => setHover(null)}
-            aria-label={`${datum.label}: ${format ? format(datum.value, datum) : datum.value}`}
-          />
+          <span className="barslot" key={datum.key}>
+            {datum.reference !== undefined && datum.reference > 0 && (
+              <i
+                className="barref"
+                style={{ bottom: `${(datum.reference / max) * 100}%` }}
+                aria-hidden="true"
+              />
+            )}
+            <button
+              className={`bar${datum.current ? ' current' : ''}${hover === index ? ' hovered' : ''}`}
+              style={{ height: `${Math.max(2, (datum.value / max) * 100)}%` }}
+              onMouseEnter={() => setHover(index)}
+              onMouseLeave={() => setHover(null)}
+              onFocus={() => setHover(index)}
+              onBlur={() => setHover(null)}
+              aria-label={`${datum.label}: ${format ? format(datum.value, datum) : datum.value}`}
+            />
+          </span>
         ))}
       </div>
 
@@ -99,7 +123,8 @@ export function Bars({
 
       <p className="chart-readout" id={id} aria-live="polite">
         {shown
-          ? `${shown.label} · ${format ? format(shown.value, shown) : shown.value}`
+          ? `${shown.label} · ${format ? format(shown.value, shown) : shown.value}` + (shown.reference !== undefined && referenceLabel
+            ? ` · ${referenceLabel} ${shown.reference}` : '')
           : ' '}
       </p>
     </div>
@@ -325,8 +350,10 @@ export function Donut({
           >
             <i style={{ background: arc.color }} />
             <span className="legendname" title={arc.label}>{arc.label}</span>
-            <b>{format ? format(arc.value) : arc.value}</b>
-            <span className="legendshare">{arc.share}%</span>
+            <span className="legendvalue">
+              <b>{format ? format(arc.value) : arc.value}</b>
+              <span className="legendshare">· {arc.share}%</span>
+            </span>
           </li>
         ))}
       </ul>

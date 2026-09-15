@@ -246,12 +246,15 @@ export function Sidebar({
                 anchor={rowMenu?.anchor ?? null}
                 onClose={() => setRowMenu(null)}
                 onEdit={() => onProjectSheet({ mode: 'edit', projectId: project.id })}
-                onAddAbove={() => onProjectSheet({
+                /* Only in the tree. A favourite is the same project shown a
+                   second time, and "above" and "below" name positions in the
+                   list it actually lives in, not in this one. */
+                onAddAbove={keyPrefix !== '' ? undefined : () => onProjectSheet({
                   mode: 'create',
                   workspaceId: project.workspace_id ?? null,
                   anchor: { siblingId: project.id, position: 'above' },
                 })}
-                onAddBelow={() => onProjectSheet({
+                onAddBelow={keyPrefix !== '' ? undefined : () => onProjectSheet({
                   mode: 'create',
                   workspaceId: project.workspace_id ?? null,
                   anchor: { siblingId: project.id, position: 'below' },

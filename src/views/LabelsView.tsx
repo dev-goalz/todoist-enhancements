@@ -74,7 +74,7 @@ export function LabelsView() {
           rather than a dialog to open. Its colour and its star are set on the
           card it becomes, which is right there underneath. */}
       <form
-        className="tagadd"
+        className="mode tagadd"
         onSubmit={(e) => {
           e.preventDefault();
           const name = draft.trim();
