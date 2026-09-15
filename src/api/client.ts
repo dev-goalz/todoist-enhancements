@@ -1,6 +1,10 @@
 import { auth } from './auth';
 
-export const API_BASE = 'https://api.todoist.com/api/v1';
+/**
+ * Todoist's cloud, unless the build names another server that speaks the same
+ * API. A relative value such as `/api/v1` means the server that hosts the app.
+ */
+export const API_BASE: string = import.meta.env.VITE_API_BASE || 'https://api.todoist.com/api/v1';
 
 export class ApiError extends Error {
   constructor(
@@ -50,7 +54,8 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
 
   const { method = 'GET', form, json, query, signal, retries = 3 } = options;
 
-  const url = new URL(`${API_BASE}${path}`);
+  // A relative base resolves against the page, so one build works on any host.
+  const url = new URL(`${API_BASE}${path}`, globalThis.location?.href);
   if (query) {
     for (const [key, value] of Object.entries(query)) {
       if (value !== undefined && value !== '') url.searchParams.set(key, String(value));

@@ -11,3 +11,6 @@ todoist-enhancements-dist.zip
 
 # Communication drafts stay on the machine, not in the repository.
 REDDIT-POST.md
+
+# Local database of the self-hosted server.
+server/data

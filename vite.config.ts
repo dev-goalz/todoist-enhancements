@@ -3,7 +3,13 @@ import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 import { fileURLToPath, URL } from 'node:url';
 
+/* With VITE_API_BASE=/api/v1 the app calls its own origin; in development
+   those calls are handed to the local server. */
+const apiProxy = { '/api': process.env.API_PROXY_TARGET ?? 'http://127.0.0.1:8787' };
+
 export default defineConfig({
+  server: { proxy: apiProxy },
+  preview: { proxy: apiProxy },
   // Relative base so the build can be dropped into any subfolder on Infomaniak.
   base: './',
   resolve: {
