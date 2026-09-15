@@ -111,18 +111,20 @@ everything at once is what stops people. The review asks one question at a
 time, in an order, with an end.
 
 The daily pass takes a few minutes: what is late, what is sitting in the
-Inbox, what you committed to this week without naming a day, and what today
-holds. Each row offers the same three answers — today, this week, or the
-backlog — and the one the task is already in is marked, so leaving it alone
-reads as a decision rather than as not answering. Pressing one makes exactly
-the change dragging the task there would make.
+Inbox, what you committed to this week without naming a day, what has no
+estimate yet, and what today holds. Each step asks the question that step is
+actually about — a task is in the Inbox because it has no project, so that
+step files it rather than dating it — and pressing an answer makes exactly the
+change dragging the task there would make. A row that has been answered leaves
+the list; the answers that leave it there are marked, because those are
+decisions rather than states.
 
 The weekly pass is longer: what you finished — in a list you can order by date
 or by priority, with nothing crossed out, because a review is no place to read
-your own week struck through — then the same week counted, then what slipped,
-what is still unfiled, what is in play with no estimate (with the field right
-there on the row), which projects have gone quiet, and the backlog. When the
-last question is answered it says so and stops.
+your own week struck through — then the same week in numbers, then what
+slipped, what is still unfiled, what is in play with no estimate (with the
+field right there on the row), which projects have gone quiet, and what is
+parked in Someday. When the last question is answered it says so and stops.
 
 Any task in a review can be ticked off. Sometimes the answer is that you
 already did it.
