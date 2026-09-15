@@ -109,6 +109,7 @@ export function ProjectSheet({ target, onClose }: ProjectSheetProps) {
         color,
         destination === PERSONAL ? null : destination,
         target.anchor ?? null,
+        { description, favourite },
       );
     }
     onClose();
@@ -135,6 +136,9 @@ export function ProjectSheet({ target, onClose }: ProjectSheetProps) {
         <div className="projectpreview">
           <span className="hash" style={markerStyle(color)}>#</span>
           <span className="projectpreview-name">{name.trim() || t('project.name')}</span>
+          {favourite && (
+            <Icon name="star" size="sm" className="projectpreview-star" />
+          )}
           <span className="projectpreview-where">
             {isEdit
               ? (editing?.workspace_id
@@ -192,29 +196,31 @@ export function ProjectSheet({ target, onClose }: ProjectSheetProps) {
           </div>
         </div>
 
-        {isEdit ? (
-          <label className="checkrow">
-            <input
-              type="checkbox"
-              checked={favourite}
-              onChange={() => setFavourite((v) => !v)}
+        {/* Only worth asking when there is somewhere else for it to go, and
+            never when the project is already somewhere: moving between
+            workspaces is a different act from editing one. */}
+        {!isEdit && workspaces.length > 0 && (
+          <div className="formfield">
+            <Select
+              label={t('project.destination')}
+              value={destination}
+              options={destinations}
+              onChange={setDestination}
             />
-            <Icon name="star" size="sm" />
-            <span>{t('project.favourite')}</span>
-          </label>
-        ) : (
-          /* Only worth asking when there is somewhere else for it to go. */
-          workspaces.length > 0 && (
-            <div className="formfield">
-              <Select
-                label={t('project.destination')}
-                value={destination}
-                options={destinations}
-                onChange={setDestination}
-              />
-            </div>
-          )
+          </div>
         )}
+
+        {/* A new project can be a favourite from the start, the same as an
+            existing one. There was no reason for the two to differ. */}
+        <button
+          type="button"
+          className={`favtoggle${favourite ? ' on' : ''}`}
+          aria-pressed={favourite}
+          onClick={() => setFavourite((v) => !v)}
+        >
+          <Icon name="star" size="sm" />
+          <span>{t('project.favourite')}</span>
+        </button>
       </div>
 
       <div className="sheet-foot">

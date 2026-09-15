@@ -13,6 +13,7 @@ import type { DropTarget } from '@/domain/dnd';
 import type { TranslationKey } from '@/i18n';
 import { SyncStatus } from './SyncStatus';
 import { Droppable } from './dnd/Droppable';
+import { ProjectRowSortable } from './dnd/ProjectRowSortable';
 import { COFFEE_URL, FEEDBACK_URL } from '@/app-info';
 import { ProjectMenu } from './ProjectMenu';
 import type { ProjectSheetTarget } from './overlays/ProjectSheet';
@@ -193,7 +194,11 @@ export function Sidebar({
         {({ isOver }) => (
           /* A row, not a button: the actions live beside the destination and a
              button cannot legally contain another one. */
-          <div className={`navrow${menuOpen ? ' menuopen' : ''}`}>
+          <ProjectRowSortable
+            projectId={project.id}
+            sortable={keyPrefix === ''}
+            className={menuOpen ? ' menuopen' : ''}
+          >
             <button
               className={`navitem${isOver ? ' dropping' : ''}`}
               style={depth > 0 ? { paddingLeft: `${8 + depth * 16}px` } : undefined}
@@ -253,7 +258,7 @@ export function Sidebar({
                 })}
               />
             )}
-          </div>
+          </ProjectRowSortable>
         )}
       </Droppable>
     );

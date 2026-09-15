@@ -208,16 +208,6 @@ export function ProjectView({
                   anchor={menuAnchor}
                   onClose={() => setMenuAnchor(null)}
                   onEdit={() => onProjectSheet({ mode: 'edit', projectId })}
-                  onAddAbove={() => onProjectSheet({
-                    mode: 'create',
-                    workspaceId: project.workspace_id ?? null,
-                    anchor: { siblingId: projectId, position: 'above' },
-                  })}
-                  onAddBelow={() => onProjectSheet({
-                    mode: 'create',
-                    workspaceId: project.workspace_id ?? null,
-                    anchor: { siblingId: projectId, position: 'below' },
-                  })}
                 />
               )}
             </span>

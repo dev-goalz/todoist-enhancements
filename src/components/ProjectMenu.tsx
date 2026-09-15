@@ -10,10 +10,14 @@ import type { Project } from '@/domain/types';
 export interface ProjectMenuProps {
   project: Project;
   onClose: () => void;
-  /** Opens the project sheet: to edit this one, or to add one beside it. */
+  /** Opens the project sheet to edit this one. */
   onEdit: () => void;
-  onAddAbove: () => void;
-  onAddBelow: () => void;
+  /**
+   * Adds a project beside this one. Only the sidebar offers these: "above" and
+   * "below" are positions in a list, and a project's own page is not in one.
+   */
+  onAddAbove?: () => void;
+  onAddBelow?: () => void;
   /** Where the popover hangs from, so a sidebar row and a header can differ. */
   align?: 'left' | 'right';
   /** The control it belongs to. The menu is placed against this. */
@@ -132,13 +136,17 @@ export function ProjectMenu({
         visibility: position ? undefined : 'hidden',
       }}
     >
-      <button className="opt" role="menuitem" onClick={() => { onClose(); onAddAbove(); }}>
-        <Icon name="plus" size="sm" /><span>{t('project.addAbove')}</span>
-      </button>
-      <button className="opt" role="menuitem" onClick={() => { onClose(); onAddBelow(); }}>
-        <Icon name="plus" size="sm" /><span>{t('project.addBelow')}</span>
-      </button>
-      <hr />
+      {onAddAbove && onAddBelow && (
+        <>
+          <button className="opt" role="menuitem" onClick={() => { onClose(); onAddAbove(); }}>
+            <Icon name="plus" size="sm" /><span>{t('project.addAbove')}</span>
+          </button>
+          <button className="opt" role="menuitem" onClick={() => { onClose(); onAddBelow(); }}>
+            <Icon name="plus" size="sm" /><span>{t('project.addBelow')}</span>
+          </button>
+          <hr />
+        </>
+      )}
       <button className="opt" role="menuitem" onClick={() => { onClose(); onEdit(); }}>
         <Icon name="edit" size="sm" /><span>{t('project.edit')}</span>
       </button>

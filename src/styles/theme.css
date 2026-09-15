@@ -883,22 +883,18 @@
 .fselect{position:relative;display:grid;gap:4px;min-width:0}
 .fselect-label{font-size:var(--fs-11);font-weight:600;color:var(--faint)}
 .fselect-face{
-  display:flex;align-items:center;justify-content:space-between;gap:var(--s2);
-  min-width:0;max-width:100%;
-  min-height:34px;padding:0 10px;border:1px solid var(--border-strong);
-  border-radius:var(--r-ctl);background:var(--surface);
-  font-size:var(--fs-13);font-weight:600;letter-spacing:-.02em;color:var(--text);
-  transition:border-color .14s ease-out,background .14s ease-out;
+  width:100%;min-height:34px;padding:0 10px;display:flex;align-items:center;gap:8px;
+  border:1px solid var(--border);border-radius:var(--r-sm);
+  background:var(--surface);color:var(--text);font-size:var(--fs-13);font-weight:600;
+  text-align:left;cursor:pointer;
 }
 .fselect-face .ic{color:var(--muted);flex:0 0 auto}
+.fselect-face .hash{flex:0 0 auto;width:18px;height:18px;font-size:var(--fs-12)}
 .fselect-value{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.fselect:hover .fselect-face{border-color:var(--accent);background:var(--accent-tint)}
-/* The native control still runs the interaction; it is simply invisible. */
-.fselect select{
-  position:absolute;inset:0;width:100%;height:100%;
-  opacity:0;cursor:pointer;appearance:none;border:0;
-}
-.fselect:focus-within .fselect-face{outline:2px solid var(--accent);outline-offset:2px}
+.fselect-face:hover{border-color:var(--accent);background:var(--accent-tint)}
+.fselect-face:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.fselect-face.open{border-color:var(--accent);background:var(--accent-tint)}
+.fselect-face.empty .fselect-value{color:var(--faint);font-weight:400}
 .logbar .fselect{min-width:150px}
 
 /* Marks stay thin. Without a cap a seven-day chart draws seven blocks the
@@ -1662,4 +1658,93 @@
   .reviewrow{grid-template-columns:18px minmax(0,1fr);row-gap:8px}
   .reviewactions,.reviewest{grid-column:2;justify-self:start}
   .reviewquiet{grid-column:2}
+}
+
+/* ==========================================================================
+   The app's own pickers
+   ==========================================================================
+   A native select opens the operating system's list — its type, its size, its
+   idea of a dialog — in the middle of a sheet this app drew, and the seam is
+   the only thing you see. A native date input is a different control on every
+   platform it renders on. Both are ours now, and they are drawn into the
+   document so no scrolling box can clip them.
+   ========================================================================== */
+.listbox{
+  position:fixed;z-index:95;
+  max-width:min(340px,calc(100vw - 16px));max-height:min(320px,60vh);
+  overflow-y:auto;padding:var(--s2);
+}
+.listbox .opt{
+  width:100%;display:flex;align-items:center;gap:8px;justify-content:flex-start;
+  min-height:32px;padding:0 8px;border-radius:var(--r-sm);
+  font-size:var(--fs-13);color:var(--text);text-align:left;
+}
+.listbox .opt .hash{flex:0 0 auto;width:18px;height:18px;font-size:var(--fs-12)}
+.listbox-label{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* The highlight follows the keyboard and the pointer alike, so there is only
+   ever one row that looks like the one you are about to choose. */
+.listbox .opt.active{background:var(--hover)}
+.listbox .opt[aria-selected="true"]{color:var(--accent-dark);font-weight:600}
+.listbox .opt[aria-selected="true"] > .ic{color:var(--accent);margin-left:auto}
+
+/* ---------- The calendar ---------- */
+.datefield{display:grid;gap:4px;min-width:0}
+.datepanel{position:fixed;z-index:95;width:278px;padding:var(--s3)}
+.datepanel-quick{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:var(--s3)}
+.datepanel-quick button{
+  min-height:28px;padding:0 10px;border-radius:var(--r-full);
+  border:1px solid var(--border);background:var(--surface);
+  color:var(--muted);font-size:var(--fs-12);font-weight:600;
+}
+.datepanel-quick button:hover{border-color:var(--accent);color:var(--accent-dark);background:var(--accent-tint)}
+
+.datepanel-head{
+  display:flex;align-items:center;justify-content:space-between;gap:var(--s2);
+  margin-bottom:6px;
+}
+.datepanel-head strong{font-size:var(--fs-13);font-weight:700;text-transform:capitalize}
+.datepanel-head .iconbtn{width:26px;height:26px}
+
+.datepanel-week{
+  display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:2px;
+  color:var(--faint);font-size:var(--fs-11);font-weight:600;text-align:center;
+}
+.datepanel-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.dateday{
+  aspect-ratio:1;display:grid;place-items:center;border-radius:var(--r-sm);
+  color:var(--text);font-size:var(--fs-12);font-variant-numeric:tabular-nums;
+}
+.dateday:hover{background:var(--hover)}
+.dateday.outside{color:var(--faint)}
+/* Today is named by a ring; the chosen day is filled. The two can coincide. */
+.dateday.today{box-shadow:inset 0 0 0 1px var(--border-strong);font-weight:700}
+.dateday.chosen{background:var(--accent);color:#fff;font-weight:700;box-shadow:none}
+.dateday.chosen:hover{background:var(--accent-dark)}
+
+.datepanel-clear{
+  width:100%;margin-top:var(--s3);padding-top:var(--s2);
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  border-top:1px solid var(--border);
+  color:var(--muted);font-size:var(--fs-12);font-weight:600;min-height:30px;
+}
+.datepanel-clear:hover{color:var(--accent)}
+
+/* The property rows in a task's panel hold these too. */
+.prop .fselect,.prop .datefield{margin-top:4px}
+
+@media (max-width:720px){
+  .listbox{max-width:calc(100vw - 16px)}
+  .datepanel{width:min(300px,calc(100vw - 16px))}
+}
+
+/* ---------- Reordering projects in the sidebar ---------- */
+/* The row is its own handle: there is no grip to find, you just move the
+   project. The drag starts after a few pixels so a click still opens it. */
+.navrow.sortable{touch-action:none}
+.navrow.lifting{opacity:.4}
+/* The row you are about to drop onto says so with a line, not a gap: a gap
+   would push every row below it and the list would move under the pointer. */
+.navrow.landing::after{
+  content:"";position:absolute;left:4px;right:4px;bottom:-1px;height:2px;
+  border-radius:1px;background:var(--accent);
 }

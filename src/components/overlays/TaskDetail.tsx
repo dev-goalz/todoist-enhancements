@@ -11,6 +11,8 @@ import {
 import { deadlineDate, dueDate, formatRelativeDay, toApiDate } from '@/domain/dates';
 import { renderMarkdown } from '@/domain/markdown';
 import { EstimateField } from '../EstimateField';
+import { Select } from '../Select';
+import { DateField } from '../DateField';
 import { markerStyle } from '@/domain/colors';
 import { toDisplayPriority, toTodoistPriority, type DisplayPriority } from '@/domain/types';
 
@@ -340,27 +342,27 @@ export function TaskDetail({ taskId, onClose, onOpen }: TaskDetailProps) {
         <aside className="detail-side">
           <div className="prop">
             <span>{t('detail.project')}</span>
-            <select
-              className="propselect"
+            <Select
               value={item.project_id}
-              onChange={(e) => void updateTask(item.id, { project_id: e.target.value })}
-            >
-              {Object.values(snapshot.projects)
-                .filter((p) => !p.is_archived && !p.is_deleted)
-                .map((p) => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
-                ))}
-            </select>
+              ariaLabel={t('detail.project')}
+              onChange={(next) => void updateTask(item.id, { project_id: next })}
+              options={Object.values(snapshot.projects)
+                .filter((p) => !p.is_archived && !p.is_deleted && !p.is_folder)
+                .map((p) => ({
+                  value: p.id,
+                  label: p.inbox_project ? t('nav.inbox') : p.name,
+                  marker: p.color,
+                }))}
+            />
           </div>
 
           <div className="prop">
             <span>{t('detail.startDate')}</span>
-            <input
-              className="propinput"
-              type="date"
+            <DateField
               value={due ? toApiDate(due) : ''}
-              onChange={(e) => {
-                const value = e.target.value;
+              label={t('detail.startDate')}
+              placeholder={t('date.pick')}
+              onChange={(value) => {
                 void updateTask(item.id, {
                   due: value
                     ? {
@@ -378,14 +380,12 @@ export function TaskDetail({ taskId, onClose, onOpen }: TaskDetailProps) {
 
           <div className="prop">
             <span>{t('detail.deadline')}</span>
-            <input
-              className="propinput"
-              type="date"
+            <DateField
               value={deadline ? toApiDate(deadline) : ''}
-              onChange={(e) => {
-                const value = e.target.value;
-                void updateTask(item.id, { deadline: value ? { date: value, lang: locale } : null });
-              }}
+              label={t('detail.deadline')}
+              placeholder={t('date.pick')}
+              onChange={(value) =>
+                void updateTask(item.id, { deadline: value ? { date: value, lang: locale } : null })}
             />
           </div>
 
@@ -407,19 +407,17 @@ export function TaskDetail({ taskId, onClose, onOpen }: TaskDetailProps) {
 
           <div className="prop">
             <span>{t('detail.priority')}</span>
-            <select
-              className="propselect"
-              value={priority}
-              onChange={(e) =>
+            <Select
+              value={String(priority)}
+              ariaLabel={t('detail.priority')}
+              onChange={(next) =>
                 void updateTask(item.id, {
-                  priority: toTodoistPriority(Number(e.target.value) as DisplayPriority),
-                })
-              }
-            >
-              {([1, 2, 3, 4] as const).map((p) => (
-                <option key={p} value={p}>P{p}</option>
-              ))}
-            </select>
+                  priority: toTodoistPriority(Number(next) as DisplayPriority),
+                })}
+              options={([1, 2, 3, 4] as const).map((p) => ({
+                value: String(p), label: `P${p}`,
+              }))}
+            />
           </div>
 
           <div className="prop">

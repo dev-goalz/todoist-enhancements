@@ -388,6 +388,7 @@
 }
 .projectpreview .hash{width:22px;height:22px;flex:0 0 auto}
 .projectpreview-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.projectpreview-star{flex:0 0 auto;color:var(--p2);fill:currentColor}
 /* Where it will live, said at the end of the line rather than left to memory. */
 .projectpreview-where{
   margin-left:auto;flex:0 0 auto;padding-left:var(--s3);
@@ -395,7 +396,22 @@
 }
 
 /* One field under the next, each labelled, none of them guessing at a width. */
-.projectform{display:grid;gap:var(--s5)}
+.projectform{display:grid;gap:var(--s4)}
+.projectform .projectpreview + .formfield{margin-top:2px}
+
+/* The star is a state, so it is a thing you press that stays pressed, not a
+   checkbox in a row of text. Creating a project offers it as readily as
+   editing one does; there was never a reason for the two to differ. */
+.favtoggle{
+  justify-self:start;display:inline-flex;align-items:center;gap:8px;
+  min-height:34px;padding:0 12px 0 10px;
+  border:1px solid var(--border);border-radius:var(--r-full);
+  color:var(--muted);font-size:var(--fs-13);font-weight:600;
+}
+.favtoggle:hover{border-color:var(--border-strong);color:var(--text)}
+.favtoggle .ic{color:var(--faint)}
+.favtoggle.on{border-color:var(--p2);background:rgba(181,101,0,.08);color:var(--p2)}
+.favtoggle.on .ic{color:var(--p2);fill:currentColor}
 .projectform .projectpreview{margin-bottom:0}
 .formfield{display:grid;gap:8px}
 .fieldlabel{

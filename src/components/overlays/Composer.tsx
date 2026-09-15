@@ -3,6 +3,7 @@ import { Overlay } from './Overlay';
 import { Icon } from '../Icon';
 import { EstimateField } from '../EstimateField';
 import { Select } from '../Select';
+import { DateField } from '../DateField';
 import { TaskNameField } from '../TaskNameField';
 import { useT } from '@/hooks/useT';
 import { useStore } from '@/store/store';
@@ -136,15 +137,15 @@ export function Composer({
         />
 
         <div className="composer-fields">
-          <label className="cfield">
-            <span>{t('composer.date')}</span>
-            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-          </label>
+          <span className="cfield">
+            <span className="fselect-label">{t('composer.date')}</span>
+            <DateField value={date} onChange={setDate} label={t('composer.date')} />
+          </span>
 
-          <label className="cfield">
-            <span>{t('detail.deadline')}</span>
-            <input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} />
-          </label>
+          <span className="cfield">
+            <span className="fselect-label">{t('detail.deadline')}</span>
+            <DateField value={deadline} onChange={setDeadline} label={t('detail.deadline')} />
+          </span>
 
           {/* The Inbox is a project like any other and is already in this list.
               It used to be offered a second time above it, as an empty value,

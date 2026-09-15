@@ -94,6 +94,14 @@ interface AppState {
   createLabel: (name: string, color?: string) => Promise<void>;
   /** Puts the tags in this order, which is also the order of the sidebar's favourites. */
   reorderLabels: (ids: string[]) => Promise<void>;
+  /**
+   * Puts these projects in this order.
+   *
+   * The ids are one set of siblings — the same parent, the same workspace —
+   * because child_order only means anything inside one. Moving a project to a
+   * different parent or workspace is a different act and is not this.
+   */
+  reorderProjects: (ids: string[]) => Promise<void>;
   skipOccurrence: (id: string) => Promise<void>;
   /** Creates a project, in a workspace when one is named and personal when not. */
   createProject: (
@@ -102,6 +110,8 @@ interface AppState {
     workspaceId?: string | null,
     /** Places the new project next to an existing one instead of at the end. */
     anchor?: { siblingId: string; position: 'above' | 'below' } | null,
+    /** The rest of what the sheet asks for, so creating and editing match. */
+    extra?: { description?: string; favourite?: boolean },
   ) => Promise<void>;
   /** Puts a project out of sight without destroying it. Todoist keeps the tasks. */
   archiveProject: (id: string) => Promise<void>;
@@ -613,7 +623,24 @@ export const useStore = create<AppState>((set, get) => ({
     );
   },
 
-  async createProject(name, color, workspaceId = null, anchor = null) {
+  async reorderProjects(ids) {
+    const projects = get().snapshot.projects;
+    const moved = ids
+      .map((id, index) => ({ id, child_order: index + 1 }))
+      .filter(({ id, child_order }) => projects[id] && projects[id].child_order !== child_order);
+
+    if (moved.length === 0) return;
+
+    await get().apply([command('project_reorder', { projects: moved })], (snapshot) => {
+      const next = { ...snapshot.projects };
+      for (const { id, child_order } of moved) {
+        if (next[id]) next[id] = { ...next[id], child_order };
+      }
+      return { ...snapshot, projects: next };
+    });
+  },
+
+  async createProject(name, color, workspaceId = null, anchor = null, extra = {}) {
     const tempId = newUuid();
     const snapshot = get().snapshot;
     const sibling = anchor ? snapshot.projects[anchor.siblingId] : undefined;
@@ -623,6 +650,8 @@ export const useStore = create<AppState>((set, get) => ({
     const args: Record<string, unknown> = { name, color };
     if (workspaceId) args.workspace_id = workspaceId;
     if (sibling?.parent_id) args.parent_id = sibling.parent_id;
+    if (extra.description) args.description = extra.description;
+    if (extra.favourite) args.is_favorite = true;
 
     const commands: Command[] = [];
 
@@ -665,7 +694,9 @@ export const useStore = create<AppState>((set, get) => ({
           id: tempId, name, color,
           parent_id: (sibling?.parent_id ?? null),
           child_order: childOrder,
-          is_archived: false, is_deleted: false, is_favorite: false,
+          description: extra.description ?? '',
+          is_archived: false, is_deleted: false,
+          is_favorite: extra.favourite ?? false,
           workspace_id: sibling ? (sibling.workspace_id ?? null) : workspaceId,
         },
       },

@@ -287,3 +287,25 @@ export function projectCounts(items: Item[]): Map<string, number> {
   }
   return counts;
 }
+
+/**
+ * The projects that sit beside this one, in the order the sidebar shows them.
+ *
+ * Siblings share a parent and a workspace, because `child_order` only means
+ * anything inside one list. A project at the root of a workspace and a project
+ * at the root of the personal space are not in the same list, however alike
+ * their rows look.
+ */
+export function siblingOrder(snapshot: Snapshot, projectId: string): string[] {
+  const project = snapshot.projects[projectId];
+  if (!project) return [];
+  return Object.values(snapshot.projects)
+    .filter((other) =>
+      !other.is_archived &&
+      !other.is_deleted &&
+      !other.inbox_project &&
+      (other.parent_id ?? null) === (project.parent_id ?? null) &&
+      (other.workspace_id ?? null) === (project.workspace_id ?? null))
+    .sort((a, b) => a.child_order - b.child_order)
+    .map((other) => other.id);
+}
