@@ -2,6 +2,13 @@ import { auth } from './auth';
 
 export const API_BASE = 'https://api.todoist.com/api/v1';
 
+/** What Todoist puts in the body of a refusal. */
+interface TodoistErrorBody {
+  error?: string;
+  error_tag?: string;
+  error_code?: number;
+}
+
 export class ApiError extends Error {
   constructor(
     message: string,
@@ -11,9 +18,44 @@ export class ApiError extends Error {
     super(message);
     this.name = 'ApiError';
   }
-  /** The token is missing, wrong, or has been revoked. */
+
+  private get parsedBody(): TodoistErrorBody {
+    return (this.body && typeof this.body === 'object' ? this.body : {}) as TodoistErrorBody;
+  }
+
+  /**
+   * The token is missing, wrong, or has been revoked.
+   *
+   * 401 always means that. 403 does not: Todoist also answers 403 when a
+   * command is against the rules of the account's plan, and reading that as a
+   * bad token both hid the real reason and signed the user out over it. A 403
+   * only counts as an auth failure when the body says so.
+   */
   get isAuthError(): boolean {
-    return this.status === 401 || this.status === 403;
+    if (this.status === 401) return true;
+    if (this.status !== 403) return false;
+    const tag = `${this.parsedBody.error_tag ?? ''} ${this.parsedBody.error ?? ''}`.toLowerCase();
+    return /auth|token|permission|forbidden/.test(tag) || tag.trim() === '';
+  }
+
+  /**
+   * Todoist has refused this and will refuse it again.
+   *
+   * A refusal is a fact about the request, not about the network, so the
+   * change must be rolled back and the command dropped rather than queued to
+   * be retried for ever.
+   */
+  get isRefusal(): boolean {
+    return this.status >= 400 && this.status < 500 && this.status !== 429 && !this.isAuthError;
+  }
+
+  /** What Todoist actually said, for showing to the person who asked. */
+  get detail(): string {
+    const { error, error_tag: tag } = this.parsedBody;
+    if (error) return error;
+    if (typeof this.body === 'string' && this.body.trim()) return this.body.trim();
+    if (tag) return tag.replace(/_/g, ' ').toLowerCase();
+    return this.message;
   }
 }
 

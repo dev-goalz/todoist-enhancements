@@ -2,6 +2,8 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Icon } from './Icon';
 import { markerStyle } from '@/domain/colors';
 import { readNaturalDate } from '@/domain/nlp';
+import { useStore } from '@/store/store';
+import { useT } from '@/hooks/useT';
 import type { Snapshot } from '@/domain/types';
 
 export type HighlightKind = 'date' | 'project' | 'priority' | 'label';
@@ -97,6 +99,8 @@ interface TaskNameFieldProps {
 export function TaskNameField({
   value, onChange, onSubmit, placeholder, ariaLabel, snapshot, naturalDates,
 }: TaskNameFieldProps) {
+  const { t } = useT();
+  const createLabel = useStore((s) => s.createLabel);
   const inputRef = useRef<HTMLInputElement>(null);
   const mirrorRef = useRef<HTMLDivElement>(null);
   const [caret, setCaret] = useState(0);
@@ -112,13 +116,27 @@ export function TaskNameField({
         .filter((p) => !p.is_archived && !p.is_deleted && !p.is_folder)
         .filter((p) => p.name.toLowerCase().includes(token.query))
         .slice(0, 6)
-        .map((p) => ({ id: p.id, name: p.name, color: p.color, sigil: '#' as const }));
+        .map((p) => ({
+          id: p.id, name: p.name, color: p.color, sigil: '#' as const, isNew: false,
+        }));
     }
-    return Object.values(snapshot.labels)
+    const known = Object.values(snapshot.labels)
       .filter((l) => !l.is_deleted && !l.name.startsWith('est-'))
       .filter((l) => l.name.toLowerCase().includes(token.query))
       .slice(0, 6)
-      .map((l) => ({ id: l.id, name: l.name, color: l.color, sigil: '@' as const }));
+      .map((l) => ({ id: l.id, name: l.name, color: l.color, sigil: '@' as const, isNew: false }));
+
+    /* A tag you have not made yet is the common case when you are typing one:
+       the list offers to make it rather than silently matching nothing. */
+    const exact = Object.values(snapshot.labels).some(
+      (l) => !l.is_deleted && l.name.toLowerCase() === token.query,
+    );
+    if (token.query && !exact) {
+      known.push({
+        id: '__new__', name: token.query, color: 'charcoal', sigil: '@' as const, isNew: true,
+      });
+    }
+    return known;
   })();
 
   useEffect(() => { setPick(0); }, [value, caret]);
@@ -135,8 +153,11 @@ export function TaskNameField({
     return () => input.removeEventListener('scroll', sync);
   }, [value]);
 
-  const choose = (name: string) => {
+  const choose = (name: string, isNew = false) => {
     if (!token) return;
+    // Made before it is inserted, so the tag it names exists by the time the
+    // task carrying it is saved.
+    if (isNew) void createLabel(name);
     const needsQuotes = /\s/.test(name);
     const inserted = `${token.sigil}${needsQuotes ? name.replace(/\s+/g, '') : name} `;
     const next = value.slice(0, token.start) + inserted + value.slice(caret);
@@ -199,7 +220,7 @@ export function TaskNameField({
             }
             if (e.key === 'Enter' || e.key === 'Tab') {
               e.preventDefault();
-              choose(options[pick].name);
+              choose(options[pick].name, options[pick].isNew);
               return;
             }
             if (e.key === 'Escape') {
@@ -222,13 +243,14 @@ export function TaskNameField({
               key={option.id}
               role="option"
               aria-selected={index === pick}
-              onMouseDown={(e) => { e.preventDefault(); choose(option.name); }}
+              onMouseDown={(e) => { e.preventDefault(); choose(option.name, option.isNew); }}
               onMouseEnter={() => setPick(index)}
             >
               {option.sigil === '#'
                 ? <span className="hash" style={markerStyle(option.color)}>#</span>
-                : <Icon name="tag" size="sm" className="taglabel" style={markerStyle(option.color, false)} />}
+                : <Icon name={option.isNew ? 'plus' : 'tag'} size="sm" className="taglabel" style={markerStyle(option.color, false)} />}
               <span>{option.name}</span>
+              {option.isNew && <small className="namepicker-new">{t('labels.createNew')}</small>}
             </button>
           ))}
         </div>

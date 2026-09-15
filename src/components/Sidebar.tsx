@@ -14,19 +14,21 @@ import type { TranslationKey } from '@/i18n';
 import { SyncStatus } from './SyncStatus';
 import { Droppable } from './dnd/Droppable';
 import { COFFEE_URL, FEEDBACK_URL } from '@/app-info';
+import { ProjectMenu } from './ProjectMenu';
+import type { ProjectSheetTarget } from './overlays/ProjectSheet';
 
 interface SidebarProps {
   route: Route;
   onAddTask: () => void;
   onSearch: () => void;
   onIssues: () => void;
-  /** Carries the section that asked, so the project is created in that space. */
-  onAddProject: (workspaceId: string | null) => void;
+  /** Opens the project sheet, to create one here or to edit that one. */
+  onProjectSheet: (target: ProjectSheetTarget) => void;
   issuesCount: number;
 }
 
 export function Sidebar({
-  route, onAddTask, onSearch, onIssues, onAddProject, issuesCount,
+  route, onAddTask, onSearch, onIssues, onProjectSheet, issuesCount,
 }: SidebarProps) {
   const { t } = useT();
   const { snapshot, items } = useData();
@@ -37,6 +39,8 @@ export function Sidebar({
   const menuRef = useRef<HTMLDivElement>(null);
   const [openFolders, setOpenFolders] = useState<Record<string, boolean>>({});
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
+  /** The project row whose action menu is open, and the button it hangs from. */
+  const [rowMenu, setRowMenu] = useState<{ key: string; anchor: HTMLElement } | null>(null);
 
   const roots = useMemo(() => rootItems(items), [items]);
   const inboxId = snapshot.user?.inbox_project_id;
@@ -165,27 +169,68 @@ export function Sidebar({
       );
     }
 
+    const rowKey = `${keyPrefix}${project.id}`;
+    const count = counts.byProject.get(project.id) ?? 0;
+    const menuOpen = rowMenu?.key === rowKey;
+
     return (
       <Droppable
         target={{ kind: 'project', projectId: project.id }}
         /* A favourite project also appears under its workspace, so the two
            rows must not claim the same droppable id. */
         scope={`nav-${keyPrefix || 'tree'}`}
-        key={`${keyPrefix}${project.id}`}
+        key={rowKey}
       >
         {({ isOver }) => (
-          <button
-            className={`navitem${isOver ? ' dropping' : ''}`}
-            style={depth > 0 ? { paddingLeft: `${8 + depth * 16}px` } : undefined}
-            aria-current={route.view === 'project' && route.id === project.id ? 'page' : undefined}
-            onClick={() => navigate('project', project.id)}
-          >
-            <span className="hash" style={markerStyle(project.color)}>#</span>
-            <span className="label">{project.name}</span>
-            {(counts.byProject.get(project.id) ?? 0) > 0 && (
-              <span className="count">{counts.byProject.get(project.id)}</span>
+          /* A row, not a button: the actions live beside the destination and a
+             button cannot legally contain another one. */
+          <div className={`navrow${menuOpen ? ' menuopen' : ''}`}>
+            <button
+              className={`navitem${isOver ? ' dropping' : ''}`}
+              style={depth > 0 ? { paddingLeft: `${8 + depth * 16}px` } : undefined}
+              aria-current={route.view === 'project' && route.id === project.id ? 'page' : undefined}
+              onClick={() => navigate('project', project.id)}
+            >
+              <span className="hash" style={markerStyle(project.color)}>#</span>
+              <span className="label">{project.name}</span>
+            </button>
+
+            {/* The count gives up its place to the actions under the pointer,
+                which is where Todoist puts them and where the eye looks. */}
+            <span className="navend">
+              {count > 0 && <span className="count">{count}</span>}
+              <button
+                className="navmore"
+                aria-label={t('project.actions')}
+                title={t('project.actions')}
+                aria-expanded={menuOpen}
+                aria-haspopup="menu"
+                onClick={(event) =>
+                  setRowMenu(menuOpen ? null : { key: rowKey, anchor: event.currentTarget })}
+              >
+                <Icon name="more" size="sm" />
+              </button>
+            </span>
+
+            {menuOpen && (
+              <ProjectMenu
+                project={project}
+                anchor={rowMenu?.anchor ?? null}
+                onClose={() => setRowMenu(null)}
+                onEdit={() => onProjectSheet({ mode: 'edit', projectId: project.id })}
+                onAddAbove={() => onProjectSheet({
+                  mode: 'create',
+                  workspaceId: project.workspace_id ?? null,
+                  anchor: { siblingId: project.id, position: 'above' },
+                })}
+                onAddBelow={() => onProjectSheet({
+                  mode: 'create',
+                  workspaceId: project.workspace_id ?? null,
+                  anchor: { siblingId: project.id, position: 'below' },
+                })}
+              />
             )}
-          </button>
+          </div>
         )}
       </Droppable>
     );
@@ -299,7 +344,10 @@ export function Sidebar({
               title={workspace.name ?? t('nav.myProjects')}
               open={openGroups[key] ?? true}
               onToggle={() => toggleGroup(key)}
-              onAdd={() => onAddProject(workspace.workspaceId)}
+              onAdd={() => onProjectSheet({
+                mode: 'create',
+                workspaceId: workspace.workspaceId,
+              })}
               addLabel={t('nav.addProject')}
             >
               {workspace.roots.map((node) => projectNode(node))}

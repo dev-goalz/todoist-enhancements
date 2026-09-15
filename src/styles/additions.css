@@ -127,12 +127,28 @@
 /* Toasts */
 .toasts{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);
   z-index:200;display:grid;gap:8px;width:max-content;max-width:min(520px,92vw)}
+/* The stack owns the placement now, so every property the older single-toast
+   rule still sets has to be handed back — including the opacity:0 and the
+   pointer-events:none it used to lift with a `show` class that nothing adds.
+   Without this every toast in the product renders and is invisible, which is
+   also why no error, and no undo, has ever reached anyone. */
 .toast{
+  position:static;transform:none;
+  opacity:1;pointer-events:auto;
   display:flex;align-items:center;gap:var(--s4);padding:10px var(--s4);
   background:var(--text);color:#fff;border-radius:var(--r-md);
-  font-size:var(--fs-13);box-shadow:var(--sh-lg);
+  font-size:var(--fs-13);line-height:1.45;box-shadow:var(--sh-lg);
+  animation:toastIn .18s ease-out;
 }
+.toast > span{min-width:0}
+.toast button{flex:0 0 auto}
+@keyframes toastIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.toast{animation:none}}
 .toast button{color:#fff;font-weight:600;font-size:var(--fs-12);text-decoration:underline}
+/* A phone puts the navigation bar where the toast was going to sit. */
+@media (max-width:720px){
+  .toasts{bottom:calc(76px + env(safe-area-inset-bottom));width:auto;left:var(--s3);right:var(--s3);transform:none}
+}
 
 /* Empty states */
 .empty{
@@ -418,10 +434,19 @@
   .swatches{grid-template-columns:repeat(6,minmax(0,1fr))}
 }
 
-/* A sheet's actions sit on their own bar, against the sheet's own edge. */
+/* A sheet's actions sit on their own bar, against the sheet's own edge — and
+   stay there. The sheet is the scroller, so a long list used to push Save off
+   the bottom and make you scroll to the end of forty tasks to reach it. Both
+   bars hold: the title so you know what you are in, the actions so you can
+   always leave. */
 .sheet-foot{
+  position:sticky;bottom:0;z-index:3;
   display:flex;align-items:center;justify-content:flex-end;gap:var(--s2);
   padding:var(--s3) var(--s4);border-top:1px solid var(--border);
+  background:var(--surface);
+}
+.sheet > .sheet-head{
+  position:sticky;top:0;z-index:3;background:var(--surface);
 }
 
 /* A row of choices inside a picker. The display panel stopped using these

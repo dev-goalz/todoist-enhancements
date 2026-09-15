@@ -8,7 +8,7 @@ import { TaskDetail } from './components/overlays/TaskDetail';
 import { Issues } from './components/overlays/Issues';
 import { Search } from './components/overlays/Search';
 import { InsightsPanel } from './components/overlays/InsightsPanel';
-import { AddProject } from './components/overlays/AddProject';
+import { ProjectSheet, type ProjectSheetTarget } from './components/overlays/ProjectSheet';
 import { Unestimated } from './components/overlays/Unestimated';
 import { ConfirmProvider } from './components/overlays/Confirm';
 import { WeekView } from './views/WeekView';
@@ -46,9 +46,9 @@ export function App() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [issuesOpen, setIssuesOpen] = useState(false);
   const [insightsOpen, setInsightsOpen] = useState(false);
-  /* Not a boolean: which sidebar section's add button was pressed decides
-     where the project lands, so the open state carries that destination. */
-  const [addProjectIn, setAddProjectIn] = useState<AddProjectTarget>(null);
+  /* Not a boolean: what the sheet was opened to do — create one here, or edit
+     that one — is carried by the open state itself. */
+  const [projectSheet, setProjectSheet] = useState<ProjectSheetTarget>(null);
   const [unestimatedOpen, setUnestimatedOpen] = useState(false);
   /** Where a newly composed task should land, when it was added from a section. */
   const [placement, setPlacement] = useState<ComposerPlacement>({});
@@ -121,8 +121,8 @@ export function App() {
             setIssuesOpen={setIssuesOpen}
             insightsOpen={insightsOpen}
             setInsightsOpen={setInsightsOpen}
-            addProjectIn={addProjectIn}
-            setAddProjectIn={setAddProjectIn}
+            projectSheet={projectSheet}
+            setProjectSheet={setProjectSheet}
             unestimatedOpen={unestimatedOpen}
             setUnestimatedOpen={setUnestimatedOpen}
             placement={placement}
@@ -161,16 +161,13 @@ interface ShellProps {
   setIssuesOpen: (open: boolean) => void;
   insightsOpen: boolean;
   setInsightsOpen: (open: boolean) => void;
-  addProjectIn: AddProjectTarget;
-  setAddProjectIn: (target: AddProjectTarget) => void;
+  projectSheet: ProjectSheetTarget;
+  setProjectSheet: (target: ProjectSheetTarget) => void;
   unestimatedOpen: boolean;
   setUnestimatedOpen: (open: boolean) => void;
   placement: ComposerPlacement;
   setPlacement: (placement: ComposerPlacement) => void;
 }
-
-/** Where a new project goes, and null when the sheet is closed. */
-export type AddProjectTarget = { workspaceId: string | null } | null;
 
 export interface ComposerPlacement {
   projectId?: string;
@@ -181,7 +178,7 @@ export interface ComposerPlacement {
 function AppShell({
   route, openTaskId, setOpenTaskId, composerOpen, setComposerOpen,
   searchOpen, setSearchOpen, issuesOpen, setIssuesOpen,
-  insightsOpen, setInsightsOpen, addProjectIn, setAddProjectIn,
+  insightsOpen, setInsightsOpen, projectSheet, setProjectSheet,
   unestimatedOpen, setUnestimatedOpen, placement, setPlacement,
 }: ShellProps) {
   const { t } = useT();
@@ -251,6 +248,7 @@ function AppShell({
     onInsights: openInsights,
     onUnestimated: openUnestimated,
     onAddTaskTo: addTaskTo,
+    onProjectSheet: setProjectSheet,
   };
 
   return (
@@ -267,7 +265,7 @@ function AppShell({
         onAddTask={addTask}
         onSearch={() => setSearchOpen(true)}
         onIssues={() => setIssuesOpen(true)}
-        onAddProject={(workspaceId) => setAddProjectIn({ workspaceId })}
+        onProjectSheet={setProjectSheet}
         issuesCount={conflictCount}
       />
 
@@ -348,11 +346,7 @@ function AppShell({
       />
       <Issues open={issuesOpen} onClose={() => setIssuesOpen(false)} onOpen={openTask} />
       <Search open={searchOpen} onClose={() => setSearchOpen(false)} onOpen={openTask} />
-      <AddProject
-        open={addProjectIn !== null}
-        workspaceId={addProjectIn?.workspaceId ?? null}
-        onClose={() => setAddProjectIn(null)}
-      />
+      <ProjectSheet target={projectSheet} onClose={() => setProjectSheet(null)} />
       <Unestimated
         open={unestimatedOpen}
         onClose={() => setUnestimatedOpen(false)}

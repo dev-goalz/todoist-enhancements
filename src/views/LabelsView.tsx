@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import {
   DndContext, PointerSensor, closestCenter, useSensor, useSensors, type DragEndEvent,
 } from '@dnd-kit/core';
@@ -28,6 +28,9 @@ export function LabelsView() {
   const { t } = useT();
   const { snapshot, items } = useData();
   const updateLabelFavourite = useStore((s) => s.setLabelFavourite);
+  const createLabel = useStore((s) => s.createLabel);
+  const [draft, setDraft] = useState('');
+  const draftRef = useRef<HTMLInputElement>(null);
   const reorderLabels = useStore((s) => s.reorderLabels);
 
   const roots = useMemo(() => rootItems(items), [items]);
@@ -59,7 +62,40 @@ export function LabelsView() {
           <h1 className="ptitle">{t('nav.labels')}</h1>
           {labels.length > 1 && <p className="psub">{t('labels.orderHint')}</p>}
         </div>
+        <div className="pactions">
+          <button className="btn primary" onClick={() => draftRef.current?.focus()}>
+            <Icon name="plus" />
+            {t('nav.addTag')}
+          </button>
+        </div>
       </div>
+
+      {/* A tag is a name and nothing else, so making one is a line to type in
+          rather than a dialog to open. Its colour and its star are set on the
+          card it becomes, which is right there underneath. */}
+      <form
+        className="tagadd"
+        onSubmit={(e) => {
+          e.preventDefault();
+          const name = draft.trim();
+          if (!name) return;
+          void createLabel(name);
+          setDraft('');
+        }}
+      >
+        <Icon name="tag" size="sm" />
+        <input
+          ref={draftRef}
+          value={draft}
+          placeholder={t('labels.newPlaceholder')}
+          aria-label={t('nav.addTag')}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Escape') { setDraft(''); e.currentTarget.blur(); } }}
+        />
+        <button className="btn quiet" type="submit" disabled={!draft.trim()}>
+          {t('nav.addTag')}
+        </button>
+      </form>
 
       {labels.length === 0 ? (
         <p className="empty">{t('labels.none')}</p>

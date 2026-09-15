@@ -17,30 +17,44 @@ const CHOICES = [
 /** The value the destination select uses for the personal space. */
 const PERSONAL = 'personal';
 
-interface AddProjectProps {
-  open: boolean;
+/**
+ * What the sheet was opened to do.
+ *
+ * Creating and editing ask for the same three things, so they are one sheet
+ * rather than two that drift. `anchor` is what "add project above" means once
+ * it reaches the store: a position among the siblings.
+ */
+export type ProjectSheetTarget =
+  | { mode: 'create'; workspaceId: string | null; anchor?: { siblingId: string; position: 'above' | 'below' } }
+  | { mode: 'edit'; projectId: string }
+  | null;
+
+interface ProjectSheetProps {
+  target: ProjectSheetTarget;
   onClose: () => void;
-  /**
-   * The space the project starts in. The sidebar passes whichever section's
-   * add button was pressed, so the new project lands where it was asked for.
-   */
-  workspaceId?: string | null;
 }
 
 /**
- * Creating a project: a name, a colour, and where it goes.
+ * Creating a project, and changing one: a name, a colour, a description, and
+ * where it goes.
  *
  * The destination is a field like the others rather than a consequence of
  * which button opened the sheet, so it can be read before submitting and
  * changed without starting again.
  */
-export function AddProject({ open, onClose, workspaceId = null }: AddProjectProps) {
+export function ProjectSheet({ target, onClose }: ProjectSheetProps) {
   const { t } = useT();
   const createProject = useStore((s) => s.createProject);
+  const updateProjectFields = useStore((s) => s.updateProjectFields);
   const snapshot = useStore((s) => s.snapshot);
+
+  const editing = target?.mode === 'edit' ? snapshot.projects[target.projectId] : undefined;
+
   const [name, setName] = useState('');
   const [color, setColor] = useState('charcoal');
-  const [destination, setDestination] = useState(workspaceId ?? PERSONAL);
+  const [description, setDescription] = useState('');
+  const [favourite, setFavourite] = useState(false);
+  const [destination, setDestination] = useState(PERSONAL);
   const [saving, setSaving] = useState(false);
 
   const workspaces = useMemo(
@@ -48,14 +62,27 @@ export function AddProject({ open, onClose, workspaceId = null }: AddProjectProp
     [snapshot.workspaces],
   );
 
-  /* Each opening starts clean, and starts in the space the caller named. */
+  /* Each opening starts from the project it was opened on, or from nothing. */
   useEffect(() => {
-    if (!open) return;
+    if (!target) return;
+    setSaving(false);
+    if (target.mode === 'edit') {
+      const project = snapshot.projects[target.projectId];
+      setName(project?.name ?? '');
+      setColor(project?.color ?? 'charcoal');
+      setDescription(project?.description ?? '');
+      setFavourite(project?.is_favorite ?? false);
+      setDestination(project?.workspace_id ?? PERSONAL);
+      return;
+    }
     setName('');
     setColor('charcoal');
-    setDestination(workspaceId ?? PERSONAL);
-    setSaving(false);
-  }, [open, workspaceId]);
+    setDescription('');
+    setFavourite(false);
+    setDestination(target.workspaceId ?? PERSONAL);
+    // Reading the project once, on opening, is the point: later edits are ours.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [target]);
 
   const destinations = useMemo(
     () => [
@@ -66,16 +93,38 @@ export function AddProject({ open, onClose, workspaceId = null }: AddProjectProp
   );
 
   async function submit() {
-    if (!name.trim() || saving) return;
+    if (!name.trim() || saving || !target) return;
     setSaving(true);
-    await createProject(name.trim(), color, destination === PERSONAL ? null : destination);
+
+    if (target.mode === 'edit') {
+      await updateProjectFields(target.projectId, {
+        name: name.trim(),
+        color,
+        description,
+        is_favorite: favourite,
+      });
+    } else {
+      await createProject(
+        name.trim(),
+        color,
+        destination === PERSONAL ? null : destination,
+        target.anchor ?? null,
+      );
+    }
     onClose();
   }
 
+  const isEdit = target?.mode === 'edit';
+
   return (
-    <Overlay open={open} onClose={onClose} label={t('project.create')} size="sm">
+    <Overlay
+      open={target !== null}
+      onClose={onClose}
+      label={isEdit ? t('project.edit') : t('project.create')}
+      size="sm"
+    >
       <div className="sheet-head">
-        <h2>{t('project.create')}</h2>
+        <h2>{isEdit ? t('project.edit') : t('project.create')}</h2>
         <button className="iconbtn" aria-label={t('common.close')} onClick={onClose}>
           <Icon name="close" />
         </button>
@@ -87,7 +136,11 @@ export function AddProject({ open, onClose, workspaceId = null }: AddProjectProp
           <span className="hash" style={markerStyle(color)}>#</span>
           <span className="projectpreview-name">{name.trim() || t('project.name')}</span>
           <span className="projectpreview-where">
-            {destinations.find((d) => d.value === destination)?.label}
+            {isEdit
+              ? (editing?.workspace_id
+                  ? snapshot.workspaces[editing.workspace_id]?.name
+                  : t('nav.myProjects'))
+              : destinations.find((d) => d.value === destination)?.label}
           </span>
         </div>
 
@@ -101,6 +154,20 @@ export function AddProject({ open, onClose, workspaceId = null }: AddProjectProp
             placeholder={t('project.namePlaceholder')}
             onChange={(e) => setName(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') void submit(); }}
+          />
+        </div>
+
+        <div className="formfield">
+          <label className="fieldlabel" htmlFor="project-description">
+            {t('project.description')}
+          </label>
+          <textarea
+            id="project-description"
+            className="textfield textarea"
+            rows={2}
+            value={description}
+            placeholder={t('project.descriptionPlaceholder')}
+            onChange={(e) => setDescription(e.target.value)}
           />
         </div>
 
@@ -125,16 +192,28 @@ export function AddProject({ open, onClose, workspaceId = null }: AddProjectProp
           </div>
         </div>
 
-        {/* Only worth asking when there is somewhere else for it to go. */}
-        {workspaces.length > 0 && (
-          <div className="formfield">
-            <Select
-              label={t('project.destination')}
-              value={destination}
-              options={destinations}
-              onChange={setDestination}
+        {isEdit ? (
+          <label className="checkrow">
+            <input
+              type="checkbox"
+              checked={favourite}
+              onChange={() => setFavourite((v) => !v)}
             />
-          </div>
+            <Icon name="star" size="sm" />
+            <span>{t('project.favourite')}</span>
+          </label>
+        ) : (
+          /* Only worth asking when there is somewhere else for it to go. */
+          workspaces.length > 0 && (
+            <div className="formfield">
+              <Select
+                label={t('project.destination')}
+                value={destination}
+                options={destinations}
+                onChange={setDestination}
+              />
+            </div>
+          )
         )}
       </div>
 
@@ -145,7 +224,7 @@ export function AddProject({ open, onClose, workspaceId = null }: AddProjectProp
           disabled={!name.trim() || saving}
           onClick={() => void submit()}
         >
-          {t('project.createSubmit')}
+          {isEdit ? t('project.save') : t('project.createSubmit')}
         </button>
       </div>
     </Overlay>

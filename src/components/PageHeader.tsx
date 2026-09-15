@@ -5,7 +5,8 @@ import { formatDuration } from '@/domain/estimates';
 import type { LoadSummary } from '@/domain/load';
 
 interface PageHeaderProps {
-  title: string;
+  /** A node, not a string: a project's title renames in place. */
+  title: ReactNode;
   /** Real content only — a project's description. Never a description of the view. */
   subtitle?: ReactNode;
   /** Display and Insights: the controls for this page, on the title line. */

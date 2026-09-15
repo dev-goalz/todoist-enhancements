@@ -13,7 +13,7 @@ import {
   type DisplayPriority, type Item, type Snapshot, type ViewPrefs,
 } from '@/domain/types';
 import { withEstimate } from '@/domain/estimates';
-import { detectLocale, type Locale } from '@/i18n';
+import { detectLocale, translate, type Locale } from '@/i18n';
 import { buildDemoSnapshot } from '@/demo/demoData';
 import {
   defaultPreferences, hydratePreferences, viewPrefs as readViewPrefs,
@@ -77,11 +77,36 @@ interface AppState {
   setTaskLabels: (id: string, labels: string[]) => Promise<void>;
   setTaskPriority: (id: string, priority: DisplayPriority) => Promise<void>;
   setLabelFavourite: (id: string, favourite: boolean) => Promise<void>;
+  /**
+   * Creates a tag.
+   *
+   * Todoist will accept a label name on a task it has never seen, but the tag
+   * only becomes a thing you can find, colour and favourite once it exists as
+   * a label of its own — so it is created outright rather than left implied.
+   */
+  createLabel: (name: string, color?: string) => Promise<void>;
   /** Puts the tags in this order, which is also the order of the sidebar's favourites. */
   reorderLabels: (ids: string[]) => Promise<void>;
   skipOccurrence: (id: string) => Promise<void>;
   /** Creates a project, in a workspace when one is named and personal when not. */
-  createProject: (name: string, color: string, workspaceId?: string | null) => Promise<void>;
+  createProject: (
+    name: string,
+    color: string,
+    workspaceId?: string | null,
+    /** Places the new project next to an existing one instead of at the end. */
+    anchor?: { siblingId: string; position: 'above' | 'below' } | null,
+  ) => Promise<void>;
+  /** Puts a project out of sight without destroying it. Todoist keeps the tasks. */
+  archiveProject: (id: string) => Promise<void>;
+  /** Deletes a project and everything in it. Todoist holds it for seven days. */
+  deleteProject: (id: string) => Promise<void>;
+  /**
+   * Copies a project: its sections, and the open tasks inside them.
+   *
+   * Completed tasks, comments and history stay with the original — a copy is a
+   * new start on the same shape of work, not a second record of the old one.
+   */
+  duplicateProject: (id: string, name: string) => Promise<void>;
   updateProjectFields: (id: string, args: Record<string, unknown>) => Promise<void>;
   updateSectionFields: (id: string, args: Record<string, unknown>) => Promise<void>;
   /** Creates a section at `index` and hands back its id, so the caller can focus its name. */
@@ -120,10 +145,16 @@ function schedulePersist(snapshot: Snapshot) {
  * as Todoist worded it rather than guessed at.
  */
 function explainFailure(error: string, locale: Locale): string {
-  if (!/limit/i.test(error)) return error;
+  const limit = /limit|maximum|quota|exceed|reached|too many/i.test(error);
+  const said = error.trim() || (locale === 'fr' ? 'Todoist a refusé' : 'Todoist refused it');
+  if (!limit) {
+    return locale === 'fr'
+      ? `Todoist a refusé : ${said}. La modification n’a pas été enregistrée.`
+      : `Todoist refused this: ${said}. The change was not saved.`;
+  }
   return locale === 'fr'
-    ? `${error} — c’est une limite de votre compte Todoist, pas de cette application. La modification n’a pas été enregistrée.`
-    : `${error} — this is a limit on your Todoist account, not on this app. The change was not saved.`;
+    ? `${said} — c’est une limite de votre compte ou de votre espace de travail Todoist, pas de cette application. La modification n’a pas été enregistrée.`
+    : `${said} — this is a limit on your Todoist account or workspace, not on this app. The change was not saved.`;
 }
 
 export const useStore = create<AppState>((set, get) => ({
@@ -315,11 +346,17 @@ export const useStore = create<AppState>((set, get) => ({
       if (tempIds.length > 0) {
         const items = { ...merged.items };
         const projects = { ...merged.projects };
+        const sections = { ...merged.sections };
+        const labels = { ...merged.labels };
         for (const tempId of tempIds) {
           delete items[tempId];
           delete projects[tempId];
+          // Sections and labels are created under a temp id too, and a
+          // placeholder left behind is a second copy on screen.
+          delete sections[tempId];
+          delete labels[tempId];
         }
-        merged = { ...merged, items, projects };
+        merged = { ...merged, items, projects, sections, labels };
       }
 
       set({ snapshot: merged, syncState: 'idle' });
@@ -334,12 +371,17 @@ export const useStore = create<AppState>((set, get) => ({
         get().toast(explainFailure(failures[0].error, get().prefs.locale));
       }
     } catch (error) {
-      if (navigator.onLine && error instanceof ApiError && !error.isAuthError) {
-        // Todoist refused the change outright, so the screen must not keep it.
-        set({ snapshot: before, syncState: 'error' });
+      if (error instanceof ApiError && error.isRefusal) {
+        /* Todoist refused the change outright. The screen must not keep it,
+           the queue must not keep retrying it, and — the part that was missing
+           — the person who asked for it has to be told. A change that vanishes
+           without a word is indistinguishable from one that never registered
+           the click. */
+        set({ snapshot: before, syncState: 'idle' });
         schedulePersist(before);
         await idb.dequeue(commands.map((c) => c.uuid));
         set({ pendingCount: Math.max(0, get().pendingCount - commands.length) });
+        get().toast(explainFailure(error.detail, get().prefs.locale));
       } else {
         // Network trouble: the change stays queued and goes out on the next sync.
         set({ syncState: 'offline' });
@@ -477,6 +519,34 @@ export const useStore = create<AppState>((set, get) => ({
     await get().refresh();
   },
 
+  async createLabel(name, color = 'charcoal') {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+
+    // Todoist tag names carry no spaces, and neither does the @ syntax.
+    const clean = trimmed.replace(/\s+/g, '-');
+    const existing = Object.values(get().snapshot.labels).find(
+      (label) => label.name.toLowerCase() === clean.toLowerCase(),
+    );
+    if (existing) return;
+
+    const tempId = newUuid();
+    const order = Object.keys(get().snapshot.labels).length + 1;
+    await get().apply(
+      [{ type: 'label_add', uuid: newUuid(), temp_id: tempId, args: { name: clean, color } }],
+      (snapshot) => ({
+        ...snapshot,
+        labels: {
+          ...snapshot.labels,
+          [tempId]: {
+            id: tempId, name: clean, color,
+            item_order: order, is_favorite: false, is_deleted: false,
+          },
+        },
+      }),
+    );
+  },
+
   async setLabelFavourite(id, favourite) {
     await get().apply(
       [command('label_update', { id, is_favorite: favourite })],
@@ -505,28 +575,165 @@ export const useStore = create<AppState>((set, get) => ({
     );
   },
 
-  async createProject(name, color, workspaceId = null) {
+  async createProject(name, color, workspaceId = null, anchor = null) {
     const tempId = newUuid();
+    const snapshot = get().snapshot;
+    const sibling = anchor ? snapshot.projects[anchor.siblingId] : undefined;
+
     /* Todoist reads the absence of workspace_id as the personal space, so the
        key is left off entirely rather than sent as null. */
     const args: Record<string, unknown> = { name, color };
     if (workspaceId) args.workspace_id = workspaceId;
+    if (sibling?.parent_id) args.parent_id = sibling.parent_id;
 
-    await get().apply(
-      [{ type: 'project_add', uuid: newUuid(), args, temp_id: tempId }],
-      (snapshot) => ({
-        ...snapshot,
-        projects: {
-          ...snapshot.projects,
-          [tempId]: {
-            id: tempId, name, color, parent_id: null,
-            child_order: Object.keys(snapshot.projects).length,
-            is_archived: false, is_deleted: false, is_favorite: false,
-            workspace_id: workspaceId,
-          },
+    const commands: Command[] = [];
+
+    /* "Above" and "below" mean a position among the siblings, which is a
+       child_order. The new project is given the one it should hold, and every
+       sibling from there down is pushed one place to make room — with their
+       real ids, so no command has to resolve a temp id to do its work. */
+    let childOrder = Object.keys(snapshot.projects).length;
+    if (sibling) {
+      const siblings = Object.values(snapshot.projects)
+        .filter((project) =>
+          !project.is_archived &&
+          !project.is_deleted &&
+          !project.inbox_project &&
+          (project.parent_id ?? null) === (sibling.parent_id ?? null) &&
+          (project.workspace_id ?? null) === (sibling.workspace_id ?? null))
+        .sort((a, b) => a.child_order - b.child_order);
+
+      const at = siblings.findIndex((project) => project.id === sibling.id);
+      const insertAt = anchor?.position === 'above' ? at : at + 1;
+      childOrder = insertAt + 1;
+
+      const shifted = siblings.slice(insertAt).map((project, offset) => ({
+        id: project.id,
+        child_order: insertAt + offset + 2,
+      }));
+      if (shifted.length > 0) {
+        commands.push(command('project_reorder', { projects: shifted }));
+      }
+    }
+    args.child_order = childOrder;
+
+    commands.unshift({ type: 'project_add', uuid: newUuid(), args, temp_id: tempId });
+
+    await get().apply(commands, (current) => ({
+      ...current,
+      projects: {
+        ...current.projects,
+        [tempId]: {
+          id: tempId, name, color,
+          parent_id: (sibling?.parent_id ?? null),
+          child_order: childOrder,
+          is_archived: false, is_deleted: false, is_favorite: false,
+          workspace_id: sibling ? (sibling.workspace_id ?? null) : workspaceId,
         },
-      }),
-    );
+      },
+    }));
+  },
+
+  async archiveProject(id) {
+    const project = get().snapshot.projects[id];
+    if (!project) return;
+    await get().apply([command('project_archive', { id })], (snapshot) => ({
+      ...snapshot,
+      projects: { ...snapshot.projects, [id]: { ...project, is_archived: true } },
+    }));
+    get().toast(translate(get().prefs.locale, 'project.archived', { name: project.name }));
+  },
+
+  async deleteProject(id) {
+    const snapshot = get().snapshot;
+    const project = snapshot.projects[id];
+    if (!project) return;
+
+    await get().apply([command('project_delete', { id })], (current) => {
+      const projects = { ...current.projects };
+      const sections = { ...current.sections };
+      const items = { ...current.items };
+      delete projects[id];
+      // The tasks and sections go with it, so the screen must not keep them.
+      for (const section of Object.values(sections)) {
+        if (section.project_id === id) delete sections[section.id];
+      }
+      for (const item of Object.values(items)) {
+        if (item.project_id === id) delete items[item.id];
+      }
+      return { ...current, projects, sections, items };
+    });
+    get().toast(translate(get().prefs.locale, 'project.deleted', { name: project.name }));
+  },
+
+  async duplicateProject(id, name) {
+    const snapshot = get().snapshot;
+    const source = snapshot.projects[id];
+    if (!source) return;
+
+    const projectTempId = newUuid();
+    const commands: Command[] = [{
+      type: 'project_add',
+      uuid: newUuid(),
+      temp_id: projectTempId,
+      args: {
+        name,
+        color: source.color,
+        ...(source.workspace_id ? { workspace_id: source.workspace_id } : {}),
+        ...(source.description ? { description: source.description } : {}),
+      },
+    }];
+
+    /* Sections first, so the tasks that belong to one have somewhere to land.
+       Todoist resolves a temp id used as an argument inside the same call, so
+       the whole copy is one round trip and can never half-exist. */
+    const sectionTempIds = new Map<string, string>();
+    for (const section of Object.values(snapshot.sections)
+      .filter((s) => s.project_id === id && !s.is_archived && !s.is_deleted)
+      .sort((a, b) => a.section_order - b.section_order)) {
+      const tempId = newUuid();
+      sectionTempIds.set(section.id, tempId);
+      commands.push({
+        type: 'section_add',
+        uuid: newUuid(),
+        temp_id: tempId,
+        args: { name: section.name, project_id: projectTempId },
+      });
+    }
+
+    for (const item of Object.values(snapshot.items)
+      .filter((i) => i.project_id === id && !i.checked && !i.is_deleted)
+      .sort((a, b) => a.child_order - b.child_order)) {
+      commands.push({
+        type: 'item_add',
+        uuid: newUuid(),
+        temp_id: newUuid(),
+        args: {
+          content: item.content,
+          description: item.description || undefined,
+          project_id: projectTempId,
+          section_id: item.section_id ? sectionTempIds.get(item.section_id) : undefined,
+          priority: item.priority,
+          labels: item.labels,
+          due: item.due ?? undefined,
+        },
+      });
+    }
+
+    await get().apply(commands, (current) => ({
+      ...current,
+      projects: {
+        ...current.projects,
+        [projectTempId]: {
+          ...source,
+          id: projectTempId,
+          name,
+          is_favorite: false,
+          child_order: source.child_order + 1,
+        },
+      },
+    }));
+    get().toast(translate(get().prefs.locale, 'project.duplicated', { name }));
   },
 
   async updateProjectFields(id, args) {
@@ -667,12 +874,24 @@ async function flushQueue(
 
   const commands: Command[] = queue.map(({ queuedAt: _q, attempts: _a, ...cmd }) => cmd);
   try {
-    const { response } = await sendCommands(get().snapshot.syncToken, commands);
+    const { response, failures } = await sendCommands(get().snapshot.syncToken, commands);
     const merged = applySync(get().snapshot, response);
     set({ snapshot: merged });
     await idb.dequeue(commands.map((c) => c.uuid));
     set({ pendingCount: 0 });
-  } catch {
-    // Still unreachable or refused; the queue is left alone and retried later.
+    if (failures.length > 0) {
+      get().toast(explainFailure(failures[0].error, get().prefs.locale));
+    }
+  } catch (error) {
+    /* A refusal will be refused again. Left in the queue it goes out on every
+       sync for ever, holding a pending count that never falls and a change
+       that never lands, so it is dropped here and reported once. */
+    if (error instanceof ApiError && error.isRefusal) {
+      await idb.dequeue(commands.map((c) => c.uuid));
+      set({ pendingCount: 0 });
+      get().toast(explainFailure(error.detail, get().prefs.locale));
+      return;
+    }
+    // Still unreachable; the queue is left alone and retried later.
   }
 }

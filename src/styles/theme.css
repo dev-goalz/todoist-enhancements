@@ -1260,3 +1260,100 @@
 /* The ring stands a little off the rows rather than cutting through them. */
 .group.dropping{outline:2px solid var(--accent);outline-offset:8px;border-radius:var(--r-lg)}
 .col.dropping{box-shadow:inset 0 0 0 2px var(--accent);border-color:var(--accent)}
+
+/* ==========================================================================
+   Project actions
+   ==========================================================================
+   The count on a sidebar row gives up its place to a three-dot button under
+   the pointer, which is where Todoist puts it and where the hand already is.
+   Both live in the same slot so nothing moves when they swap.
+   ========================================================================== */
+.navrow{position:relative;display:flex;align-items:center}
+.navrow .navitem{padding-right:34px}
+.navend{
+  position:absolute;right:6px;top:50%;transform:translateY(-50%);
+  display:grid;place-items:center;pointer-events:none;
+}
+.navend > *{grid-area:1/1}
+.navend .count{
+  color:var(--faint);font-size:var(--fs-12);font-variant-numeric:tabular-nums;
+}
+.navmore{
+  width:22px;height:22px;display:grid;place-items:center;
+  border-radius:var(--r-xs);color:var(--muted);opacity:0;pointer-events:none;
+}
+/* Swap them: on hover, on keyboard focus, and while the menu it opens is up. */
+.navrow:hover .navend .count,
+.navrow:focus-within .navend .count,
+.navrow.menuopen .navend .count{opacity:0}
+.navrow:hover .navmore,
+.navrow:focus-within .navmore,
+.navrow.menuopen .navmore{opacity:1;pointer-events:auto}
+.navmore:hover{background:var(--hover);color:var(--text)}
+.navrow.menuopen .navmore{background:var(--hover);color:var(--text)}
+
+/* A touch screen has no pointer to reveal anything with. */
+@media (hover:none){
+  .navend .count{opacity:0}
+  .navmore{opacity:1;pointer-events:auto}
+}
+
+/* ---------- The menu itself ---------- */
+/* Fixed and in the document, not in the sidebar: a scrolling box clips what
+   is drawn inside it, and this menu is taller than the row it belongs to. */
+.projectmenu{
+  position:fixed;z-index:90;
+  min-width:226px;max-width:min(260px,calc(100vw - 16px));padding:var(--s2);
+}
+/* An icon then its label, hard against the left. The shared option row pushes
+   its two halves apart, which is right for a setting with a value and wrong
+   for a verb with a glyph. */
+.projectmenu .opt{justify-content:flex-start;gap:10px}
+.projectmenu .opt > span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.projectmenu .opt .ic{flex:0 0 auto;color:var(--faint)}
+.projectmenu .opt:hover .ic{color:var(--muted)}
+.projectmenu .opt.danger{color:var(--accent)}
+.projectmenu .opt.danger .ic{color:var(--accent)}
+.projectmenu .opt.danger:hover{background:var(--accent-tint)}
+.pmenu-wrap{position:relative;display:inline-flex}
+
+/* ---------- Renaming a project from its own page ---------- */
+/* It reads as the heading it replaces, and is the field the whole time, so
+   nothing shifts under the pointer at the moment you aim at it. */
+.titlefield{
+  max-width:100%;padding:2px 6px;margin-left:-6px;
+  border:1px solid transparent;border-radius:var(--r-sm);background:transparent;
+  color:inherit;font:inherit;font-size:inherit;font-weight:inherit;
+  letter-spacing:inherit;line-height:inherit;
+}
+.titlefield:hover{border-color:var(--border)}
+.titlefield:focus{outline:none;border-color:var(--accent);background:var(--surface)}
+
+/* A description box in the project sheet, matching its text field. */
+.textfield.textarea{
+  min-height:0;padding:9px 12px;resize:vertical;line-height:1.5;
+}
+
+/* ---------- Making a tag ---------- */
+/* One line, on the page the tags are already on. A tag is a name and nothing
+   else; everything else about it is set on the card it becomes. */
+.tagadd{
+  display:flex;align-items:center;gap:10px;
+  margin:var(--s4) 0 0;padding:8px 12px;
+  border:1px solid var(--border);border-radius:var(--r-md);background:var(--surface);
+}
+.tagadd:focus-within{border-color:var(--accent)}
+.tagadd > .ic{flex:0 0 auto;color:var(--faint)}
+.tagadd input{
+  flex:1;min-width:0;border:0;background:transparent;color:var(--text);
+  font:inherit;font-size:var(--fs-14);
+}
+.tagadd input:focus{outline:none}
+.tagadd input::placeholder{color:var(--faint)}
+.tagadd .btn{flex:0 0 auto;min-height:28px;font-size:var(--fs-12)}
+
+/* The "new tag" line in the @ picker says what it will do. */
+.namepicker-new{
+  margin-left:auto;flex:0 0 auto;
+  color:var(--faint);font-size:var(--fs-11);font-weight:600;
+}
