@@ -1252,3 +1252,123 @@
 /* The ring stands a little off the rows rather than cutting through them. */
 .group.dropping{outline:2px solid var(--accent);outline-offset:8px;border-radius:var(--r-lg)}
 .col.dropping{box-shadow:inset 0 0 0 2px var(--accent);border-color:var(--accent)}
+
+/* ==========================================================================
+   Review
+   ==========================================================================
+   One question on screen at a time, and a rail that says how many are left.
+   A review people abandon is a review with no visible end, so the end is the
+   first thing it shows.
+   ========================================================================== */
+.reviewcadence{width:auto;grid-auto-columns:max-content}
+.reviewcadence button{padding:0 12px}
+
+/* ---------- The rail ---------- */
+.reviewrail{
+  display:flex;flex-wrap:wrap;gap:4px;
+  margin:var(--s4) 0 var(--s5);padding:0;list-style:none;
+}
+.reviewpip{
+  display:inline-flex;align-items:center;gap:7px;
+  min-height:30px;padding:0 10px 0 6px;border-radius:var(--r-full);
+  color:var(--muted);font-size:var(--fs-12);font-weight:600;
+}
+.reviewpip:hover{background:var(--hover);color:var(--text)}
+.reviewpip-dot{
+  width:20px;height:20px;flex:0 0 auto;display:grid;place-items:center;
+  border-radius:var(--r-full);border:1px solid var(--border-strong);
+  background:var(--surface);font-size:10px;font-weight:700;
+}
+.reviewpip-dot .ic{width:11px;height:11px}
+/* Settled is a tick, outstanding is the number of things still in it. */
+.reviewpip.clear .reviewpip-dot{border-color:var(--ok);color:var(--ok)}
+.reviewpip:not(.clear) .reviewpip-dot{border-color:var(--accent);color:var(--accent)}
+.reviewpip.current{background:var(--accent-soft);color:var(--accent-dark)}
+.reviewpip.current .reviewpip-dot{border-color:var(--accent);background:var(--accent);color:#fff}
+.reviewpip.passed:not(.current){opacity:.75}
+
+/* ---------- The question ---------- */
+.reviewstep h2{font-size:var(--fs-20);font-weight:700;letter-spacing:-.015em}
+.reviewask{
+  max-width:64ch;margin:6px 0 var(--s4);
+  color:var(--muted);font-size:var(--fs-13);line-height:1.6;text-wrap:pretty;
+}
+
+/* ---------- The rows ---------- */
+.reviewlist{display:grid;border-top:1px solid var(--border)}
+.reviewrow{
+  display:grid;grid-template-columns:18px minmax(0,1fr) auto;
+  gap:12px;align-items:center;padding:10px 0;
+  border-bottom:1px solid var(--border);
+}
+.reviewrow .check{margin-top:0}
+.reviewname{display:grid;gap:3px;min-width:0;text-align:left}
+/* A project is one line, not a title over a meta row, so it lays out across. */
+.reviewname.as-row{display:flex;align-items:center;gap:8px}
+/* And its row has no completion control to leave a column for. */
+.reviewrow.project{grid-template-columns:minmax(0,1fr) auto}
+.reviewname.as-text{cursor:default}
+.reviewname .ttitle{
+  display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font-size:var(--fs-14);
+}
+.reviewname .meta{margin-top:0}
+.reviewrow.done .ttitle{color:var(--muted);text-decoration:line-through}
+/* A finished task wears the same filled tick it wears everywhere else. */
+.reviewrow.done .check{color:#fff;border-color:var(--ok);background:var(--ok)}
+.reviewrow .hash{flex:0 0 auto}
+
+/* Three buttons, and the review is pressing one of them. They are quiet at
+   rest and step forward under the pointer, because a row of loud buttons on
+   every line is a page nobody wants to read. */
+.reviewactions{display:flex;flex-wrap:wrap;gap:4px;justify-self:end}
+/* Always drawn, never revealed on hover: these buttons are the review, not a
+   secondary action on a row, and half the devices that will open this page
+   have no pointer to reveal anything with. Quiet at rest, firmer under one. */
+.reviewactions .btn{
+  min-height:28px;padding:0 9px;font-size:var(--fs-12);
+  border-color:var(--border);color:var(--muted);
+}
+.reviewrow:hover .reviewactions .btn,
+.reviewrow:focus-within .reviewactions .btn{border-color:var(--border-strong);color:var(--text)}
+.reviewactions .btn:hover{border-color:var(--accent);color:var(--accent-dark)}
+.reviewquiet{color:var(--faint);font-size:var(--fs-12);white-space:nowrap}
+.reviewtally{margin:0 0 var(--s3);color:var(--muted);font-size:var(--fs-13);font-weight:600}
+
+/* ---------- The steps that report a number ---------- */
+.reviewload{display:flex;flex-wrap:wrap;gap:var(--s5) var(--s6);padding:var(--s4) 0}
+.reviewload-fig{display:grid;gap:3px}
+.reviewload-fig b{font-size:var(--fs-26);font-weight:700;letter-spacing:-.02em;line-height:1}
+.reviewload-fig b.loadpill{justify-self:start;font-size:var(--fs-20)}
+.reviewload-fig small{color:var(--faint);font-size:var(--fs-12)}
+
+/* ---------- Nothing to settle ---------- */
+.reviewsettled{
+  display:flex;align-items:center;gap:8px;
+  padding:var(--s4) 0;margin:0;color:var(--ok);font-size:var(--fs-14);font-weight:600;
+}
+
+/* ---------- Moving through it ---------- */
+.reviewfoot{
+  position:sticky;bottom:0;z-index:2;
+  display:flex;align-items:center;gap:var(--s3);
+  margin-top:var(--s5);padding:var(--s3) 0 var(--s4);
+  border-top:1px solid var(--border);background:var(--surface);
+}
+.reviewcount{margin:0 auto;color:var(--faint);font-size:var(--fs-12)}
+
+/* ---------- The end ---------- */
+.reviewdone{display:grid;justify-items:center;gap:var(--s2);padding:var(--s6) 0;text-align:center}
+.reviewdone-mark{
+  width:44px;height:44px;display:grid;place-items:center;margin-bottom:var(--s2);
+  border-radius:var(--r-full);color:#fff;background:var(--ok);
+}
+.reviewdone h2{font-size:var(--fs-20);font-weight:700}
+.reviewdone p{max-width:48ch;color:var(--muted);font-size:var(--fs-14);line-height:1.6;text-wrap:pretty}
+.reviewdone-actions{display:flex;gap:var(--s2);margin-top:var(--s3)}
+
+@media (max-width:720px){
+  .reviewrow{grid-template-columns:18px minmax(0,1fr);row-gap:8px}
+  .reviewactions{grid-column:2;justify-self:start}
+  .reviewquiet{grid-column:2}
+}

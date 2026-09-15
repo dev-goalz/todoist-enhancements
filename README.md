@@ -103,6 +103,27 @@ and labelled for the week, a task carrying two estimates, a "quick" task
 estimated at forty minutes. These are listed with the options that match each
 possible intent, and nothing changes until you choose one.
 
+### Daily and weekly review
+
+A planning tool is only worth having if you look at it, and looking at
+everything at once is what stops people. The review asks one question at a
+time, in an order, with an end.
+
+The daily pass takes a few minutes: what is late, what was captured and never
+filed, what you committed to this week without naming a day, and what today
+actually holds against the capacity you set. Each row offers three answers —
+today, this week, or park it — and pressing one makes exactly the change
+dragging the task there would make.
+
+The weekly pass is longer: what you finished, what slipped, what is still
+unfiled, what is in play with no estimate, which projects have gone quiet, the
+backlog, and what next week is being asked to carry. When the last question is
+answered it says so and stops.
+
+It stores nothing of its own. There is no per-project review interval here,
+because there is nowhere in Todoist to keep one, and a review that needs its
+own hidden state is a review that breaks the promise the rest of this makes.
+
 ### Also included
 
 - Upcoming, Someday and Inbox views, plus project and tag pages. Tags can be
