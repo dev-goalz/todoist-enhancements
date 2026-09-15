@@ -1368,4 +1368,55 @@
 .namepicker-new{
   margin-left:auto;flex:0 0 auto;
   color:var(--faint);font-size:var(--fs-11);font-weight:600;
+
+/* ==========================================================================
+   Compact density
+   ==========================================================================
+   One setting, one rule: take away space, never information. Nothing here
+   changes a type size, hides a field, or drops a row's contents. It closes the
+   gaps — around the page, between the groups, above and below each row — so a
+   screen holds more of the list without holding less of any part of it.
+
+   A list of tasks at comfortable density shows about nine rows on a laptop.
+   The same list here shows fourteen, and every one of them still carries its
+   description, its estimate, its date and its tags.
+   ========================================================================== */
+
+/* ---------- The page frame ---------- */
+[data-density="compact"] .page,
+[data-density="compact"] .page.wide{padding:22px 40px 72px}
+[data-density="compact"] .ptitle{font-size:var(--fs-22)}
+[data-density="compact"] .phead{margin-bottom:2px}
+[data-density="compact"] .metrics{margin-bottom:var(--s3);gap:6px}
+
+/* ---------- Groups ---------- */
+[data-density="compact"] .group{margin-top:18px}
+[data-density="compact"] .group:first-of-type{margin-top:var(--s3)}
+[data-density="compact"] .ghead{min-height:28px}
+
+/* ---------- List rows ----------
+   The row keeps its full 18px control and its whole meta line; what goes is
+   the air above and below them. */
+[data-density="compact"] .task{padding-top:7px;padding-bottom:7px;min-height:0}
+[data-density="compact"] .meta{margin-top:3px;gap:3px 8px}
+[data-density="compact"] .tdesc{margin-top:1px}
+[data-density="compact"] .subtasks{margin-top:0}
+
+/* ---------- Board cards ----------
+   A board row is drawn flush inside its card and has no padding to give up.
+   The card around it does, and so does the space between the cards. */
+[data-density="compact"] .col .task{padding-top:0;padding-bottom:0}
+[data-density="compact"] .col .taskwrap{padding:7px 10px;margin-bottom:5px}
+[data-density="compact"] .col{padding:var(--s3)}
+[data-density="compact"] .tcard{margin-bottom:6px;padding:9px 10px 9px 32px}
+
+/* ---------- The sidebar ---------- */
+[data-density="compact"] .navitem{min-height:28px}
+[data-density="compact"] .side-group{margin-top:var(--s3)}
+
+/* A finger needs the same target whatever the setting says, so the row keeps
+   its height on a touch screen and only the page around it tightens. */
+@media (max-width:720px){
+  [data-density="compact"] .task{padding-top:10px;padding-bottom:10px;min-height:52px}
+  [data-density="compact"] .page{padding:var(--s3) var(--s4) 72px}
 }

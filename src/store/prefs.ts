@@ -11,6 +11,20 @@ export const HOME_VIEWS = [
 
 export type HomeView = (typeof HOME_VIEWS)[number];
 
+/**
+ * How much room a list gives each task.
+ *
+ * Comfortable is the layout the product was designed at. Compact tightens the
+ * space around things without touching the things themselves: the same type at
+ * the same size, the same information on every row, and the same targets to
+ * press. It is a shorter page, not a smaller one.
+ */
+export const DENSITIES = ['comfortable', 'compact'] as const;
+export type Density = (typeof DENSITIES)[number];
+
+export const isDensity = (value: unknown): value is Density =>
+  typeof value === 'string' && (DENSITIES as readonly string[]).includes(value);
+
 export const isHomeView = (value: unknown): value is HomeView =>
   typeof value === 'string' && (HOME_VIEWS as readonly string[]).includes(value);
 
@@ -32,6 +46,8 @@ export interface Preferences {
   showQuickGroup: boolean;
   conflicts: ConflictSettings;
   sidebarCollapsed: boolean;
+  /** How much room a list gives each task. */
+  density: Density;
   /** Filters, grouping, sorting and mode are remembered per view. */
   views: Record<string, ViewPrefs>;
   upcomingHorizonDays: number;
@@ -47,6 +63,7 @@ export const defaultPreferences = (locale: Locale): Preferences => ({
   showQuickGroup: true,
   conflicts: defaultConflictSettings(),
   sidebarCollapsed: false,
+  density: 'comfortable',
   views: {},
   upcomingHorizonDays: 15,
 });
@@ -72,6 +89,7 @@ export function hydratePreferences(stored: unknown, locale: Locale): Preferences
     conflicts: { ...base.conflicts, ...(s.conflicts ?? {}) },
     // A homepage stored by an older build may name a view that no longer exists.
     homepage: isHomeView(s.homepage) ? s.homepage : base.homepage,
+    density: isDensity(s.density) ? s.density : base.density,
     views: s.views ?? {},
   };
 }
