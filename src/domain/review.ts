@@ -69,7 +69,7 @@ export interface ReviewInput {
 }
 
 const STEPS: Record<ReviewCadence, ReviewStepId[]> = {
-  daily: ['overdue', 'inbox', 'anytime', 'today'],
+  daily: ['overdue', 'inbox', 'anytime', 'unestimated', 'today'],
   weekly: ['done', 'stats', 'slipped', 'inbox', 'unestimated', 'quiet', 'backlog'],
 };
 
@@ -117,6 +117,7 @@ function quietProjects(input: ReviewInput): Project[] {
 function contentOf(
   id: ReviewStepId,
   input: ReviewInput,
+  cadence: ReviewCadence,
 ): Pick<ReviewStep, 'items' | 'projects' | 'completed'> {
   const empty = { items: [] as Item[], projects: [] as Project[], completed: [] as CompletedItem[] };
   const { roots, now } = input;
@@ -144,13 +145,17 @@ function contentOf(
       };
 
     case 'unestimated':
-      /* Only the week being planned. An estimate on something six months out
-         is a guess about a guess, and the review will ask again nearer the time. */
+      /* Only the work being planned. An estimate on something six months out
+         is a guess about a guess, and the review will ask again nearer the
+         time. The daily pass narrows it further to what today actually holds,
+         because the number that matters today is today's. */
       return {
         ...empty,
         items: roots.filter((i) => {
           const bucket = bucketOf(i, now);
-          const inPlay = bucket === 'overdue' || bucket === 'today' || bucket === 'anytime';
+          const inPlay = cadence === 'daily'
+            ? bucket === 'overdue' || bucket === 'today'
+            : bucket === 'overdue' || bucket === 'today' || bucket === 'anytime';
           return inPlay && estimateOf(i) === null;
         }),
       };
@@ -202,7 +207,7 @@ const REPORT_ONLY: ReviewStepId[] = ['done', 'stats', 'quiet'];
 /** Builds every step of a review, in order. */
 export function buildReview(cadence: ReviewCadence, input: ReviewInput): ReviewStep[] {
   return stepsFor(cadence).map((id) => {
-    const content = contentOf(id, input);
+    const content = contentOf(id, input, cadence);
     const nothing =
       content.items.length === 0 &&
       content.projects.length === 0 &&

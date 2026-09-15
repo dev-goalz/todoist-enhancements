@@ -1256,15 +1256,11 @@
 /* ==========================================================================
    Review
    ==========================================================================
-   A measured column, not the full width of the workspace. This is a surface
-   for reading one question and answering it, and a decision that runs the
-   length of a wide screen puts its own buttons out of reach of its own text.
-
-   The frame is fixed: the question at the top, the answer below it, and the
-   same two controls in the same place on every step of both cadences. Only
-   the content between them changes.
+   The page is the width every other page is. The frame inside it is fixed:
+   the question at the top, the answer below it, and the same two controls in
+   the same place on every step of both cadences. Only the content between
+   them changes.
    ========================================================================== */
-.review{max-width:760px}
 .reviewhead{
   display:flex;align-items:center;justify-content:space-between;gap:var(--s4);
   flex-wrap:wrap;margin-bottom:var(--s4);
@@ -1311,6 +1307,13 @@
   flex-wrap:wrap;margin-bottom:var(--s3);
 }
 .reviewlist{display:grid;border-top:1px solid var(--border)}
+/* A long record scrolls inside itself, so reading it never moves the question
+   above it or the button that leaves the step. */
+.reviewlist.scrolls{
+  max-height:min(52vh,440px);overflow-y:auto;
+  border-bottom:1px solid var(--border);
+}
+.reviewlist.scrolls .reviewrow:last-child{border-bottom:0}
 .reviewrow{
   display:grid;grid-template-columns:18px minmax(0,1fr) auto;
   gap:12px;align-items:center;padding:9px 0;
@@ -1361,27 +1364,37 @@
 .reviewquiet{color:var(--faint);font-size:var(--fs-12);white-space:nowrap}
 .reviewtally{color:var(--muted);font-size:var(--fs-13);font-weight:600}
 
-/* ---------- The week in numbers ---------- */
-.reviewfigs{
-  display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
-  gap:var(--s3);
+/* ---------- Nothing to settle ----------
+   Worth more than a line of grey text: an empty step is the answer the review
+   was hoping for, and it should feel like one. */
+.reviewclear{
+  display:grid;justify-items:center;gap:6px;
+  padding:var(--s6) var(--s4);text-align:center;
+  border:1px dashed var(--border);border-radius:var(--r-lg);background:var(--subtle);
 }
-.reviewfig{
-  display:grid;gap:2px;align-content:start;
-  padding:var(--s3) var(--s4);border-radius:var(--r-md);background:var(--subtle);
+.reviewclear-mark{
+  width:34px;height:34px;display:grid;place-items:center;margin-bottom:2px;
+  border-radius:var(--r-full);background:var(--ok);
 }
-.reviewfig b{
-  font-size:var(--fs-22);font-weight:700;letter-spacing:-.02em;line-height:1.15;
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-}
-.reviewfig > span{color:var(--muted);font-size:var(--fs-12);font-weight:600}
-.reviewfig small{color:var(--faint);font-size:var(--fs-11);line-height:1.4}
+/* Set on the glyph, not inherited: a bare .ic rule elsewhere carries a colour
+   of its own, and an inherited one never reaches it. */
+.reviewclear-mark .ic,
+.reviewdone-mark .ic{color:#fff;width:18px;height:18px}
+.reviewclear strong{color:var(--text);font-size:var(--fs-15);font-weight:700}
+.reviewclear > span{max-width:44ch;color:var(--muted);font-size:var(--fs-13);line-height:1.5}
 
-/* ---------- Nothing to settle ---------- */
-.reviewsettled{
-  display:flex;align-items:center;gap:8px;
-  padding:var(--s4) 0;margin:0;color:var(--ok);font-size:var(--fs-14);font-weight:600;
+/* ---------- The week in numbers ---------- */
+/* The dashboard's own pieces, so the two never describe the same week in two
+   different visual languages. */
+.reviewbento{margin-top:0}
+.reviewsummary{display:grid;gap:var(--s3)}
+.reviewsummary-figs{display:flex;flex-wrap:wrap;gap:var(--s5) var(--s6)}
+.reviewsummary-figs > span{display:grid;gap:2px}
+.reviewsummary-figs b{
+  font-size:var(--fs-26);font-weight:700;letter-spacing:-.02em;line-height:1.1;
 }
+.reviewsummary-figs small{color:var(--muted);font-size:var(--fs-12);font-weight:600}
+.reviewsummary .psub{margin:0}
 
 /* ---------- Moving through it ---------- */
 .reviewfoot{

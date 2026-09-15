@@ -11,7 +11,12 @@ import { markerStyle } from '@/domain/colors';
 import { formatDuration, effectiveEstimate, withEstimate } from '@/domain/estimates';
 import { dueDate, formatRelativeDay } from '@/domain/dates';
 import { summariseInsights } from '@/domain/insights';
+import {
+  Bars, ChartCard, Donut, SplitBar, seriesColor,
+  type BarDatum, type SliceDatum,
+} from '@/components/charts';
 import { rangeFor } from '@/domain/periods';
+import { format, startOfDay } from 'date-fns';
 import { bucketOf } from '@/domain/views';
 import { toDisplayPriority, type CompletedItem, type Item } from '@/domain/types';
 import {
@@ -199,8 +204,11 @@ export function ReviewView({ onOpen }: ReviewViewProps) {
     /* Where the task is now, so the row can mark it. On the backlog step this
        is what makes "leave it here" read as an answer rather than as silence. */
     const bucket = bucketOf(item);
-    const current: ReviewAction | null =
-      bucket === 'today' ? 'today'
+    /* The Inbox marks nothing. A task sitting there has not been filed
+       anywhere yet, so "backlog" is a place it happens to fall out of the
+       rules rather than a decision anyone made about it. */
+    const current: ReviewAction | null = s.id === 'inbox' ? null
+      : bucket === 'today' ? 'today'
         : bucket === 'anytime' ? 'anytime'
           : bucket === 'someday' ? 'someday' : null;
 
@@ -315,7 +323,10 @@ export function ReviewView({ onOpen }: ReviewViewProps) {
           </div>
         </div>
 
-        <div className="reviewlist">
+        {/* The list scrolls, not the page under it. A week of finished work is
+            a thing to read through, and reading it should not move the
+            question, the rail, or the button that leaves the step. */}
+        <div className="reviewlist scrolls">
           {ordered.map((done) => <DoneRow key={done.id} done={done} />)}
         </div>
       </>
@@ -346,7 +357,7 @@ export function ReviewView({ onOpen }: ReviewViewProps) {
     );
   }
 
-  /** The week in figures, from the same completions the first step listed. */
+  /** The week in figures, drawn with the same pieces the dashboard uses. */
   function Stats() {
     const summary = useMemo(
       () => summariseInsights(step?.completed ?? [], roots, snapshot),
@@ -354,57 +365,92 @@ export function ReviewView({ onOpen }: ReviewViewProps) {
       [step?.completed, roots, snapshot],
     );
 
+    const byPriority: SliceDatum[] = useMemo(
+      () => ([1, 2, 3, 4] as const).map((p) => ({
+        key: `p${p}`,
+        label: t(`common.p${p}` as TranslationKey),
+        value: summary.priorities[`p${p}` as 'p1'],
+        color: `var(--p${p})`,
+      })),
+      [summary.priorities],
+    );
+
+    const byProject: SliceDatum[] = useMemo(
+      () => summary.byProject.map((entry, index) => ({
+        key: entry.projectId,
+        label: entry.name,
+        value: entry.count,
+        color: seriesColor(index),
+      })),
+      [summary.byProject],
+    );
+
+    /* The seven days of the week under review, in order, including the ones
+       nothing was finished on — a gap is part of the shape. */
+    const byDay: BarDatum[] = useMemo(() => {
+      const counts = new Map(summary.byDay.map((d) => [d.date, d.count]));
+      const todayKey = format(startOfDay(new Date()), 'yyyy-MM-dd');
+      return Array.from({ length: 7 }, (_, offset) => {
+        const day = new Date(weekRange.since.getTime() + offset * 86_400_000);
+        const key = format(day, 'yyyy-MM-dd');
+        return {
+          key,
+          label: new Intl.DateTimeFormat(locale, { weekday: 'narrow' }).format(day),
+          value: counts.get(key) ?? 0,
+          current: key === todayKey,
+        };
+      });
+    }, [summary.byDay]);
+
     if (loading && summary.completedCount === 0) {
       return <p className="reviewquiet">{t('common.loading')}</p>;
     }
 
-    const busiest = [...summary.byDay].sort((a, b) => b.count - a.count)[0];
-    const top = summary.byProject[0];
-
     return (
-      <div className="reviewfigs">
-        <Fig value={String(summary.completedCount)} label={t('review.fig.finished')} />
-        <Fig
-          value={formatDuration(summary.completedMinutes, locale)}
-          label={t('review.fig.time')}
-          note={summary.completedWithoutEstimate > 0
-            ? t('review.fig.timeNote', { count: summary.completedWithoutEstimate })
-            : undefined}
-        />
-        <Fig
-          value={`${summary.focusScore}`}
-          label={t('review.fig.focus')}
-          note={t('review.fig.focusNote')}
-        />
-        <Fig
-          value={busiest && busiest.count > 0
-            ? formatRelativeDay(new Date(`${busiest.date}T12:00:00`), locale)
-            : '—'}
-          label={t('review.fig.busiest')}
-          note={busiest && busiest.count > 0
-            ? t('metrics.tasks', { count: busiest.count })
-            : undefined}
-        />
-        <Fig
-          value={top ? top.name : '—'}
-          label={t('review.fig.topProject')}
-          note={top ? t('metrics.tasks', { count: top.count }) : undefined}
-        />
-        <Fig
-          value={String(summary.activeDays)}
-          label={t('review.fig.activeDays')}
-          note={t('review.fig.streak', { count: summary.currentStreak })}
-        />
-      </div>
-    );
-  }
+      <div className="bento reviewbento">
+        {/* What the week amounted to, and where the effort went inside it. */}
+        <section className="card w12 reviewsummary">
+          <div className="reviewsummary-figs">
+            <span>
+              <b>{summary.completedCount}</b>
+              <small>{t('review.fig.finished')}</small>
+            </span>
+            <span>
+              <b>{formatDuration(summary.completedMinutes, locale)}</b>
+              <small>{t('review.fig.time')}</small>
+            </span>
+            <span>
+              <b>{summary.focusScore}%</b>
+              <small>{t('review.fig.focus')}</small>
+            </span>
+          </div>
+          <SplitBar data={byPriority} />
+          <p className="psub">{t('review.fig.focusNote')}</p>
+        </section>
 
-  function Fig({ value, label, note }: { value: string; label: string; note?: string }) {
-    return (
-      <div className="reviewfig">
-        <b>{value}</b>
-        <span>{label}</span>
-        {note && <small>{note}</small>}
+        <ChartCard
+          title={t('review.chart.perDay')}
+          span={6}
+          trailing={<span className="kpi-label">{summary.completedCount}</span>}
+        >
+          <Bars
+            data={byDay}
+            height={140}
+            emptyLabel={t('review.doneNone')}
+            format={(value) => t('metrics.tasks', { count: value })}
+          />
+        </ChartCard>
+
+        <ChartCard title={t('review.chart.byProject')} span={6}>
+          <Donut
+            data={byProject}
+            limit={6}
+            otherLabel={t('insights.otherProjects')}
+            total={summary.completedCount}
+            caption={t('insights.tasks')}
+            emptyLabel={t('review.doneNone')}
+          />
+        </ChartCard>
       </div>
     );
   }
@@ -431,12 +477,14 @@ export function ReviewView({ onOpen }: ReviewViewProps) {
     );
   }
 
+  /** Nothing to settle. Which is the whole point of asking. */
   function Settled({ note }: { note?: string }) {
     return (
-      <p className="reviewsettled">
-        <Icon name="check" size="sm" />
-        {note ?? t('review.settled')}
-      </p>
+      <div className="reviewclear">
+        <span className="reviewclear-mark" aria-hidden="true"><Icon name="check" /></span>
+        <strong>{note ?? t('review.settled')}</strong>
+        <span>{t(`review.clear.${step?.id ?? 'overdue'}` as TranslationKey)}</span>
+      </div>
     );
   }
 
