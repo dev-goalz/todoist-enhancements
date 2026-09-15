@@ -2,6 +2,46 @@
 
 What changed in each version, newest first.
 
+## 1.1.0
+
+### Fixed
+
+- Every toast the app raised was invisible. A leftover rule held them at zero
+  opacity waiting for a class nothing ever added, so no error and no undo has
+  ever reached anyone. This is why a refused change looked like a change that
+  never registered the click.
+- Adding a task from the composer without touching the project picker sent an
+  empty project id, which Todoist refuses. The Inbox was listed twice — once
+  as that empty value, and once as the real project it already is.
+- Todoist refusing a change is now reported rather than swallowed, and a
+  refused command is dropped instead of being retried on every sync for ever,
+  where it also blocked everything queued behind it.
+- A 403 is no longer read as a bad token. Todoist also answers 403 for the
+  limits of a plan, and reading that as an auth failure hid the real reason
+  and signed people out over it.
+- A project nested under another project was never drawn in the sidebar. Only
+  folders disclosed their children.
+
+### Added
+
+- Projects carry the actions Todoist gives them, from the sidebar row and from
+  their own page: add above, add below, edit, favourite, duplicate, archive,
+  delete. A project renames from its own title.
+- A density setting, chosen by looking at it rather than by reading two
+  adjectives.
+- Tags can be created, from the Tags page or by typing a name after `@` that
+  does not exist yet.
+- The estimate sheet keeps its action bar in place, fills by Tab, and saves
+  the whole pass as one request.
+
+### Changed
+
+- The phone's navigation bar no longer sits below the fold, and a fifth
+  destination — Browse — holds everything a phone has no room for: the profile
+  and its menu, search, tags, favourites, projects.
+- Insights reads a year of history four windows at a time instead of one after
+  another.
+
 ## 1.0.0
 
 ### Added
