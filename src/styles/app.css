@@ -461,8 +461,7 @@ ul{margin:0;padding:0;list-style:none}
 /* ==========================================================================
    8. BOARD / DAY COLUMNS / CALENDAR / STACK
    ========================================================================== */
-.board{display:grid;gap:var(--s4);margin-top:var(--s5);align-items:start;
-  grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.board{display:flex;gap:var(--s4);margin-top:var(--s5);align-items:flex-start}
 
 .col{min-width:0;display:flex;flex-direction:column;padding:var(--s4);border:1px solid var(--border);
   border-radius:var(--r-lg);background:var(--subtle)}
@@ -810,7 +809,7 @@ kbd{padding:2px 5px;border:1px solid var(--border-strong);border-radius:var(--r-
   .ghead .gcount{margin-left:auto}
   .ghead .gactions{order:4;width:100%;margin:8px 0 0;justify-content:flex-start}
 
-  .board,.board.days{grid-template-columns:minmax(0,1fr)}
+
   .cal{grid-template-columns:repeat(7,minmax(84px,1fr));overflow-x:auto}
   .bento{grid-template-columns:minmax(0,1fr)}
   .stackcol{grid-column:auto;grid-template-columns:1fr}

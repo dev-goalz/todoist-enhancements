@@ -7,12 +7,15 @@ import {
 } from '@/components/charts';
 import { useT } from '@/hooks/useT';
 import { useData } from '@/hooks/useData';
-import { useCompleted, type Period } from '@/hooks/useCompleted';
+import { useCompleted } from '@/hooks/useCompleted';
 import { navigate, useRoute } from '@/hooks/useRoute';
 import { rootItems } from '@/store/selectors';
 import { summariseInsights } from '@/domain/insights';
 import { formatDuration, estimateOf } from '@/domain/estimates';
-import { formatRelativeDay } from '@/domain/dates';
+import { formatRelativeDay, toApiDate } from '@/domain/dates';
+import {
+  formatRange, previousRange, rangeFor, spanOf, type Period, type Range,
+} from '@/domain/periods';
 import { markerStyle } from '@/domain/colors';
 import { toDisplayPriority, type CompletedItem } from '@/domain/types';
 import type { TranslationKey } from '@/i18n';
@@ -20,7 +23,7 @@ import type { TranslationKey } from '@/i18n';
 type Tab = 'overview' | 'logbook';
 type LogGroup = 'day' | 'project' | 'priority';
 
-const PERIODS: Period[] = ['day', 'week', 'month', 'quarter', 'year'];
+const PRESETS: Period[] = ['day', 'week', 'month', 'quarter', 'year'];
 
 /**
  * Insights.
@@ -33,6 +36,10 @@ export function InsightsView() {
   const { t, locale } = useT();
   const { snapshot, items } = useData();
   const [period, setPeriod] = useState<Period>('week');
+  /* Which occurrence of the period: 0 is the one holding today, -1 the one
+     before. The arrows move it; picking a preset resets it. */
+  const [offset, setOffset] = useState(0);
+  const [custom, setCustom] = useState<Range | null>(null);
   // The address bar can name the tab, so the sidebar can link straight to the
   // logbook rather than landing on the overview and asking for a second click.
   const route = useRoute();
@@ -43,7 +50,28 @@ export function InsightsView() {
   useEffect(() => {
     setTab(route.id === 'logbook' ? 'logbook' : 'overview');
   }, [route.id]);
-  const { data: completed, previous, loading } = useCompleted(period, true);
+  const startDay = snapshot.user?.start_day ?? 1;
+  const range = useMemo(
+    () => rangeFor(period, offset, custom, startDay),
+    [period, offset, custom, startDay],
+  );
+  const { data: completed, previous, loading } = useCompleted(range, true);
+
+  const pickPreset = (next: Period) => { setPeriod(next); setOffset(0); };
+  /* Editing either date makes the range a custom one, starting from whatever
+     the presets had produced so the other bound is already sensible. */
+  const pickBound = (bound: 'since' | 'until', value: string) => {
+    const at = new Date(`${value}T00:00:00`);
+    if (Number.isNaN(at.getTime())) return;
+    const next = bound === 'since'
+      ? { since: at, until: range.until < at ? at : range.until }
+      : { since: range.since > at ? at : range.since, until: at };
+    setCustom(next);
+    setPeriod('custom');
+    setOffset(0);
+  };
+  // The period after this one has not happened yet.
+  const atPresent = rangeFor(period, offset + 1, custom, startDay).since > new Date();
 
   const roots = useMemo(() => rootItems(items), [items]);
   const summary = useMemo(
@@ -53,16 +81,15 @@ export function InsightsView() {
 
   const intl = locale === 'fr' ? 'fr-FR' : 'en-GB';
 
-  /* How this period is worth cutting up.
+  /* How this range is worth cutting up.
      A single day has no series of days in it; a year has too many to read. */
-  const grain = granularityOf(period);
+  const grain = granularityOf(spanOf(range));
 
-  /* Each bucket of the period, with the matching bucket of the period before
+  /* Each bucket of the range, with the matching bucket of the range before
      it drawn as a dot. Both series share one axis; never two scales. */
   const perBucket: CompareDatum[] = useMemo(() => {
     if (grain === null) return [];
-    const now = startOfDay(new Date());
-    const nowKey = bucketKey(now, grain);
+    const nowKey = bucketKey(startOfDay(new Date()), grain);
     const count = (items: CompletedItem[]) => {
       const map = new Map<string, number>();
       for (const item of items) {
@@ -73,31 +100,31 @@ export function InsightsView() {
     };
     const current = count(completed);
     const earlier = count(previous);
-    const span = spanOfDays(period);
-    const buckets = bucketsIn(period, grain);
+    const buckets = bucketsOf(range, grain);
+    // Matched by position: the first week of this quarter against the first
+    // week of the last, whatever dates those fall on.
+    const before = bucketsOf(previousRange(range), grain);
 
-    return Array.from({ length: buckets }, (_, offset) => {
-      const at = shiftBucket(now, grain, -(buckets - 1 - offset));
-      const before = new Date(at.getTime() - span * 86_400_000);
-      return {
-        key: bucketKey(at, grain),
-        label: bucketLabel(at, grain, intl),
-        value: current.get(bucketKey(at, grain)) ?? 0,
-        previous: earlier.get(bucketKey(before, grain)) ?? 0,
-        current: bucketKey(at, grain) === nowKey,
-      };
-    });
-  }, [completed, previous, period, grain, intl]);
+    return buckets.map((at, index) => ({
+      key: bucketKey(at, grain),
+      label: bucketLabel(at, grain, intl),
+      value: current.get(bucketKey(at, grain)) ?? 0,
+      previous: before[index] ? (earlier.get(bucketKey(before[index], grain)) ?? 0) : 0,
+      current: bucketKey(at, grain) === nowKey,
+    }));
+  }, [completed, previous, range, grain, intl]);
 
-  /* The current calendar week, starting on the day the Todoist account does,
-     so the axis reads M T W T F S S rather than "the last seven days". */
+  /* One calendar week, starting on the day the Todoist account does, so the
+     axis reads M T W T F S S rather than "the last seven days". For a week it
+     is the week itself; for a month, the week its last day falls in, which is
+     this week while the month is the current one. */
   const weekActivity: BarDatum[] = useMemo(() => {
     const today = startOfDay(new Date());
     const todayKey = format(today, 'yyyy-MM-dd');
     const counts = countByDay(completed);
-    const startDay = snapshot.user?.start_day ?? 1;
-    const back = (today.getDay() - (startDay % 7) + 7) % 7;
-    const first = new Date(today.getTime() - back * 86_400_000);
+    const anchor = period === 'week' ? range.since : startOfDay(range.until < today ? range.until : today);
+    const back = (anchor.getDay() - (startDay % 7) + 7) % 7;
+    const first = new Date(anchor.getTime() - back * 86_400_000);
 
     return Array.from({ length: 7 }, (_, offset) => {
       const day = new Date(first.getTime() + offset * 86_400_000);
@@ -109,7 +136,7 @@ export function InsightsView() {
         current: key === todayKey,
       };
     });
-  }, [completed, intl, snapshot.user]);
+  }, [completed, intl, startDay, period, range]);
 
   const byHour: BarDatum[] = useMemo(
     () =>
@@ -172,16 +199,58 @@ export function InsightsView() {
       </div>
 
       <div className="viewbar periodbar">
-        {PERIODS.map((value) => (
+        <span className="pager">
+          <button
+            className="iconbtn"
+            aria-label={t('insights.previous')}
+            title={t('insights.previous')}
+            onClick={() => setOffset((o) => o - 1)}
+          >
+            <Icon name="arrow-left" size="sm" />
+          </button>
+          <button
+            className="iconbtn"
+            aria-label={t('insights.next')}
+            title={t('insights.next')}
+            disabled={atPresent}
+            onClick={() => setOffset((o) => o + 1)}
+          >
+            <Icon name="arrow-right" size="sm" />
+          </button>
+        </span>
+        {PRESETS.map((value) => (
           <button
             key={value}
             className="btn"
-            aria-pressed={period === value}
-            onClick={() => setPeriod(value)}
+            aria-pressed={period === value && offset === 0}
+            onClick={() => pickPreset(value)}
           >
             {t(`insights.period.${value}` as TranslationKey)}
           </button>
         ))}
+        {/* The dates the presets resolve to, editable: change one and the
+            range becomes your own. */}
+        <span className="rangefields">
+          <label className="datefield">
+            <span>{t('insights.from')}</span>
+            <input
+              type="date"
+              value={toApiDate(range.since)}
+              max={toApiDate(new Date())}
+              onChange={(e) => pickBound('since', e.target.value)}
+            />
+          </label>
+          <label className="datefield">
+            <span>{t('insights.to')}</span>
+            <input
+              type="date"
+              value={toApiDate(range.until)}
+              min={toApiDate(range.since)}
+              onChange={(e) => pickBound('until', e.target.value)}
+            />
+          </label>
+        </span>
+        <span className="rangelabel">{formatRange(range, intl)}</span>
       </div>
 
       <div className="tabs" role="tablist">
@@ -364,35 +433,29 @@ export function InsightsView() {
 
 /* ------------------------------------------------------------------ */
 
-/** How many days one period covers. */
-function spanOfDays(period: Period): number {
-  if (period === 'day') return 1;
-  if (period === 'week') return 7;
-  if (period === 'month') return 30;
-  if (period === 'quarter') return 90;
-  return 365;
-}
-
 type Grain = 'day' | 'week' | 'month';
 
 /**
- * The unit the period is read in.
+ * The unit a range of so many days is read in.
  *
- * Today has no series of days inside it, so it gets none; a quarter read day
+ * A day has no series of days inside it, so it gets none; a quarter read day
  * by day is ninety bars nobody can tell apart, and a year is three hundred
  * and sixty-five.
  */
-function granularityOf(period: Period): Grain | null {
-  if (period === 'day') return null;
-  if (period === 'week' || period === 'month') return 'day';
-  if (period === 'quarter') return 'week';
+function granularityOf(days: number): Grain | null {
+  if (days <= 1) return null;
+  if (days <= 62) return 'day';
+  if (days <= 200) return 'week';
   return 'month';
 }
 
-function bucketsIn(period: Period, grain: Grain): number {
-  if (grain === 'day') return spanOfDays(period);
-  if (grain === 'week') return 13;
-  return 12;
+/** The start of every bucket the range touches, in order. */
+function bucketsOf(range: Range, grain: Grain): Date[] {
+  const out: Date[] = [];
+  for (let at = startOfGrain(range.since, grain); at <= range.until; at = shiftBucket(at, grain, 1)) {
+    out.push(at);
+  }
+  return out;
 }
 
 const startOfGrain = (at: Date, grain: Grain): Date => {
@@ -502,10 +565,10 @@ function Logbook({ completed }: { completed: CompletedItem[] }) {
     }
 
     const entries = [...map.entries()].map(([key, value]) => ({ key, ...value }));
-    // Days read newest first; the other groupings read largest first.
-    return group === 'day'
-      ? entries.sort((a, b) => b.key.localeCompare(a.key))
-      : entries.sort((a, b) => b.rows.length - a.rows.length);
+    // Days read newest first, priorities from P1 down, projects largest first.
+    if (group === 'day') return entries.sort((a, b) => b.key.localeCompare(a.key));
+    if (group === 'priority') return entries.sort((a, b) => a.key.localeCompare(b.key));
+    return entries.sort((a, b) => b.rows.length - a.rows.length);
   }, [filtered, group, snapshot.projects, locale]);
 
   const projects = Object.values(snapshot.projects)

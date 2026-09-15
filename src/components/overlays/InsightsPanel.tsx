@@ -5,6 +5,7 @@ import { Bars, SplitBar, type BarDatum, type SliceDatum } from '../charts';
 import { useT } from '@/hooks/useT';
 import { useData } from '@/hooks/useData';
 import { useCompleted } from '@/hooks/useCompleted';
+import { rangeFor } from '@/domain/periods';
 import { navigate } from '@/hooks/useRoute';
 import { summariseInsights } from '@/domain/insights';
 import { effectiveEstimate, formatDuration } from '@/domain/estimates';
@@ -27,7 +28,9 @@ export function InsightsPanel({
 }: InsightsPanelProps) {
   const { t, locale } = useT();
   const { snapshot, childrenOf } = useData();
-  const { data: completed, loading } = useCompleted('week', open);
+  const startDay = snapshot.user?.start_day ?? 1;
+  const week = useMemo(() => rangeFor('week', 0, null, startDay), [startDay]);
+  const { data: completed, loading } = useCompleted(week, open);
 
   const summary = useMemo(
     () => summariseInsights(completed, items, snapshot),

@@ -22,7 +22,6 @@ interface UpcomingViewProps {
 }
 
 /** How many day columns the board shows at once. */
-const COLUMNS_PER_PAGE = 4;
 
 /**
  * Upcoming — strictly future dates, fifteen days at a time.
@@ -36,9 +35,6 @@ export function UpcomingView({ onOpen, onInsights, onUnestimated, onAddTaskTo }:
   const prefs = useStore((s) => s.prefs);
   const current = viewPrefs(prefs, 'upcoming');
   const [horizon, setHorizon] = useState(prefs.upcomingHorizonDays);
-  /* The board shows a fixed number of days so the page keeps one width. Moving
-     through them is two buttons, not a horizontal scroll nobody discovers. */
-  const [page, setPage] = useState(0);
 
   const scoped = useMemo(() => {
     const roots = rootItems(items);
@@ -86,11 +82,6 @@ export function UpcomingView({ onOpen, onInsights, onUnestimated, onAddTaskTo }:
     }))
     .filter((column) => column.items.length > 0 || current.mode === 'board');
 
-  const pageCount = Math.max(1, Math.ceil(columns.length / COLUMNS_PER_PAGE));
-  const safePage = Math.min(page, pageCount - 1);
-  const shown = current.mode === 'board'
-    ? columns.slice(safePage * COLUMNS_PER_PAGE, (safePage + 1) * COLUMNS_PER_PAGE)
-    : columns;
 
   return (
     <div className="page">
@@ -98,29 +89,6 @@ export function UpcomingView({ onOpen, onInsights, onUnestimated, onAddTaskTo }:
         title={t('nav.upcoming')}
         actions={
           <>
-            {current.mode === 'board' && pageCount > 1 && (
-              <span className="pager">
-                <button
-                  className="iconbtn"
-                  aria-label={t('upcoming.earlier')}
-                  title={t('upcoming.earlier')}
-                  disabled={safePage === 0}
-                  onClick={() => setPage((p) => Math.max(0, p - 1))}
-                >
-                  <Icon name="arrow-left" size="sm" />
-                </button>
-                <span className="pagerlabel">{safePage + 1} / {pageCount}</span>
-                <button
-                  className="iconbtn"
-                  aria-label={t('upcoming.later')}
-                  title={t('upcoming.later')}
-                  disabled={safePage >= pageCount - 1}
-                  onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
-                >
-                  <Icon name="arrow-right" size="sm" />
-                </button>
-              </span>
-            )}
             <DisplayMenu
               viewKey="upcoming"
               modes={['list', 'board']}
@@ -145,7 +113,7 @@ export function UpcomingView({ onOpen, onInsights, onUnestimated, onAddTaskTo }:
           group="day"
           sort={current.sort}
           onOpen={onOpen}
-          boardColumns={shown}
+          boardColumns={columns}
         />
       ) : current.group === 'none' || current.group === 'day' ? (
         <div className="mode">

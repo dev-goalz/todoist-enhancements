@@ -6,9 +6,9 @@ A different front end for Todoist. Todoist stays the backend; this replaces the
 interface with one built around planning a week.
 
 [Demo](#try-it-without-an-account) · [Features](#features) ·
-[Contributing](#contributing) · [Buy me a coffee](https://buymeacoffee.com/julesbertolino)
+[Contributing](#contributing) · [License](#license) ·
+[Buy me a coffee](https://buymeacoffee.com/julesbertolino)
 
-<!-- TODO: replace with a screenshot of My week -->
 ![Enhanced for Todoist, My week view](docs/screenshot-my-week.png)
 
 </div>
@@ -46,8 +46,7 @@ My week splits the week into five buckets: behind schedule, quick, today,
 scheduled today, and anytime this week. That last one holds the work you've
 committed to without pinning it to a particular day, which is most of it.
 
-<!-- TODO: replace with a screenshot or gif of the My week buckets -->
-![The My week buckets](docs/feature-my-week.png)
+![The My week buckets](docs/feature-my-week.gif)
 
 ### Estimates and workload
 
@@ -57,29 +56,28 @@ set for that day or week. A parent task with no estimate of its own adds up its
 subtasks. Anything still unestimated is listed in one place so you can fill
 them in together.
 
-<!-- TODO: replace with a screenshot of the load bar and the estimate field -->
-![Estimates and the workload figure](docs/feature-estimates.png)
+![Estimates and the workload figure](docs/feature-estimates.gif)
 
 ### Looking back
 
 The dashboard changes with the period you pick. A single day shows the hours
 you finished things in. A week adds the shape of the week and a comparison
-against the previous one. A year reads month by month.
+against the previous one. A year reads month by month. Arrows step back to
+the week or month before, and either date can be edited to make your own
+range.
 
 It also carries a focus score, which weights what you finished by its priority.
 It answers whether your effort went to the work that mattered or to everything
 else.
 
-<!-- TODO: replace with a screenshot of the insights dashboard -->
-![The insights dashboard](docs/feature-insights.png)
+![The insights dashboard](docs/feature-insights.gif)
 
 ### Logbook
 
 What you actually finished, grouped by day, filterable by several projects and
 priorities at once.
 
-<!-- TODO: replace with a screenshot of the logbook -->
-![The logbook](docs/feature-logbook.png)
+![The logbook](docs/feature-logbook.gif)
 
 ### Adding tasks
 
@@ -92,9 +90,6 @@ along with the parent.
 Reading dates from the text can be switched off in settings. `#project`, `p1`
 and `@tag` are explicit syntax and always apply.
 
-<!-- TODO: replace with a gif of typing a task with natural language -->
-![Adding a task](docs/feature-add-task.png)
-
 ### Things to settle
 
 Some contradictions can't be resolved automatically: a task that is both dated
@@ -104,9 +99,11 @@ possible intent, and nothing changes until you choose one.
 
 ### Also included
 
-- Upcoming, Someday and Inbox views, plus project and tag pages.
+- Upcoming, Someday and Inbox views, plus project and tag pages. Tags can be
+  dragged into your own order, which is also the order of the sidebar's
+  favourites.
 - List and board modes, with grouping, sorting and filtering behind a single
-  Display control.
+  Display control. A board with more columns than fit scrolls sideways.
 - Drag and drop, where each destination has one fixed meaning and every drop
   can be undone.
 - Search (`⌘K`) across tasks, projects and tags, usable from the keyboard.
@@ -160,9 +157,10 @@ coffee](https://buymeacoffee.com/julesbertolino).
 
 ## Changelog
 
-[CHANGELOG.md](CHANGELOG.md) lists what changed in each version.
+[CHANGELOG.md](CHANGELOG.md) lists what changed in each version. Each version
+is also a [release](https://github.com/julesvbertolino/todoist-enhancements/releases)
+with a ready-to-host build attached.
 
----
+## License
 
-<sub>The images above are placeholders. [docs/README.md](docs/README.md) lists
-what each one should show; replace the files under the same names.</sub>
+[MIT](LICENSE). Not affiliated with Doist; Todoist is a trademark of Doist Inc.

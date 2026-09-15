@@ -1,5 +1,6 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { TaskGroup } from './TaskGroup';
+import { Icon } from './Icon';
 import { DraggableTask } from './dnd/DraggableTask';
 import { useT } from '@/hooks/useT';
 import { useStore } from '@/store/store';
@@ -96,12 +97,67 @@ function BoardSurface(props: ModeSurfaceProps) {
     props.boardColumns ??
     groups.map((g) => ({ id: g.key, title: g.title || t('common.all'), items: g.items }));
 
+  const boardRef = useRef<HTMLDivElement>(null);
+  const [reach, setReach] = useState({ left: false, right: false });
+
+  /* The arrows are shown only when the board actually overflows, and each
+     one goes dark at its end. Measured from the scroll position rather than
+     counted, because how many columns fit depends on the window. */
+  useEffect(() => {
+    const board = boardRef.current;
+    if (!board) return;
+    const measure = () => {
+      const max = board.scrollWidth - board.clientWidth;
+      setReach({ left: board.scrollLeft > 1, right: board.scrollLeft < max - 1 });
+    };
+    measure();
+    board.addEventListener('scroll', measure, { passive: true });
+    const observer = new ResizeObserver(measure);
+    observer.observe(board);
+    return () => {
+      board.removeEventListener('scroll', measure);
+      observer.disconnect();
+    };
+  }, [columns.length]);
+
+  const step = (direction: -1 | 1) => {
+    const board = boardRef.current;
+    const first = board?.querySelector<HTMLElement>('.col');
+    if (!board || !first) return;
+    const gap = parseFloat(getComputedStyle(board).columnGap || '16') || 16;
+    board.scrollBy({ left: direction * (first.offsetWidth + gap), behavior: 'smooth' });
+  };
+
   if (columns.length === 0) return <p className="empty">{t('task.noTasks')}</p>;
 
   return (
     /* The same measure as the list: columns share the page's width and edges. */
     <div className="mode">
-      <div className={`board${props.group === 'day' ? ' days' : ''}`}>
+      {(reach.left || reach.right) && (
+        <div className="boardnav">
+          <span className="pager">
+            <button
+              className="iconbtn"
+              aria-label={t('board.previous')}
+              title={t('board.previous')}
+              disabled={!reach.left}
+              onClick={() => step(-1)}
+            >
+              <Icon name="arrow-left" size="sm" />
+            </button>
+            <button
+              className="iconbtn"
+              aria-label={t('board.next')}
+              title={t('board.next')}
+              disabled={!reach.right}
+              onClick={() => step(1)}
+            >
+              <Icon name="arrow-right" size="sm" />
+            </button>
+          </span>
+        </div>
+      )}
+      <div className={`board${props.group === 'day' ? ' days' : ''}`} ref={boardRef}>
         {columns.map((column) => {
           /* The column's own header line: time, what is still unestimated and,
              where the column is a day, how full it is. */

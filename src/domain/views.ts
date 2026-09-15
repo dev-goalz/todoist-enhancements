@@ -9,13 +9,17 @@ export const hasLabel = (item: Item, label: string): boolean =>
 export const QUICK_THRESHOLD_MINUTES = 5;
 
 /**
- * Quick holds tasks carrying `quick` or estimated at strictly under five
- * minutes. A `quick` task estimated above the threshold still shows here, and
- * is reported as a conflict rather than being silently reclassified.
+ * Quick holds tasks that take under five minutes.
+ *
+ * The estimate is the fact and the `quick` tag is a claim: a task tagged quick
+ * but estimated at forty minutes is not quick, so it stays out of the group
+ * and is reported as a conflict instead. Without an estimate the tag is all
+ * there is to go on.
  */
 export function isQuick(item: Item): boolean {
-  if (hasLabel(item, SYSTEM_LABELS.quick)) return true;
   const est = estimateOf(item);
+  if (est !== null && est > QUICK_THRESHOLD_MINUTES) return false;
+  if (hasLabel(item, SYSTEM_LABELS.quick)) return true;
   return est !== null && est < QUICK_THRESHOLD_MINUTES;
 }
 

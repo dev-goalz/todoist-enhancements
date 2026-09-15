@@ -2,6 +2,35 @@
 
 What changed in each version, newest first.
 
+## 1.0.0
+
+### Added
+
+- The insights period can be stepped with arrows: this week, then the week
+  before it. The presets are calendar units, so a week starts on the day the
+  Todoist account does and the quarter is the calendar quarter. Either date
+  can be edited to make a range of your own.
+- Tags can be dragged into a new order on the Tags page. The order is
+  Todoist's own, so the sidebar's favourites follow it.
+- A board with more columns than fit scrolls sideways, with arrows above it.
+
+### Changed
+
+- A task tagged quick but estimated at more than five minutes is left out of
+  the Quick group. The tag is a claim and the estimate is the fact.
+- The add-task line at the end of a section takes no room until the section
+  is hovered, and unfolds rather than appearing. Behind schedule and Quick no
+  longer carry an empty band under their last row.
+- On a project board, tasks outside any section are the first column.
+- Tags are listed one per row.
+- The logbook grouped by priority reads P1 first.
+- Upcoming's board uses the same arrows as every other board.
+
+### Removed
+
+- Behind schedule no longer accepts drops. Dropping there dated the task
+  today, which is not what the heading says.
+
 ## 0.9.0
 
 ### Changed

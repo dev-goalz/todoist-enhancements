@@ -1,13 +1,11 @@
-# Screenshots
+# Images
 
-The images the README links to live here. Replace each placeholder with a real
-capture using the same filename.
+The images the README shows.
 
-| File | What it should show |
+| File | What it shows |
 | --- | --- |
 | `screenshot-my-week.png` | My week, full window |
-| `feature-my-week.png` | The buckets: behind schedule, quick, today, anytime |
-| `feature-estimates.png` | The workload line, and an estimate being typed |
-| `feature-insights.png` | The insights dashboard |
-| `feature-logbook.png` | The logbook grouped by day |
-| `feature-add-task.png` | Adding a task with a date in the text (a gif works) |
+| `feature-my-week.gif` | The buckets: behind schedule, quick, today, anytime |
+| `feature-estimates.gif` | An estimate being typed and the workload line updating |
+| `feature-insights.gif` | The insights dashboard |
+| `feature-logbook.gif` | The logbook |

@@ -251,7 +251,7 @@ export const en = {
   'insights.otherProjects': 'Other projects',
   'insights.period.week': 'This week',
   'insights.period.month': 'This month',
-  'insights.period.quarter': 'Last 3 months',
+  'insights.period.quarter': 'This quarter',
   'insights.period.year': 'This year',
   'insights.focusExplainer': 'The share of your completed work that went to high-priority tasks.',
   'insights.loading': 'Reading your history…',
@@ -409,6 +409,14 @@ export const en = {
 
   'upcoming.earlier': 'Earlier days',
   'upcoming.later': 'Later days',
+  'board.previous': 'Previous columns',
+  'board.next': 'Next columns',
+  'insights.previous': 'Previous period',
+  'insights.next': 'Next period',
+  'insights.from': 'From',
+  'insights.to': 'To',
+  'labels.reorder': 'Drag to reorder',
+  'labels.orderHint': 'This order is the order of the favourites in the sidebar.',
 
   'search.hintMove': 'to move',
   'search.hintOpen': 'to open',

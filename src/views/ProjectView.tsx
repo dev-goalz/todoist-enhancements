@@ -127,6 +127,8 @@ export function ProjectView({
         // An empty "no section" column is noise; a real section stays, because
         // an empty column of your own is still somewhere to drop work.
         .filter((group) => group.id !== 'none' || group.items.length > 0)
+        // Loose tasks lead the board, as they do in Todoist's own.
+        .sort((a, b) => (a.id === 'none' ? -1 : b.id === 'none' ? 1 : 0))
         .map((group) => ({
           id: group.id,
           title: group.title,

@@ -319,10 +319,18 @@
 .subcaret{width:26px;height:26px;margin:0;vertical-align:0;color:var(--muted)}
 .subcaret:hover{color:var(--text);background:var(--hover)}
 
-/* "Add task" appears at the end of a section on hover. */
-.sectionadd{opacity:0;transition:opacity .12s ease-out}
+/* "Add task" appears at the end of a section on hover. At rest it takes no
+   room either: a callout with an empty band under its last row looked as if
+   something had failed to load. It unfolds rather than jumping in. */
+.sectionadd{
+  max-height:0;margin-top:0;padding-block:0;opacity:0;overflow:hidden;
+  transition:max-height .2s ease-out,opacity .16s ease-out,
+    margin-top .2s ease-out,padding .2s ease-out;
+}
 .group:hover .sectionadd,
-.group:focus-within .sectionadd{opacity:1}
+.group:focus-within .sectionadd{
+  max-height:40px;margin-top:var(--s2);padding-block:6px;opacity:1;
+}
 
 /* On a narrow screen the handle has nowhere to hang, and touch has no hover. */
 @media (max-width:700px){
@@ -500,6 +508,23 @@
   border-color:var(--accent);font-weight:600;
 }
 
+/* The arrows lead the presets; the dates end the row. */
+.periodbar{align-items:center}
+.periodbar .pager{margin-right:4px}
+.rangefields{display:inline-flex;gap:8px;margin-left:auto}
+.datefield{display:inline-flex;align-items:center;gap:6px;font-size:var(--fs-12);color:var(--faint)}
+.datefield input{
+  min-height:32px;padding:0 8px;border:1px solid var(--border-strong);
+  border-radius:var(--r-ctl);background:var(--surface);
+  font:inherit;font-size:var(--fs-13);font-weight:600;letter-spacing:-.02em;color:var(--text);
+  font-variant-numeric:tabular-nums;
+}
+.datefield input:hover{border-color:var(--accent);background:var(--accent-tint)}
+.datefield input:focus{outline:2px solid var(--accent);outline-offset:2px}
+.rangelabel{
+  width:100%;color:var(--muted);font-size:var(--fs-12);font-variant-numeric:tabular-nums;
+}
+
 /* Logbook days */
 .logday{margin-top:var(--s5)}
 .logday h4{
@@ -622,24 +647,27 @@
 .group.accent-quick .task{border-bottom-color:rgba(32,32,32,.07)}
 
 /* ---------- Kanban ---------- */
-/* Columns wrap onto a second row rather than running off the right edge.
-   Sideways scrolling meant that grouping by anything with more than three or
-   four values — project, tag — put most of the board out of sight and cut the
-   visible columns in half. */
+/* Columns keep one width and the board scrolls sideways when there are more
+   than fit, the way a board is expected to behave. Wrapping them onto a
+   second row kept the page's width but turned a board into a grid, and a
+   column squeezed to fit four across left its titles unreadable. */
 .board{
-  display:grid;
-  grid-auto-flow:row;
-  grid-template-columns:repeat(auto-fit,minmax(248px,1fr));
-  grid-auto-columns:auto;
+  display:flex;
   gap:var(--s4);
-  overflow-x:visible;
+  overflow-x:auto;
+  overscroll-behavior-x:contain;
+  scroll-snap-type:x proximity;
   padding-bottom:var(--s3);
-  align-items:start;
+  align-items:flex-start;
+  scrollbar-width:thin;
 }
-/* auto-fit, not auto-fill: three sections fill the row instead of leaving a
-   fourth, empty track beside them. A lone column is capped so it reads as a
-   column rather than a page-wide list. */
-.col{max-height:none;max-width:400px}
+/* Each column is wrapped by its drop zone, so the wrapper is the flex item. */
+.board > *{flex:0 0 min(272px,80vw);min-width:0;scroll-snap-align:start}
+.col{max-width:none;max-height:none}
+/* The arrows sit above the board on the right, and only when there is
+   somewhere to go. */
+.boardnav{display:flex;justify-content:flex-end;margin-top:var(--s5)}
+.boardnav + .board{margin-top:var(--s2)}
 /* A column's load sits under its heading in the same quiet type as the count. */
 .cload{margin:-4px 0 10px;color:var(--faint);font-size:var(--fs-11);font-variant-numeric:tabular-nums}
 .cload.over{color:var(--accent-dark);font-weight:600}
@@ -1072,12 +1100,9 @@
 /* ==========================================================================
    Tags — a page of tags, not a list of tasks pretending to be one
    ========================================================================== */
-/* It borrowed the task row's grid, which gave every tag an empty checkbox
-   column, an empty actions column and a hairline it had no use for. */
-.taggrid{
-  display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));
-  gap:var(--s3);margin-top:var(--s5);
-}
+/* One tag per row, in the order Todoist keeps them, so the rows can be
+   dragged into a new one. Cards side by side had no order to speak of. */
+.taglist{display:grid;gap:var(--s2);margin-top:var(--s5)}
 .tagcard{
   position:relative;display:flex;align-items:center;
   border:1px solid var(--border);border-radius:14px;background:var(--surface);
@@ -1085,9 +1110,18 @@
   transition:border-color .14s ease-out,box-shadow .14s ease-out;
 }
 .tagcard:hover{border-color:var(--border-strong);box-shadow:0 2px 8px rgba(28,25,23,.07)}
+/* The row in flight rides above the ones it passes. */
+.tagcard.dragging{position:relative;z-index:2;box-shadow:var(--sh-md);border-color:var(--accent)}
+.tagcard-grip{
+  width:28px;height:32px;margin-left:6px;flex:0 0 auto;
+  display:grid;place-items:center;border-radius:var(--r-sm);
+  color:var(--faint);cursor:grab;touch-action:none;
+}
+.tagcard-grip:hover{color:var(--text);background:var(--hover)}
+.tagcard.dragging .tagcard-grip{cursor:grabbing}
 .tagcard-open{
   flex:1;min-width:0;display:flex;align-items:center;gap:12px;
-  padding:14px 16px;text-align:left;
+  padding:10px 12px 10px 6px;text-align:left;
 }
 .tagcard-mark{
   width:34px;height:34px;flex:0 0 auto;display:grid;place-items:center;

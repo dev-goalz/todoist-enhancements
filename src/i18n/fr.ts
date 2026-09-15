@@ -253,7 +253,7 @@ export const fr: Record<TranslationKey, string> = {
   'insights.otherProjects': 'Autres projets',
   'insights.period.week': 'Cette semaine',
   'insights.period.month': 'Ce mois',
-  'insights.period.quarter': '3 derniers mois',
+  'insights.period.quarter': 'Ce trimestre',
   'insights.period.year': 'Cette année',
   'insights.focusExplainer': 'La part de votre travail terminé consacrée aux tâches prioritaires.',
   'insights.loading': 'Lecture de votre historique…',
@@ -411,6 +411,14 @@ export const fr: Record<TranslationKey, string> = {
 
   'upcoming.earlier': 'Jours précédents',
   'upcoming.later': 'Jours suivants',
+  'board.previous': 'Colonnes précédentes',
+  'board.next': 'Colonnes suivantes',
+  'insights.previous': 'Période précédente',
+  'insights.next': 'Période suivante',
+  'insights.from': 'Du',
+  'insights.to': 'Au',
+  'labels.reorder': 'Glisser pour réordonner',
+  'labels.orderHint': 'Cet ordre est celui des favoris dans la barre latérale.',
 
   'search.hintMove': 'pour naviguer',
   'search.hintOpen': 'pour ouvrir',

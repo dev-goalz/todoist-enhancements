@@ -69,6 +69,8 @@ interface AppState {
   setTaskLabels: (id: string, labels: string[]) => Promise<void>;
   setTaskPriority: (id: string, priority: DisplayPriority) => Promise<void>;
   setLabelFavourite: (id: string, favourite: boolean) => Promise<void>;
+  /** Puts the tags in this order, which is also the order of the sidebar's favourites. */
+  reorderLabels: (ids: string[]) => Promise<void>;
   skipOccurrence: (id: string) => Promise<void>;
   createProject: (name: string, color: string) => Promise<void>;
   updateProjectFields: (id: string, args: Record<string, unknown>) => Promise<void>;
@@ -439,6 +441,20 @@ export const useStore = create<AppState>((set, get) => ({
           ...snapshot,
           labels: { ...snapshot.labels, [id]: { ...label, is_favorite: favourite } },
         };
+      },
+    );
+  },
+
+  async reorderLabels(ids) {
+    const order = Object.fromEntries(ids.map((id, index) => [id, index + 1]));
+    await get().apply(
+      [command('label_update_orders', { id_order_mapping: order })],
+      (snapshot) => {
+        const labels = { ...snapshot.labels };
+        for (const [id, item_order] of Object.entries(order)) {
+          if (labels[id]) labels[id] = { ...labels[id], item_order };
+        }
+        return { ...snapshot, labels };
       },
     );
   },

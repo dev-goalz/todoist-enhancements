@@ -2,21 +2,21 @@ import { useEffect, useState } from 'react';
 import { fetchCompleted } from '@/api/completed';
 import { useStore } from '@/store/store';
 import { buildDemoCompleted } from '@/demo/demoData';
+import { previousRange, type Range } from '@/domain/periods';
 import type { CompletedItem } from '@/domain/types';
 
-export type Period = 'day' | 'week' | 'month' | 'quarter' | 'year';
-
 /**
- * Reads completed tasks for a period, and for the period before it.
+ * Reads completed tasks for a range, and for the range of the same length
+ * before it.
  *
  * History is fetched on demand rather than kept in sync: it only changes at
  * the moment a task is completed, and Insights is the only place that needs it.
  *
- * The window asked for is twice the period, because every chart that compares
+ * The window asked for is twice the range, because every chart that compares
  * "this month" to "last month" would otherwise need a second round trip to say
- * anything. The result is split at the period boundary before it is returned.
+ * anything. The result is split at the range's start before it is returned.
  */
-export function useCompleted(period: Period, enabled: boolean) {
+export function useCompleted(range: Range, enabled: boolean) {
   const connected = useStore((s) => s.connected);
   const demo = useStore((s) => s.demo);
   const locale = useStore((s) => s.prefs.locale);
@@ -25,37 +25,33 @@ export function useCompleted(period: Period, enabled: boolean) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Dates are compared by value: a fresh object with the same instant is the
+  // same request, and must not fetch again.
+  const sinceMs = range.since.getTime();
+  const untilMs = range.until.getTime();
+
   useEffect(() => {
     if (!enabled || !connected) return;
 
     const controller = new AbortController();
-    const now = new Date();
-    const since = new Date(now);
-
-    if (period === 'day') since.setHours(0, 0, 0, 0);
-    else if (period === 'week') since.setDate(now.getDate() - 7);
-    else if (period === 'month') since.setMonth(now.getMonth() - 1);
-    else if (period === 'quarter') since.setMonth(now.getMonth() - 3);
-    else since.setFullYear(now.getFullYear() - 1);
-
-    // The preceding window of the same length, for the comparison marks.
-    const cutoff = since.getTime();
-    const previousSince = new Date(cutoff - (now.getTime() - cutoff));
+    const current = { since: new Date(sinceMs), until: new Date(untilMs) };
+    const earlier = previousRange(current);
 
     const split = (items: CompletedItem[]) => {
-      const current: CompletedItem[] = [];
-      const earlier: CompletedItem[] = [];
+      const inside: CompletedItem[] = [];
+      const before: CompletedItem[] = [];
       for (const item of items) {
-        (new Date(item.completed_at).getTime() >= cutoff ? current : earlier).push(item);
+        const at = new Date(item.completed_at).getTime();
+        if (at > untilMs) continue;
+        if (at >= sinceMs) inside.push(item);
+        else if (at >= earlier.since.getTime()) before.push(item);
       }
-      setData(current);
-      setPrevious(earlier);
+      setData(inside);
+      setPrevious(before);
     };
 
     if (demo) {
-      split(buildDemoCompleted(locale).filter(
-        (c) => new Date(c.completed_at).getTime() >= previousSince.getTime(),
-      ));
+      split(buildDemoCompleted(locale));
       setLoading(false);
       return;
     }
@@ -63,7 +59,7 @@ export function useCompleted(period: Period, enabled: boolean) {
     setLoading(true);
     setError(null);
 
-    fetchCompleted(previousSince, now, controller.signal)
+    fetchCompleted(earlier.since, current.until, controller.signal)
       .then(split)
       .catch((err: unknown) => {
         if (controller.signal.aborted) return;
@@ -74,7 +70,7 @@ export function useCompleted(period: Period, enabled: boolean) {
       });
 
     return () => controller.abort();
-  }, [period, enabled, connected, demo, locale]);
+  }, [sinceMs, untilMs, enabled, connected, demo, locale]);
 
   return { data, previous, loading, error };
 }
