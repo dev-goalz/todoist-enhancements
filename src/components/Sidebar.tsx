@@ -180,7 +180,7 @@ export function Sidebar({
         >
           <span className="avatar">
             {avatar
-              ? <img src={avatar} alt="" width={28} height={28} referrerPolicy="no-referrer" />
+              ? <img src={avatar} alt="" width={30} height={30} referrerPolicy="no-referrer" />
               : initials}
           </span>
           <span className="identity">

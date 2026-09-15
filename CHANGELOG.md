@@ -33,6 +33,8 @@ What changed in each version, newest first.
 
 - My week in board mode showed one column holding the whole week. It shows the
   same five buckets the list does.
+- A profile photo in the sidebar kept its own square corners on top of the
+  round frame, and a portrait that was not square was squashed into it.
 
 ### Removed
 

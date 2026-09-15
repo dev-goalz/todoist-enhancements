@@ -128,8 +128,13 @@ ul{margin:0;padding:0;list-style:none}
 .side-top{display:flex;align-items:center;gap:var(--s2);position:relative;padding-bottom:var(--s2)}
 .profile{flex:1;min-width:0;display:flex;align-items:center;gap:var(--s2);padding:var(--s1) 6px;border-radius:var(--r-sm);text-align:left}
 .profile:hover,.profile[aria-expanded="true"]{background:var(--hover)}
-.avatar{width:30px;height:30px;flex:0 0 auto;display:grid;place-items:center;border-radius:var(--r-full);
+.avatar{width:30px;height:30px;flex:0 0 auto;display:grid;place-items:center;overflow:hidden;
+  border-radius:var(--r-full);
   color:#fff;background:linear-gradient(145deg,#2d5961,#d87c62);font-size:var(--fs-11);font-weight:700}
+/* A photo fills the circle and is cropped by it. Left to itself it kept its
+   own square corners over the round background, and a portrait that is not
+   square was squashed to fit. */
+.avatar img{width:100%;height:100%;object-fit:cover;display:block}
 .identity{min-width:0;display:grid;line-height:1.2}
 .identity strong{font-size:var(--fs-13);font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .identity small{color:var(--muted);font-size:var(--fs-11)}
