@@ -127,6 +127,15 @@ export function App() {
         void useStore.getState().undo();
         return;
       }
+      /* Escape gives the selection back. A dialog and an open menu both
+         listen on `document` and stop the event there, so this only ever
+         fires when the selection is the outermost thing that could be
+         dismissed — which is exactly when it is what Escape means. */
+      if (e.key === 'Escape' && useStore.getState().selection.length > 0) {
+        e.preventDefault();
+        useStore.getState().clearSelection();
+        return;
+      }
       if (!typing && e.key === 'q') {
         e.preventDefault();
         setComposerOpen(true);

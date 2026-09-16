@@ -588,8 +588,30 @@
 }
 .bulkbar .btn.danger:hover{background:var(--accent-tint);border-color:var(--accent)}
 .bulkbar .btn.danger .ic{color:currentColor}
+/* One button per property, each opening its panel upwards: the bar is pinned
+   to the foot of the window, so a menu dropping out of it would open off the
+   bottom of the page. */
+.bulkmenu{position:relative}
+.bulkmenu > .btn{gap:6px}
+.bulkpop{bottom:calc(100% + 8px);left:0;top:auto;max-width:300px}
+/* Near the right-hand end of the bar, so it opens back into the bar rather
+   than off the edge of the window. */
+.bulkmenu:nth-last-of-type(1) .bulkpop{left:auto;right:0}
+.bulkpop-list{max-height:280px;overflow:auto}
+.bulkpop-date{padding:2px}
+.bulkpop-date .datefield{width:100%}
+.bulkpop .opt > span{display:inline-flex;align-items:center;gap:8px;min-width:0}
+.bulkpop .opt .hash{flex:0 0 auto}
+.bulkflag.p1{color:var(--p1)}
+.bulkflag.p2{color:var(--p2)}
+.bulkflag.p3{color:var(--p3)}
+.bulkflag.p4{color:var(--faint)}
 @media (max-width: 720px){
   .bulkbar{left:10px;right:10px;transform:none;flex-wrap:wrap;justify-content:center;bottom:78px}
+  /* Wrapped onto two rows, a panel anchored to its button can hang off the
+     side; centre it on the bar instead. */
+  .bulkpop{left:50%;right:auto;transform:translateX(-50%)}
+  .bulkmenu:nth-last-of-type(1) .bulkpop{left:50%;right:auto}
 }
 
 
