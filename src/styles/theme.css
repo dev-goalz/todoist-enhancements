@@ -661,8 +661,12 @@
   max-width:1160px;
 }
 
-/* A board keeps the same measure as every other view. It wraps its columns
-   onto a second row rather than asking the page to grow around it. */
+/* A board is not read line by line, so it takes the whole workspace instead
+   of the reading measure. The header above it widens with it, so both keep
+   the same left edge. */
+.page:has(> .mode > .board) > :is(.phead,.metrics,.viewbar,.tabs,.mode,.empty){
+  max-width:none;
+}
 
 /* ---------- Behind schedule and Quick read as callouts ---------- */
 .group.accent-late,
