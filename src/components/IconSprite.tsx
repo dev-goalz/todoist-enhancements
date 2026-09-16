@@ -28,6 +28,7 @@ export function IconSprite() {
 <symbol id="i-stack" viewBox="0 0 24 24"><path d="m12 3 8.5 4.5L12 12 3.5 7.5z"/><path d="m3.5 12 8.5 4.5 8.5-4.5"/><path d="m3.5 16.5 8.5 4.5 8.5-4.5"/></symbol>
 <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="16.5" rx="2.5"/><path d="M8 2.5v4M16 2.5v4M3 10h18M9.5 10v11M15 10v11M3 15.5h18"/></symbol>
 <symbol id="i-group" viewBox="0 0 24 24"><path d="M3 4.5h8"/><path d="M7 9h14M7 13h14"/><path d="M3 17.5h8"/><path d="M7 21.5h14"/></symbol>
+<symbol id="i-section" viewBox="0 0 24 24"><path d="M3 4.5h18"/><path d="M8.5 10h12M8.5 15h12M8.5 20h7"/></symbol>
 <symbol id="i-sort" viewBox="0 0 24 24"><path d="m3 16 3.5 4 3.5-4M6.5 19.5V4"/><path d="M13 5h8M13 10h6M13 15h4"/></symbol>
 <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M21 5h-7M10 5H3M21 12h-9M8 12H3M21 19h-5M12 19H3M14 3v4M8 10v4M16 17v4"/></symbol>
 <symbol id="i-filter" viewBox="0 0 24 24"><path d="M21 4H3l7.2 8.4V19l3.6 2v-8.6L21 4Z"/></symbol>

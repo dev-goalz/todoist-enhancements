@@ -681,6 +681,7 @@ export const fr: Record<TranslationKey, string> = {
 
   /* 1.1.1 — seconde passe */
   'task.typeDate': 'Demain, dimanche prochain, 12 avril…',
+  'task.typeDestination': 'Filtrer projets et sections…',
   'task.dateNotRead': 'Pas une date reconnue.',
   'settings.dateFormat': 'Format de date',
   'settings.dateFormatHint': 'L\'ordre des éléments d\'une date écrite. Aujourd\'hui et demain sont toujours nommés, jamais datés.',

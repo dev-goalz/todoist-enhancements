@@ -28,6 +28,16 @@ export interface DropMutation {
   move?: { project_id?: string; section_id?: string | null };
 }
 
+/**
+ * Todoist's `item_move` takes exactly one destination. A section implies its
+ * project, so the section is sent when there is one and the project otherwise.
+ */
+export function moveArgs(
+  move: { project_id?: string; section_id?: string | null },
+): { section_id: string } | { project_id?: string } {
+  return move.section_id ? { section_id: move.section_id } : { project_id: move.project_id };
+}
+
 const withoutWeek = (labels: string[]): string[] =>
   labels.filter((l) => l.toLowerCase() !== weekLabel().toLowerCase());
 

@@ -105,37 +105,43 @@ function ProjectBody({
 
   const sorted = (list: typeof scoped) => sortItems(list, current.sort, childrenOf);
 
+  /**
+   * The tasks in the project itself, in no section.
+   *
+   * They lead the page, above the sections, and they are not given a heading:
+   * "no section" is not a section, and putting them in a group called that
+   * invents a container you never made and buries the loose work at the
+   * bottom. The board has always read them this way; the list now agrees.
+   */
+  const looseItems = useMemo(
+    () => sorted(scoped.filter((i) => !i.section_id)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [scoped, current.sort, childrenOf],
+  );
+
   const sectionGroups = useMemo(
-    () => {
-      const grouped = sections.map((section) => ({
+    () =>
+      sections.map((section) => ({
         id: section.id,
         title: section.name,
         items: sorted(scoped.filter((i) => i.section_id === section.id)),
-      }));
-
-      const loose = sorted(scoped.filter((i) => !i.section_id));
-      // With no sections at all there is nothing to distinguish, so the list
-      // is shown plainly rather than under a "no section" heading.
-      if (sections.length === 0) {
-        return [{ id: 'none', title: '', items: loose }];
-      }
-      return [
-        ...grouped,
-        { id: 'none', title: t('group.noSection'), items: loose },
-      ];
-    },
+      })),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [sections, scoped, current.sort, childrenOf, t],
+    [sections, scoped, current.sort, childrenOf],
   );
 
   const boardColumns = useMemo(
     () =>
-      sectionGroups
+      [
         // An empty "no section" column is noise; a real section stays, because
-        // an empty column of your own is still somewhere to drop work.
-        .filter((group) => group.id !== 'none' || group.items.length > 0)
-        // Loose tasks lead the board, as they do in Todoist's own.
-        .sort((a, b) => (a.id === 'none' ? -1 : b.id === 'none' ? 1 : 0))
+        // an empty column of your own is still somewhere to drop work. The
+        // column keeps a name, unlike the list: a board column with no header
+        // is a stack of cards floating beside labelled ones.
+        ...(looseItems.length > 0
+          ? [{ id: 'none', title: t('group.noSection'), items: looseItems }]
+          : []),
+        ...sectionGroups,
+      ]
         .map((group) => ({
           id: group.id,
           title: group.title,
@@ -146,7 +152,7 @@ function ProjectBody({
             projectId,
           },
         })),
-    [sectionGroups, projectId],
+    [sectionGroups, looseItems, projectId, t],
   );
 
   if (!project) {
@@ -232,38 +238,34 @@ function ProjectBody({
         />
       ) : current.mode === 'list' && current.group === 'none' ? (
         <div className="mode">
+          {/* The project's own tasks, first and unlabelled: they are in the
+              project, not in a section that happens to be called nothing. */}
+          <TaskGroup
+            items={looseItems}
+            childrenOf={childrenOf}
+            onOpen={onOpen}
+            showProject={false}
+            dropTarget={{ kind: 'section', sectionId: null, projectId }}
+            onAddTask={() => onAddTaskTo({ projectId })}
+          />
           {sectionGroups.map((group, index) => (
             <Fragment key={group.id}>
-            {/* The seam before a real section. "No section" is not one, so it
-                gets no seam of its own and the strips never double up. */}
-            {group.id !== 'none' && (
-              <AddSectionLine
-                label={t('section.add')}
-                slotId={String(index)}
-                onAdd={() => void addSection(index)}
-              />
-            )}
+            <AddSectionLine
+              label={t('section.add')}
+              slotId={String(index)}
+              onAdd={() => void addSection(index)}
+            />
             <TaskGroup
               title={group.title}
-              sectionId={group.id === 'none' ? undefined : group.id}
-              onRename={
-                group.id === 'none'
-                  ? undefined
-                  : (name) => void updateSectionFields(group.id, { name })
-              }
-              onDelete={group.id === 'none' ? undefined : () => void deleteSection(group)}
+              sectionId={group.id}
+              onRename={(name) => void updateSectionFields(group.id, { name })}
+              onDelete={() => void deleteSection(group)}
               items={group.items}
               childrenOf={childrenOf}
               onOpen={onOpen}
               showProject={false}
-              dropTarget={{
-                kind: 'section',
-                sectionId: group.id === 'none' ? null : group.id,
-                projectId,
-              }}
-              onAddTask={() =>
-                onAddTaskTo({ projectId, sectionId: group.id === 'none' ? undefined : group.id })
-              }
+              dropTarget={{ kind: 'section', sectionId: group.id, projectId }}
+              onAddTask={() => onAddTaskTo({ projectId, sectionId: group.id })}
             />
             </Fragment>
           ))}

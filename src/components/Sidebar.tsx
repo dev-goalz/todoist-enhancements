@@ -45,6 +45,7 @@ export function Sidebar({
   const setPrefs = useStore((s) => s.setPrefs);
   const weekLayout = useStore((s) => s.prefs.weekLayout);
   const disconnect = useStore((s) => s.disconnect);
+  const draggingProjectId = useStore((s) => s.draggingProjectId);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const [openFolders, setOpenFolders] = useState<Record<string, boolean>>({});
@@ -203,6 +204,11 @@ export function Sidebar({
         /* A favourite project also appears under its workspace, so the two
            rows must not claim the same droppable id. */
         scope={`nav-${keyPrefix || 'tree'}`}
+        /* The other half of the same rule the row itself follows: while a
+           project is being dragged the row is a position in a list, not a
+           place to file anything, so the destination stands down and the
+           reorder bar is the only thing the drag can land on. */
+        disabled={draggingProjectId !== null}
         key={rowKey}
       >
         {({ isOver }) => (

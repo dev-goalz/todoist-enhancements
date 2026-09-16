@@ -679,6 +679,7 @@ export const en = {
 
   /* 1.1.1 — second pass */
   'task.typeDate': 'Tomorrow, next Sunday, 12 April…',
+  'task.typeDestination': 'Filter projects and sections…',
   'task.dateNotRead': 'Not a date this understands.',
   'settings.dateFormat': 'Date format',
   'settings.dateFormatHint': 'The order a written-out date puts its parts in. Today and tomorrow are always named, never dated.',
