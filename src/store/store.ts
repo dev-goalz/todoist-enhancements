@@ -126,6 +126,21 @@ interface AppState {
   restoreTasks: (items: Item[]) => Promise<void>;
   /** Sends several tasks to the same destination, as one change and one undo. */
   sendManyTo: (ids: string[], target: DropTarget, destination: string | null) => Promise<void>;
+  /**
+   * The same field change across a selection.
+   *
+   * The fields are computed per task rather than passed once, because the
+   * useful bulk edits are relative to what each task already carries —
+   * dropping a tag is a different list for every task in the set. What is
+   * overwritten is read back first, so the whole pass is one undo.
+   */
+  updateMany: (
+    ids: string[],
+    fieldsFor: (item: Item) => Record<string, unknown> | null,
+    message: string,
+  ) => Promise<void>;
+  /** Moves a selection into a project, as one change and one undo. */
+  moveMany: (ids: string[], projectId: string, destination: string) => Promise<void>;
   createTask: (args: Record<string, unknown>) => Promise<void>;
   moveTask: (id: string, target: { project_id?: string; section_id?: string | null }) => Promise<void>;
   /**
@@ -734,6 +749,88 @@ export const useStore = create<AppState>((set, get) => ({
       }),
       () => void get().apply(
         changes.map((change) => updateItem(change.id, change.before)),
+        patchAll((change) => change.before as unknown as Record<string, unknown>),
+      ),
+    );
+  },
+
+  async updateMany(ids, fieldsFor, message) {
+    const snapshot = get().snapshot;
+    const changes = ids
+      .map((id) => {
+        const item = snapshot.items[id];
+        if (!item) return null;
+        const update = fieldsFor(item);
+        if (!update) return null;
+        // Only the keys being written, so the undo puts back what was taken
+        // and touches nothing a sync may have changed in the meantime.
+        const before = Object.fromEntries(
+          Object.keys(update).map((key) => [key, (item as unknown as Record<string, unknown>)[key]]),
+        );
+        return { id, update, before };
+      })
+      .filter((change): change is NonNullable<typeof change> => change !== null);
+
+    if (changes.length === 0) return;
+
+    const patchAll = (
+      fields: (change: (typeof changes)[number]) => Record<string, unknown>,
+    ) => (current: Snapshot): Snapshot =>
+      changes.reduce((acc, change) => patchItem(acc, change.id, fields(change)), current);
+
+    await get().apply(
+      changes.map((change) => updateItem(change.id, change.update)),
+      patchAll((change) => change.update),
+    );
+
+    get().toast(message, () => void get().apply(
+      changes.map((change) => updateItem(change.id, change.before)),
+      patchAll((change) => change.before),
+    ));
+  },
+
+  /**
+   * A selection, into a project.
+   *
+   * `item_move` rather than `item_update`: a project is where a task lives,
+   * not a field on it, and the section has to go with it — a section id from
+   * the old project would leave the task in a place its new project has no
+   * name for.
+   */
+  async moveMany(ids, projectId, destination) {
+    const snapshot = get().snapshot;
+    const changes = ids
+      .map((id) => {
+        const item = snapshot.items[id];
+        if (!item || item.project_id === projectId) return null;
+        return {
+          id,
+          before: { project_id: item.project_id, section_id: item.section_id },
+        };
+      })
+      .filter((change): change is NonNullable<typeof change> => change !== null);
+
+    if (changes.length === 0) return;
+
+    const patchAll = (
+      fields: (change: (typeof changes)[number]) => Record<string, unknown>,
+    ) => (current: Snapshot): Snapshot =>
+      changes.reduce((acc, change) => patchItem(acc, change.id, fields(change)), current);
+
+    await get().apply(
+      changes.map((change) => moveItem(change.id, { project_id: projectId })),
+      patchAll(() => ({ project_id: projectId, section_id: null })),
+    );
+
+    get().toast(
+      translate(get().prefs.locale, 'task.movedManyTo', {
+        count: changes.length, destination,
+      }),
+      () => void get().apply(
+        changes.map((change) => moveItem(change.id, {
+          project_id: change.before.project_id,
+          section_id: change.before.section_id,
+        })),
         patchAll((change) => change.before as unknown as Record<string, unknown>),
       ),
     );
