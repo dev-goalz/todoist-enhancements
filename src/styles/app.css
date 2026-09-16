@@ -64,6 +64,7 @@
   --tag-blue:#3972bf;   --tag-blue-soft:#eaf2fd;
   --tag-gray:#6b6864;   --tag-gray-soft:#f1efed;
   --tag-teal-soft:#e6f2ea;
+  --tag-lavender-soft:#e7e2fb;
 
   /* quieter surfaces and marks that only a few components use */
   --wash-late:#fdf8f6;
@@ -177,6 +178,7 @@
   --tag-blue:#72a3eb;   --tag-blue-soft:#1f2a3a;
   --tag-gray:#aba7a3;   --tag-gray-soft:#2c2b2a;
   --tag-teal-soft:#1f2e26;
+  --tag-lavender-soft:#2b2740;
 
   --wash-late:#271f1e;
   --wash-quick:#1f232a;

@@ -1,5 +1,6 @@
 import { SYSTEM_LABELS, weekLabel, type Item } from './types';
 import { toApiDate } from './dates';
+import { dueForDate } from './recurrence';
 
 /**
  * What a drop means.
@@ -33,31 +34,28 @@ const withoutWeek = (labels: string[]): string[] =>
 const withWeek = (labels: string[]): string[] =>
   withoutWeek(labels).concat(weekLabel());
 
-/** Builds a due value for a calendar date, preserving a time of day if one was set. */
-function dueForDate(item: Item, date: Date) {
-  const dateOnly = toApiDate(date);
-  const time = item.due?.date.includes('T') ? item.due.date.slice(item.due.date.indexOf('T')) : '';
-  return {
-    date: `${dateOnly}${time}`,
-    timezone: item.due?.timezone ?? null,
-    string: dateOnly,
-    lang: item.due?.lang ?? 'en',
-    is_recurring: item.due?.is_recurring ?? false,
-  };
-}
+/**
+ * A due value for a calendar date.
+ *
+ * The one in domain/recurrence, because dropping a repeating task onto a day
+ * is the commonest way to end a series by accident: it used to write the date
+ * into `due.string` while leaving `is_recurring` true, which leaves a task
+ * wearing a repeat marker that will never repeat again.
+ */
+const dueOn = (item: Item, date: Date) => dueForDate(item.due, toApiDate(date));
 
 export function dropMutation(item: Item, target: DropTarget): DropMutation | null {
   switch (target.kind) {
     case 'today':
       // Today's date, the week label dropped, the time of day and reminders kept.
-      return { update: { due: dueForDate(item, new Date()), labels: withoutWeek(item.labels) } };
+      return { update: { due: dueOn(item, new Date()), labels: withoutWeek(item.labels) } };
 
     case 'quick': {
       const labels = withoutWeek(item.labels);
       const tagged = labels.some((l) => l.toLowerCase() === SYSTEM_LABELS.quick);
       return {
         update: {
-          due: dueForDate(item, new Date()),
+          due: dueOn(item, new Date()),
           labels: tagged ? labels : [...labels, SYSTEM_LABELS.quick],
         },
       };
@@ -67,7 +65,7 @@ export function dropMutation(item: Item, target: DropTarget): DropMutation | nul
       /* A real date and the week tag on the same task is the contradiction the
          app reports rather than resolves, so giving a task a day takes the tag
          off — exactly as dropping it on Today does. */
-      return { update: { due: dueForDate(item, target.date), labels: withoutWeek(item.labels) } };
+      return { update: { due: dueOn(item, target.date), labels: withoutWeek(item.labels) } };
 
     case 'anytime':
       // Committed to this week, but to no particular day.

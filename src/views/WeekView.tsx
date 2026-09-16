@@ -14,6 +14,7 @@ import { applyFilters, rootItems, sortItems } from '@/store/selectors';
 import { anytimeItems, bucketOf, groupWeek, weekItems } from '@/domain/views';
 import { summariseLoad, weeklyCapacity } from '@/domain/load';
 import { toApiDate } from '@/domain/dates';
+import { dueForDate } from '@/domain/recurrence';
 import { weekLabel } from '@/domain/types';
 
 /**
@@ -101,14 +102,10 @@ function WeekBody({
     for (const item of affected) {
       // Moving to today drops the `week` label, which would otherwise put the
       // same task in two groups at once.
+      /* A repeating task among them keeps its rule: this button catches up on
+         what is late, and a series being late is not a reason to end it. */
       await updateTask(item.id, {
-        due: {
-          date: today,
-          timezone: item.due?.timezone ?? null,
-          string: 'today',
-          lang: item.due?.lang ?? 'en',
-          is_recurring: item.due?.is_recurring ?? false,
-        },
+        due: dueForDate(item.due, today),
         labels: item.labels.filter((l) => l.toLowerCase() !== weekLabel().toLowerCase()),
       });
     }

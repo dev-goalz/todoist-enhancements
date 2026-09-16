@@ -684,6 +684,40 @@
 .group.accent-late .task,
 .group.accent-quick .task{border-bottom-color:var(--row-line-on-wash)}
 
+/* ---------- The repeat rule, in the task panel ----------
+   A field rather than a line of text: the rule is the thing being edited, and
+   showing it as a value you cannot touch was the reason the app could display
+   a recurrence it had no way to change. */
+.repeatfield{display:grid;gap:5px;min-width:0}
+.repeatinput{
+  display:flex;align-items:center;gap:7px;min-height:34px;padding:0 10px;
+  border:1px solid var(--border-strong);border-radius:var(--r-ctl);background:var(--surface);
+}
+.repeatinput:focus-within{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.repeatinput .ic{flex:0 0 auto;color:var(--faint)}
+.repeatinput input{
+  width:100%;min-width:0;border:0;outline:0;background:transparent;
+  color:var(--text);font-size:var(--fs-13);
+}
+.repeatinput input::placeholder{color:var(--faint)}
+.repeatinput:has(input[aria-invalid="true"]){border-color:var(--p1)}
+/* The refusal says what to type instead, because "not understood" on its own
+   leaves the reader guessing at a grammar. */
+.repeatrefused{color:var(--p1);font-size:var(--fs-11);line-height:1.35}
+.repeathint{color:var(--muted);font-size:var(--fs-11);line-height:1.35}
+
+/* The repeat standing in the composer's date slot. Shaped like the picker it
+   replaces, so the row does not change height when a rule is read. */
+.crepeat{
+  display:flex;align-items:center;gap:6px;width:100%;min-height:34px;padding:0 10px;
+  border:1px solid var(--border-strong);border-radius:var(--r-ctl);
+  background:var(--accent-tint);color:var(--accent-dark);
+  font-size:var(--fs-13);font-weight:600;text-align:left;
+}
+.crepeat > span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.crepeat .ic{flex:0 0 auto}
+.crepeat:hover{border-color:var(--accent)}
+
 /* ---------- Kanban ---------- */
 /* Columns keep one width and the board scrolls sideways when there are more
    than fit, the way a board is expected to behave. Wrapping them onto a
@@ -1235,6 +1269,9 @@
 .nmark.label{background:var(--tag-purple-soft)}
 .nmark.priority{background:var(--accent-tint)}
 .nmark.duration{background:var(--tag-teal-soft)}
+/* A repeat is the one reading that changes the task forever rather than once,
+   so it is marked more firmly than a date is. */
+.nmark.recurrence{background:var(--tag-lavender-soft);box-shadow:0 0 0 2px var(--tag-lavender-soft)}
 
 /* The list that opens on @ or #. */
 .namepicker{
