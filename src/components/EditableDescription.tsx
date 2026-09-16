@@ -23,7 +23,11 @@ export function EditableDescription({
   const [draft, setDraft] = useState(value);
   const editorRef = useRef<HTMLTextAreaElement>(null);
 
-  useEffect(() => setDraft(value), [value]);
+  /* Follows the task, except while it is being written. A sync arriving
+     mid-sentence used to replace the draft with the stored text, which reads
+     as the field emptying itself under the hand. What is typed wins until it
+     is committed or abandoned. */
+  useEffect(() => { if (!editing) setDraft(value); }, [value, editing]);
   useEffect(() => { if (editing) editorRef.current?.focus(); }, [editing]);
 
   const html = useMemo(() => renderMarkdown(value), [value]);
