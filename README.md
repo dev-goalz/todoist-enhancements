@@ -142,6 +142,17 @@ underneath, so the dialog can never be holding two different tasks at once.
 Typing `@` or `#` opens the matching list. Subtasks can be typed in the same
 dialog and are created along with the parent.
 
+A repeat is read the same way: `Call Marc every monday`, `every 3 days`,
+`every 1st wed`, `tous les jours de semaine`. The rule is handed to Todoist to
+resolve rather than worked out here, including `every!`, which counts from the
+day a task is completed instead of from the date it was due. The grammar
+follows [the list Todoist
+publishes](https://www.todoist.com/help/articles/introduction-to-recurring-due-dates-YUYVJJAV),
+and anything outside it is refused rather than guessed at — a rule read wrongly
+moves every future occurrence and says nothing about it. The rule can be edited
+from the task panel afterwards, and giving a repeating task a single date moves
+that occurrence without ending the series.
+
 Reading dates from the text can be switched off in settings. `#project`, `p1`
 and `@tag` are explicit syntax and always apply.
 
@@ -170,6 +181,13 @@ possible intent, and nothing changes until you choose one.
 - A task's date can be typed from its row — "tomorrow", "next sunday", or a
   bare "15" for the next three fifteenths — or picked from a calendar.
 - Projects nest by dragging them to the right in the sidebar, or onto a folder.
+- Light, dark, or whichever the device is set to, following it when it
+  changes. Ten accent colours, including one you pick yourself, each of them
+  drawn in both schemes and checked for contrast rather than chosen by eye.
+- A first run that asks three questions on one page — scheme, colour, density
+  — and then points at four things in the app rather than describing them. It
+  is remembered per Todoist account, so signing out and back in does not ask
+  again, and it can be run again from settings.
 - Markdown in descriptions, rendered in the list and in the task panel.
 - Offline support: changes are queued and sent when you reconnect.
 - English and French, and settings for the things people disagree about: which
