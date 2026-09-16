@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { format, startOfDay } from 'date-fns';
 import { Icon } from '@/components/Icon';
+import { CoffeeLine } from '@/components/CoffeeLine';
 import {
   Bars, ChartCard, CompareBars, Donut, RankedBars, SplitBar, StatTile, seriesColor,
   type BarDatum, type CompareDatum, type RankedDatum, type SliceDatum,
@@ -427,6 +428,9 @@ export function InsightsView() {
       )}
 
       {!loading && tab === 'logbook' && <Logbook completed={completed} />}
+
+      {/* The foot of a page that has been read to the bottom. */}
+      {!loading && <CoffeeLine />}
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Icon } from '@/components/Icon';
 import { EstimateField } from '@/components/EstimateField';
+import { CoffeeLine } from '@/components/CoffeeLine';
 import { Select } from '@/components/Select';
 import { useT } from '@/hooks/useT';
 import { useData } from '@/hooks/useData';
@@ -763,6 +764,10 @@ export function ReviewView({ onOpen }: ReviewViewProps) {
             {t('review.again')}
           </button>
         </div>
+        {/* Under the two buttons, after the review is behind you: the one
+            moment in the app where a line about the app itself is a footnote
+            rather than an interruption. */}
+        <CoffeeLine />
       </section>
     );
   }

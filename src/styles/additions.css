@@ -756,3 +756,24 @@
 
 /* The mail step stopped asking to be ticked: Next already means "done". */
 .reviewmail{padding-bottom:var(--s5)}
+
+/* The coffee line.
+
+   Faint, small, and the same at every one of its two homes: a footnote at the
+   end of something that has finished, never a banner and never a thing to be
+   dismissed. The link is the only part that carries any colour, and only
+   under the pointer. */
+.coffeeline{
+  display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;
+  margin-top:var(--s6);padding-top:var(--s4);border-top:1px solid var(--border);
+  color:var(--faint);font-size:var(--fs-12);text-align:center;
+}
+.coffeeline a{
+  display:inline-flex;align-items:center;gap:5px;
+  color:var(--muted);text-decoration:none;border-bottom:1px solid var(--border);
+}
+.coffeeline a:hover{color:var(--accent-dark);border-bottom-color:var(--accent)}
+.coffeeline .ic{width:14px;height:14px}
+/* The finished panel centres everything and caps its paragraphs at 48ch; the
+   line is not one of those paragraphs. */
+.reviewdone .coffeeline{max-width:none;width:100%;font-size:var(--fs-12);color:var(--faint)}

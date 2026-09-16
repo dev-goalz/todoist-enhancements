@@ -12,6 +12,8 @@ export const en = {
   'nav.addTask': 'Add task',
   'nav.feedback': 'Submit a bug or idea',
   'nav.coffee': 'Buy me a coffee',
+  'coffee.free': 'Free, ad-free, and nothing here leaves your browser.',
+  'coffee.offer': 'Buy me a coffee',
   'nav.openTodoist': 'Open Todoist',
   'nav.signOut': 'Disconnect',
   'nav.collapseSidebar': 'Collapse sidebar',
