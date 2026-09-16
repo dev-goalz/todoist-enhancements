@@ -153,8 +153,16 @@ moves every future occurrence and says nothing about it. The rule can be edited
 from the task panel afterwards, and giving a repeating task a single date moves
 that occurrence without ending the series.
 
-Reading dates from the text can be switched off in settings. `#project`, `p1`
-and `@tag` are explicit syntax and always apply.
+Reading dates from the text can be switched off in settings. `#project`,
+`#project/section`, `p1` and `@tag` are explicit syntax and always apply.
+
+Every reading is marked inside the name as you type, in the colour of the thing
+it names — the project's own, the tag's, the priority's, the accent for a date
+or a repeat, which are the two the app guessed rather than read. A guess can be
+wrong: clicking a mark, or pressing Backspace against it, turns that reading
+back into ordinary text and takes its value out of the fields below. It refuses
+that one occurrence and no other, so `Weekly review weekly` can keep its title
+and still repeat, and a second click brings the reading back.
 
 ### Things to settle
 

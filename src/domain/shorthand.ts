@@ -1,6 +1,7 @@
 import { readNaturalDate } from './nlp';
 import { readRecurrence, type RecurrenceLang } from './recurrence';
 import { parseDurationInput } from './estimates';
+import { colorValue } from './colors';
 import type { DisplayPriority, Snapshot } from './types';
 
 /**
@@ -34,6 +35,12 @@ export interface Highlight {
   start: number;
   end: number;
   kind: HighlightKind;
+  /**
+   * The colour the mark is drawn in, when the thing it names has one of its
+   * own — the project's colour, the tag's, the priority's. A guess made from
+   * prose has none and wears the accent instead.
+   */
+  tone?: string;
 }
 
 /** A stretch of the name, by position in it. */
@@ -46,6 +53,8 @@ export interface Shorthand {
   /** The name with every recognised phrase taken out of it. */
   content: string;
   projectId: string | null;
+  /** A section of that project, when the name said `#Project/Section`. */
+  sectionId: string | null;
   priority: DisplayPriority | null;
   labels: string[];
   /** `yyyy-MM-dd`, or with a time when one was given. */
@@ -70,14 +79,15 @@ export function parseShorthand(
   raw: string, snapshot: Snapshot, naturalDates: boolean, refused: TextRange[] = [],
 ): Shorthand {
   const ranges: Highlight[] = [];
-  const claim = (start: number, length: number, kind: HighlightKind) =>
-    ranges.push({ start, end: start + length, kind });
+  const claim = (start: number, length: number, kind: HighlightKind, tone?: string) =>
+    ranges.push({ start, end: start + length, kind, tone });
 
   /** Whether a candidate covers ground the caller has already turned down. */
   const isRefused = (start: number, length: number) =>
     refused.some((r) => start < r.end && start + length > r.start);
 
   let projectId: string | null = null;
+  let sectionId: string | null = null;
   let priority: DisplayPriority | null = null;
   const labels: string[] = [];
   let minutes: number | null = null;
@@ -85,7 +95,10 @@ export function parseShorthand(
   /* Each reader takes the first candidate it has not been turned down on, so
      refusing one occurrence hands the reading to the next rather than giving
      the name no project at all. */
-  for (const project of raw.matchAll(/#([\p{L}\p{N}_-]+)/gu)) {
+  /* `#Project/Section` names both at once, the way the move menu offers both:
+     a task that belongs in a section of a project should not need the project
+     said here and the section chosen in a field underneath. */
+  for (const project of raw.matchAll(/#([\p{L}\p{N}_-]+)(\/([\p{L}\p{N}_-]+))?/gu)) {
     if (isRefused(project.index!, project[0].length)) continue;
     const wanted = fold(project[1]);
     const found = Object.values(snapshot.projects).find(
@@ -93,21 +106,42 @@ export function parseShorthand(
     );
     if (!found) continue;
     projectId = found.id;
-    claim(project.index!, project[0].length, 'project');
+
+    if (project[3]) {
+      const named = fold(project[3]);
+      const section = Object.values(snapshot.sections).find(
+        (s) => s.project_id === found.id && !s.is_deleted && !s.is_archived
+          && fold(s.name) === named,
+      );
+      /* A section that does not exist leaves the project claimed and the rest
+         of the text alone: half a match is still a project you named. */
+      if (section) {
+        sectionId = section.id;
+        claim(project.index!, project[0].length, 'project', colorValue(found.color));
+        break;
+      }
+      claim(project.index!, project[1].length + 1, 'project', colorValue(found.color));
+      break;
+    }
+
+    claim(project.index!, project[0].length, 'project', colorValue(found.color));
     break;
   }
 
   for (const flag of raw.matchAll(/\bp([1-4])\b/gi)) {
     if (isRefused(flag.index!, flag[0].length)) continue;
     priority = Number(flag[1]) as DisplayPriority;
-    claim(flag.index!, flag[0].length, 'priority');
+    claim(flag.index!, flag[0].length, 'priority', `var(--p${priority})`);
     break;
   }
 
   for (const label of raw.matchAll(/@([\p{L}\p{N}_-]+)/gu)) {
     if (isRefused(label.index!, label[0].length)) continue;
     labels.push(label[1]);
-    claim(label.index!, label[0].length, 'label');
+    const tag = Object.values(snapshot.labels).find(
+      (l) => !l.is_deleted && fold(l.name) === fold(label[1]),
+    );
+    claim(label.index!, label[0].length, 'label', tag ? colorValue(tag.color) : undefined);
   }
 
   /* An estimate in brackets. Anything `parseDurationInput` understands goes
@@ -156,7 +190,7 @@ export function parseShorthand(
   const clean = dedupe(ranges);
   return {
     content: strip(raw, clean),
-    projectId, priority, labels, date, recurrence, minutes,
+    projectId, sectionId, priority, labels, date, recurrence, minutes,
     ranges: clean,
   };
 }

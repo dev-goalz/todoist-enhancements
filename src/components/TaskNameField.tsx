@@ -8,12 +8,16 @@ import { useStore } from '@/store/store';
 import { useT } from '@/hooks/useT';
 import type { Snapshot } from '@/domain/types';
 
+/** A name with its spaces, case and accents set aside, as the parser reads it. */
+const squash = (text: string): string =>
+  text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '');
+
 /** The `@tag` or `#project` the caret is currently inside, if any. */
 function tokenAtCaret(
   value: string, caret: number,
 ): { sigil: '@' | '#'; query: string; start: number } | null {
   const before = value.slice(0, caret);
-  const match = before.match(/(^|\s)([@#])([\p{L}\p{N}_-]*)$/u);
+  const match = before.match(/(^|\s)([@#])([\p{L}\p{N}_/-]*)$/u);
   if (!match) return null;
   return {
     sigil: match[2] as '@' | '#',
@@ -107,19 +111,74 @@ export function TaskNameField({
   const options = (() => {
     if (!token) return [];
     if (token.sigil === '#') {
-      return Object.values(snapshot.projects)
-        .filter((p) => !p.is_archived && !p.is_deleted && !p.is_folder)
-        .filter((p) => p.name.toLowerCase().includes(token.query))
-        .slice(0, 6)
-        .map((p) => ({
-          id: p.id, name: p.name, color: p.color, sigil: '#' as const, isNew: false,
-        }));
+      const projects = Object.values(snapshot.projects)
+        .filter((p) => !p.is_archived && !p.is_deleted && !p.is_folder);
+      const sectionsOf = (projectId: string) => Object.values(snapshot.sections)
+        .filter((s) => s.project_id === projectId && !s.is_archived && !s.is_deleted)
+        .sort((a, b) => a.section_order - b.section_order);
+
+      const slash = token.query.indexOf('/');
+      const head = slash < 0 ? token.query : token.query.slice(0, slash);
+      const tail = slash < 0 ? null : token.query.slice(slash + 1);
+
+      /* Past the slash the question has changed: the project is settled and
+         the list is its sections, narrowing on what follows. */
+      if (tail !== null) {
+        const owner = projects.find((p) => squash(p.name) === squash(head));
+        if (!owner) return [];
+        return sectionsOf(owner.id)
+          .filter((s) => squash(s.name).includes(squash(tail)))
+          .slice(0, 6)
+          .map((s) => ({
+            id: s.id,
+            name: `${owner.name}/${s.name}`,
+            label: s.name,
+            hint: owner.name,
+            color: owner.color,
+            sigil: '#' as const,
+            isNew: false,
+          }));
+      }
+
+      const matching = projects.filter((p) => squash(p.name).includes(squash(head)));
+      const inside = head === '' ? [] : projects.flatMap((p) => sectionsOf(p.id)
+        .filter((s) => squash(s.name).includes(squash(head)))
+        .map((s) => ({
+          id: s.id,
+          name: `${p.name}/${s.name}`,
+          label: s.name,
+          hint: p.name,
+          color: p.color,
+          sigil: '#' as const,
+          isNew: false,
+        })));
+
+      return [
+        ...matching.slice(0, 6).map((p) => ({
+          id: p.id,
+          name: p.name,
+          label: p.name,
+          hint: undefined as string | undefined,
+          color: p.color,
+          sigil: '#' as const,
+          isNew: false,
+        })),
+        ...inside,
+      ].slice(0, 8);
     }
     const known = Object.values(snapshot.labels)
       .filter((l) => !l.is_deleted && !l.name.startsWith('est-'))
       .filter((l) => l.name.toLowerCase().includes(token.query))
       .slice(0, 6)
-      .map((l) => ({ id: l.id, name: l.name, color: l.color, sigil: '@' as const, isNew: false }));
+      .map((l) => ({
+        id: l.id,
+        name: l.name,
+        label: l.name,
+        hint: undefined as string | undefined,
+        color: l.color,
+        sigil: '@' as const,
+        isNew: false,
+      }));
 
     /* A tag you have not made yet is the common case when you are typing one:
        the list offers to make it rather than silently matching nothing. */
@@ -128,7 +187,13 @@ export function TaskNameField({
     );
     if (token.query && !exact) {
       known.push({
-        id: '__new__', name: token.query, color: 'charcoal', sigil: '@' as const, isNew: true,
+        id: '__new__',
+        name: token.query,
+        label: token.query,
+        hint: undefined,
+        color: 'charcoal',
+        sigil: '@' as const,
+        isNew: true,
       });
     }
     return known;
@@ -166,24 +231,33 @@ export function TaskNameField({
   };
 
   /**
-   * Everything the mirror draws: the marks, and the refusals under their
-   * dotted line. A refusal that a new mark has grown over is left out — one
-   * run of text cannot be both read and refused.
+   * Everything the mirror draws, plus the refusals it does not.
+   *
+   * A refused run is drawn as what it now is: ordinary text, with nothing
+   * under it and nothing behind it. It still has to be in this list, because
+   * clicking it is what brings the reading back.
    */
-  const spans: Array<TextRange & { kind?: HighlightKind; refused?: TextRange }> = [
-    ...ranges.map((range) => ({ start: range.start, end: range.end, kind: range.kind })),
+  const spans: Array<
+    TextRange & { kind?: HighlightKind; tone?: string; refused?: TextRange }
+  > = [
+    ...ranges.map((range) => ({
+      start: range.start, end: range.end, kind: range.kind, tone: range.tone,
+    })),
     ...live
       .filter((r) => !ranges.some((mark) => r.start < mark.end && r.end > mark.start))
       .map((r) => ({ start: r.start, end: r.end, refused: r })),
   ].sort((a, b) => a.start - b.start);
 
-  const pieces: Array<{ text: string; kind?: HighlightKind; refused?: boolean }> = [];
+  const pieces: Array<{
+    text: string; kind?: HighlightKind; tone?: string; refused?: boolean;
+  }> = [];
   let cursor = 0;
   for (const span of spans) {
     if (span.start > cursor) pieces.push({ text: value.slice(cursor, span.start) });
     pieces.push({
       text: value.slice(span.start, span.end),
       kind: span.kind,
+      tone: span.tone,
       refused: span.refused !== undefined,
     });
     cursor = span.end;
@@ -210,11 +284,15 @@ export function TaskNameField({
     <div className="namefield">
       <div className="namemirror" ref={mirrorRef} aria-hidden="true">
         {pieces.map((piece, index) =>
-          piece.kind || piece.refused
+          piece.kind && !piece.refused
             ? (
               <mark
-                className={`nmark ${piece.refused ? 'refused' : piece.kind}`}
+                className={`nmark ${piece.kind}`}
                 key={index}
+                /* The thing's own colour, when it has one: a project's, a
+                   tag's, the priority's. A guess made from prose has none and
+                   falls through to the accent the stylesheet gives it. */
+                style={piece.tone ? ({ '--mark': piece.tone } as React.CSSProperties) : undefined}
               >
                 {piece.text}
               </mark>
@@ -308,10 +386,13 @@ export function TaskNameField({
               onMouseDown={(e) => { e.preventDefault(); choose(option.name, option.isNew); }}
               onMouseEnter={() => setPick(index)}
             >
-              {option.sigil === '#'
-                ? <span className="hash" style={markerStyle(option.color)}>#</span>
-                : <Icon name={option.isNew ? 'plus' : 'tag'} size="sm" className="taglabel" style={markerStyle(option.color, false)} />}
-              <span>{option.name}</span>
+              {option.hint
+                ? <Icon name="section" size="sm" className="taglabel" style={markerStyle(option.color, false)} />
+                : option.sigil === '#'
+                  ? <span className="hash" style={markerStyle(option.color)}>#</span>
+                  : <Icon name={option.isNew ? 'plus' : 'tag'} size="sm" className="taglabel" style={markerStyle(option.color, false)} />}
+              <span>{option.label}</span>
+              {option.hint && <small className="namepicker-new">{option.hint}</small>}
               {option.isNew && <small className="namepicker-new">{t('labels.createNew')}</small>}
             </button>
           ))}

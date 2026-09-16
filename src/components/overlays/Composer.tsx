@@ -124,8 +124,8 @@ export function Composer({
    * saved. Each effect watches its own value, so a picker changed by hand
    * afterwards stays changed until the name says something new.
    */
-  const { date: readDate, projectId: readProject, priority: readPriority,
-    minutes: readMinutes, recurrence: readRepeat } = parsed;
+  const { date: readDate, projectId: readProject, sectionId: readSection,
+    priority: readPriority, minutes: readMinutes, recurrence: readRepeat } = parsed;
   const readLabels = parsed.labels.join('\u0000');
 
   /*
@@ -145,6 +145,13 @@ export function Composer({
     if (readRepeat) setRecurrence(readRepeat);
   }, [readRepeat?.string, refusals]);
   useEffect(() => { if (readProject) setProjectId(readProject); }, [readProject, refusals]);
+  /* The section follows the project it was named with. It watches both, so
+     naming a project on its own clears a section belonging to the last one —
+     and it does not re-run while the rest of the name is typed, which is what
+     lets a section chosen by hand in the field below stand. */
+  useEffect(() => {
+    if (readProject) setSectionId(readSection ?? '');
+  }, [readProject, readSection, refusals]);
   useEffect(() => { if (readPriority) setPriority(readPriority); }, [readPriority, refusals]);
   useEffect(() => {
     if (readMinutes !== null) setMinutes(readMinutes);
