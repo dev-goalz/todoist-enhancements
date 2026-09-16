@@ -1,0 +1,34 @@
+# Apache, which is what Infomaniak serves this from.
+#
+# Vite copies everything in public/ into dist/ untouched, so this ships with
+# the build and there is nothing to remember at upload time.
+
+# Apache has no media type for .webmanifest and sends the file with no
+# Content-Type header at all. Chromium reads it anyway; not everything does,
+# and a manifest that is not recognised is an app that cannot be installed.
+<IfModule mod_mime.c>
+  AddType application/manifest+json .webmanifest
+  AddType image/svg+xml .svg
+</IfModule>
+
+# The service worker must never be served from cache, or a new build sits
+# behind the old one until the browser decides otherwise. Everything under
+# assets/ carries a content hash in its name and can be kept forever.
+<IfModule mod_headers.c>
+  <FilesMatch "^(sw\.js|registerSW\.js|manifest\.webmanifest)$">
+    Header set Cache-Control "no-cache, must-revalidate"
+  </FilesMatch>
+  <FilesMatch "\.(js|css|woff2)$">
+    Header set Access-Control-Allow-Origin "same-origin"
+  </FilesMatch>
+</IfModule>
+
+# A single-page app behind a hash router still has exactly one document. A
+# request for a path that is not a real file is that document, not a 404 —
+# which is also what stops a mistyped URL returning the host's error page.
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule . index.html [L]
+</IfModule>

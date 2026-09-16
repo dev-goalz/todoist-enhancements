@@ -203,6 +203,24 @@ npm run dev      # Node 20+, pinned in .nvmrc
 npm run build    # produces a static site in dist/
 ```
 
+### Uploading a build
+
+Upload the **whole** of `dist/`, subfolders included. `dist/icons/` is the one
+that gets left behind, and when it does the app still looks and works exactly
+right — the only symptom is that the browser stops offering to install it and
+the installed app loses its icon, because a manifest whose icons all 404 fails
+the installability check without saying so anywhere the user can see.
+
+Two things to check after an upload:
+
+```bash
+curl -o /dev/null -w '%{http_code}\n' https://<host>/icons/icon-192.png   # 200
+curl -o /dev/null -w '%{content_type}\n' https://<host>/manifest.webmanifest
+```
+
+The second should say `application/manifest+json`. It comes from `.htaccess`,
+which ships in `dist/` — a dotfile, so a client set to hide them will skip it.
+
 ---
 
 ## Contributing
