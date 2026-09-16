@@ -1,7 +1,7 @@
 import { addDays, startOfDay } from 'date-fns';
 import type { CompletedItem, Item, Project } from './types';
-import { anytimeItems, bucketOf, isOpen } from './views';
-import { estimateOf } from './estimates';
+import { anytimeItems, bucketOf, isOpen, weekItems } from './views';
+import { effectiveEstimate, estimateOf } from './estimates';
 import { dueDate } from './dates';
 
 /**
@@ -15,7 +15,9 @@ import { dueDate } from './dates';
  * and there is nowhere to store it that Todoist would recognise.
  *
  * The daily pass asks what today is, and takes a few minutes. The weekly pass
- * asks what the week was and what the next one is, and takes longer.
+ * closes the week that has ended and opens the one starting, in that order and
+ * in two named halves, because those are two different frames of mind and a
+ * pass that mixes them is one people abandon in the middle.
  */
 
 export type ReviewCadence = 'daily' | 'weekly';
@@ -29,13 +31,23 @@ export type ReviewStepId =
   /* Weekly */
   | 'done'
   | 'stats'
-  | 'slipped'
-  | 'unestimated'
   | 'quiet'
-  | 'someday';
+  | 'email'
+  | 'someday'
+  | 'unestimated'
+  | 'load';
+
+/**
+ * The two halves of the weekly pass.
+ *
+ * Closing is reading and tidying what happened; opening is deciding what the
+ * next week is. The weekly used to do only the first and then tell you the
+ * next week was ready, which it was not.
+ */
+export type ReviewHalf = 'close' | 'open';
 
 /** What a row in a step can be sent to. The drop table does the work. */
-export type ReviewAction = 'today' | 'anytime' | 'someday';
+export type ReviewAction = 'today' | 'tomorrow' | 'anytime' | 'someday';
 
 export interface ReviewStep {
   id: ReviewStepId;
@@ -52,10 +64,19 @@ export interface ReviewStep {
   /** True where the missing thing is a project, so the row files rather than schedules. */
   fileable: boolean;
   /**
+   * True when the step hands you something to read rather than a queue to
+   * empty. The two used to look identical in the progress rail: a count of
+   * finished tasks and a count of things still wrong were the same number in
+   * the same circle, and Someday showed a ticked pill reading "142".
+   */
+  reports: boolean;
+  /**
    * True when the step has nothing to settle. It is still shown — being told
    * the inbox is empty is the point of asking — but it is shown as settled.
    */
   clear: boolean;
+  /** Which half of the weekly pass this belongs to. Null for the daily one. */
+  half: ReviewHalf | null;
 }
 
 export interface ReviewInput {
@@ -68,15 +89,50 @@ export interface ReviewInput {
   now: Date;
   /** How long a project may go untouched before the review mentions it. */
   quietAfterDays: number;
+  /** The week's capacity, so the last step can say whether the next one fits. */
+  weeklyCapacityMinutes: number;
+  /** Reaching a task's children, for the estimate a parent inherits from them. */
+  childrenOf: (parentId: string) => Item[];
 }
 
+/**
+ * The steps a cadence walks through, in order.
+ *
+ * The weekly reads as two halves. Closing ends on quiet projects — the last
+ * honest observation about the week that was — and opening ends on the weight
+ * of the week ahead, which is the question the whole product is about. It used
+ * to end on Someday: the longest, least engaging list in the app, placed
+ * exactly where people stop.
+ */
 const STEPS: Record<ReviewCadence, ReviewStepId[]> = {
   daily: ['overdue', 'inbox', 'anytime', 'unestimated', 'today'],
-  weekly: ['done', 'stats', 'slipped', 'inbox', 'unestimated', 'quiet', 'someday'],
+  weekly: [
+    /* Close */
+    'done', 'stats', 'overdue', 'quiet',
+    /* Open */
+    'email', 'inbox', 'someday', 'anytime', 'unestimated', 'load',
+  ],
 };
 
-/** The steps a cadence walks through, in order. */
+const HALVES: Record<ReviewStepId, ReviewHalf> = {
+  done: 'close',
+  stats: 'close',
+  overdue: 'close',
+  quiet: 'close',
+  email: 'open',
+  inbox: 'open',
+  someday: 'open',
+  anytime: 'open',
+  unestimated: 'open',
+  load: 'open',
+  today: 'open',
+};
+
 export const stepsFor = (cadence: ReviewCadence): ReviewStepId[] => STEPS[cadence];
+
+/** The half a step belongs to, or null in a pass that has no halves. */
+export const halfOf = (cadence: ReviewCadence, id: ReviewStepId): ReviewHalf | null =>
+  cadence === 'weekly' ? HALVES[id] : null;
 
 const byDue = (a: Item, b: Item) =>
   (dueDate(a)?.getTime() ?? 0) - (dueDate(b)?.getTime() ?? 0);
@@ -126,7 +182,6 @@ function contentOf(
 
   switch (id) {
     case 'overdue':
-    case 'slipped':
       return { ...empty, items: roots.filter((i) => bucketOf(i, now) === 'overdue').sort(byDue) };
 
     case 'inbox':
@@ -168,10 +223,21 @@ function contentOf(
     case 'someday':
       return { ...empty, items: roots.filter((i) => bucketOf(i, now) === 'someday') };
 
+    case 'load':
+      /* Everything the coming week is carrying, which is exactly what My week
+         shows and measures. The step is the same reading, at the moment it is
+         still cheap to change. */
+      return { ...empty, items: weekItems(roots, now) };
+
     case 'stats':
       /* The figures are read from the same completions the first step lists,
          so the two can never disagree about the week they describe. */
       return { ...empty, completed: input.completed };
+
+    case 'email':
+      /* Nothing to list. Email lives outside this app and outside Todoist, and
+         a step that pretended otherwise would be making something up. */
+      return empty;
 
     default:
       return empty;
@@ -180,20 +246,26 @@ function contentOf(
 
 /** What each step lets you do to a row. A step that only reports offers nothing. */
 const ACTIONS: Record<ReviewStepId, ReviewAction[]> = {
-  overdue: ['today', 'anytime', 'someday'],
-  slipped: ['today', 'anytime', 'someday'],
+  overdue: ['today', 'tomorrow', 'anytime', 'someday'],
   /* The Inbox is not about when. A task is in it because it has no project,
-     so what it is missing is a project — see `files` below. */
+     so what it is missing is a project — see `fileable` below. */
   inbox: [],
   /* Already committed to the week: the only question left is whether it is
      today, and saying it is not is an answer too. */
   anytime: ['today', 'anytime'],
   someday: ['today', 'anytime', 'someday'],
   unestimated: [],
-  today: [],
+  /* The last step of the day used to offer nothing at all: if the day was
+     already full, the review ended on a problem with nowhere to put it. */
+  today: ['tomorrow', 'anytime', 'someday'],
+  /* The week weighed against its capacity. The only useful answer to "this
+     does not fit" is taking something out of the week, so that is the one
+     thing the rows do. */
+  load: ['someday'],
   done: [],
   stats: [],
   quiet: [],
+  email: [],
 };
 
 /** The step where the thing missing is an estimate, not a destination. */
@@ -203,13 +275,14 @@ const ESTIMABLE: ReviewStepId[] = ['unestimated'];
 const FILEABLE: ReviewStepId[] = ['inbox'];
 
 /**
- * Steps that only report.
+ * Steps that hand you something to read.
  *
  * Everything else asks for something — a destination, a number, or a tick —
- * so it carries a count until it is empty. Today asks for ticks, which is why
- * it is not in here even though it offers no destinations.
+ * and carries a count of what is still outstanding. Someday belongs here
+ * despite being a list of tasks: reading it is the point, a backlog is not a
+ * problem, and its size is not a number of things to deal with.
  */
-const REPORT_ONLY: ReviewStepId[] = ['done', 'stats', 'quiet'];
+const REPORTS: ReviewStepId[] = ['done', 'stats', 'quiet', 'someday', 'email'];
 
 /** Builds every step of a review, in order. */
 export function buildReview(cadence: ReviewCadence, input: ReviewInput): ReviewStep[] {
@@ -220,20 +293,34 @@ export function buildReview(cadence: ReviewCadence, input: ReviewInput): ReviewS
       content.projects.length === 0 &&
       content.completed.length === 0;
 
-    const estimable = ESTIMABLE.includes(id);
-    const fileable = FILEABLE.includes(id);
+    const reports = REPORTS.includes(id);
     return {
       id,
       ...content,
       actions: ACTIONS[id],
-      estimable,
-      fileable,
+      estimable: ESTIMABLE.includes(id),
+      fileable: FILEABLE.includes(id),
+      reports,
       /* A step that only reports is never "to settle": there is nothing to do
-         about it, so it reads as settled whatever it contains. The backlog is
-         the same — reading it is the point, and a backlog is not a problem. */
-      clear: nothing || REPORT_ONLY.includes(id) || id === 'someday',
+         about it, so it reads as settled whatever it contains. The load step is
+         the exception among the asking steps — it is settled when the week
+         fits, however many tasks are in it. */
+      clear: id === 'load'
+        ? !overloaded(content.items, input)
+        : nothing || reports,
+      half: halfOf(cadence, id),
     };
   });
+}
+
+/** True when the week ahead asks for more time than the settings allow it. */
+function overloaded(items: Item[], input: ReviewInput): boolean {
+  if (input.weeklyCapacityMinutes <= 0) return false;
+  const minutes = items.reduce(
+    (total, item) => total + (effectiveEstimate(item, input.childrenOf).minutes ?? 0),
+    0,
+  );
+  return minutes > input.weeklyCapacityMinutes;
 }
 
 /** How many steps still have something to settle. */

@@ -57,6 +57,45 @@ after 1.1 went out.
   dropping it on Today always did — the two together are the contradiction the
   app reports rather than resolves.
 
+### The review
+
+- **The week under review can be chosen.** The weekly pass read the week in
+  progress and nothing else, which only works for somebody doing it on a Sunday
+  night; done on a Monday it read a week two hours old. It opens on the week
+  that has just ended while the new one is young, and arrows reach the ones
+  before.
+- **The weekly pass is in two halves**, named in the rail: *close the week*
+  — what you finished, what it came to, what is late, which projects went
+  quiet — then *open the next one*: mail, inbox, Someday, this week's
+  commitments, estimates, and what the week weighs. It used to end on Someday,
+  the longest and least engaging list in the app, placed exactly where people
+  stop, and then claim the next week was ready when nothing had set it up.
+- **It ends on the load**, the idea the whole product is built on and the one
+  thing the ritual meant to steer it never mentioned: the coming week's hours
+  against the hours you said you have, with each task offering a way out of the
+  week on the spot.
+- **A mail step**, before the inbox, because that is where the tasks it
+  produces land. It claims nothing it cannot know — this app cannot see your
+  mail — and takes your word for it.
+- **The last step of the daily pass has somewhere to send things.** It offered
+  no action at all, so a day that was already full ended the review on a
+  problem with nowhere to put it.
+- **"Slipped" and "Behind schedule" were the same question** asked twice under
+  two names. There is one now.
+- **The estimates step holds its answers.** It wrote one request per task, so
+  the row you were typing in left the list the moment you pressed Enter and the
+  next jumped under the cursor. It now works the way the Unestimated sheet
+  does: the list stays still, the total gathers at the foot, one request at the
+  end.
+- **The progress rail stopped mixing units.** A count of things finished and a
+  count of things still wrong were the same number in the same circle — Someday
+  showed a ticked pill reading "142", which read as a hundred and forty-two
+  things done. Steps that report carry a mark; only steps that ask carry a
+  number.
+- **How long a project may go quiet is a setting.** Fourteen days is a fair
+  default and a poor constant: on a fast board it is permanent noise, on a slow
+  one the warning never comes.
+
 ## 1.1.0
 
 ### Added

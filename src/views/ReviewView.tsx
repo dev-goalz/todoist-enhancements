@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Icon } from '@/components/Icon';
 import { EstimateField } from '@/components/EstimateField';
 import { Select } from '@/components/Select';
@@ -9,30 +9,33 @@ import { useStore } from '@/store/store';
 import { navigate } from '@/hooks/useRoute';
 import { rootItems } from '@/store/selectors';
 import { markerStyle } from '@/domain/colors';
-import { formatDuration, effectiveEstimate, withEstimate } from '@/domain/estimates';
+import { formatDuration, effectiveEstimate } from '@/domain/estimates';
 import { dueDate, formatRelativeDay } from '@/domain/dates';
 import { summariseInsights } from '@/domain/insights';
+import { summariseLoad, weeklyCapacity } from '@/domain/load';
 import {
   Bars, ChartCard, Donut, SplitBar, seriesColor,
   type BarDatum, type SliceDatum,
 } from '@/components/charts';
-import { rangeFor } from '@/domain/periods';
-import { format, startOfDay } from 'date-fns';
-import { toDisplayPriority, type CompletedItem, type Item } from '@/domain/types';
+import { formatRange, rangeFor } from '@/domain/periods';
+import { addDays, format, startOfDay } from 'date-fns';
+import { toDisplayPriority, type CompletedItem, type Item, type Project } from '@/domain/types';
+import type { DropTarget } from '@/domain/dnd';
 import {
-  buildReview, type ReviewAction, type ReviewCadence, type ReviewStep,
+  buildReview,
+  type ReviewAction, type ReviewCadence, type ReviewHalf, type ReviewStep,
 } from '@/domain/review';
 import type { TranslationKey } from '@/i18n';
 
-/** How long a project may go untouched before the weekly review mentions it. */
-const QUIET_AFTER_DAYS = 14;
-
 /** The destination each action stands for, in the drop table's own terms. */
-const TARGETS = {
-  today: { kind: 'today' },
-  anytime: { kind: 'anytime' },
-  someday: { kind: 'someday' },
-} as const;
+const targetFor = (action: ReviewAction): DropTarget => {
+  switch (action) {
+    case 'today': return { kind: 'today' };
+    case 'tomorrow': return { kind: 'day', date: addDays(startOfDay(new Date()), 1) };
+    case 'anytime': return { kind: 'anytime' };
+    case 'someday': return { kind: 'someday' };
+  }
+};
 
 /** How the finished list can be ordered. */
 type DoneOrder = 'date' | 'priority';
@@ -56,15 +59,29 @@ interface ReviewViewProps {
 export function ReviewView({ onOpen }: ReviewViewProps) {
   const { t, locale } = useT();
   const { snapshot, items, childrenOf } = useData();
+  const prefs = useStore((s) => s.prefs);
   const sendTo = useStore((s) => s.sendTo);
   const toggleTask = useStore((s) => s.toggleTask);
-  const updateTask = useStore((s) => s.updateTask);
   const moveTask = useStore((s) => s.moveTask);
+
+  const startDay = snapshot.user?.start_day ?? 1;
 
   const [cadence, setCadence] = useState<ReviewCadence>('daily');
   const [index, setIndex] = useState(0);
   const [finished, setFinished] = useState(false);
   const [doneOrder, setDoneOrder] = useState<DoneOrder>('date');
+  /** Ticked when the mail has been dealt with. It lives only for this pass. */
+  const [mailCleared, setMailCleared] = useState(false);
+  /**
+   * Which week is under review: 0 is the one in progress, -1 the one before.
+   *
+   * A weekly review read the current week and nothing else, which only works
+   * for somebody who does it on a Sunday night. Done on a Monday morning it
+   * read a week two hours old. It opens on the week that has just ended while
+   * the new one is still young, and the arrows say the rest.
+   */
+  const [weekOffset, setWeekOffset] = useState(() => (earlyInTheWeek(startDay) ? -1 : 0));
+
   /**
    * What you chose for a row during this pass.
    *
@@ -78,14 +95,16 @@ export function ReviewView({ onOpen }: ReviewViewProps) {
   /* The weekly pass reports what was finished, which is history and is read
      on demand. The daily pass never asks, so it never fetches. */
   const weekRange = useMemo(
-    () => rangeFor('week', 0, null, snapshot.user?.start_day ?? 1),
-    [snapshot.user?.start_day],
+    () => rangeFor('week', weekOffset, null, startDay),
+    [weekOffset, startDay],
   );
   /* `previous` is the week before, which is what turns a bar chart into a
      comparison: the same seven days, one week back, drawn as a dotted line. */
   const { data: completed, previous, loading } = useCompleted(weekRange, cadence === 'weekly');
 
   const roots = useMemo(() => rootItems(items), [items]);
+
+  const capacity = weeklyCapacity(prefs.dailyCapacity, prefs.weeklyCapacityOverride);
 
   /** Where an Inbox task can be filed: every project, the Inbox included. */
   const fileDestinations = useMemo(
@@ -107,9 +126,12 @@ export function ReviewView({ onOpen }: ReviewViewProps) {
       completed,
       inboxProjectId: snapshot.user?.inbox_project_id ?? null,
       now: new Date(),
-      quietAfterDays: QUIET_AFTER_DAYS,
+      quietAfterDays: prefs.quietAfterDays,
+      weeklyCapacityMinutes: capacity,
+      childrenOf,
     }),
-    [cadence, roots, snapshot.projects, snapshot.user?.inbox_project_id, completed],
+    [cadence, roots, snapshot.projects, snapshot.user?.inbox_project_id, completed,
+      prefs.quietAfterDays, capacity, childrenOf],
   );
 
   // Changing cadence starts the review again rather than landing mid-way.
@@ -117,14 +139,12 @@ export function ReviewView({ onOpen }: ReviewViewProps) {
     setIndex(0);
     setFinished(false);
     setChosen({});
+    setMailCleared(false);
   }, [cadence]);
 
   const step = steps[index];
   const last = index === steps.length - 1;
-
-  /** The number on a step's pip: how many things it is asking about. */
-  const countOf = (s: ReviewStep): number =>
-    s.items.length + s.projects.length + s.completed.length;
+  const atPresent = weekOffset >= 0;
 
   return (
     <div className="page review">
@@ -141,6 +161,37 @@ export function ReviewView({ onOpen }: ReviewViewProps) {
             </button>
           ))}
         </div>
+
+        {/* Which week is being closed. The same pager Insights uses, because
+            it is the same question asked of the same kind of window. */}
+        {cadence === 'weekly' && (
+          <div className="reviewweek">
+            <span className="pager">
+              <button
+                className="iconbtn"
+                aria-label={t('review.previousWeek')}
+                title={t('review.previousWeek')}
+                onClick={() => setWeekOffset((w) => w - 1)}
+              >
+                <Icon name="arrow-left" size="sm" />
+              </button>
+              <button
+                className="iconbtn"
+                aria-label={t('review.nextWeek')}
+                title={t('review.nextWeek')}
+                disabled={atPresent}
+                onClick={() => setWeekOffset((w) => w + 1)}
+              >
+                <Icon name="arrow-right" size="sm" />
+              </button>
+            </span>
+            <span className="rangelabel">
+              {formatRange(weekRange, locale === 'fr' ? 'fr-FR' : 'en-GB')}
+              {weekOffset === -1 && <small> · {t('review.lastWeek')}</small>}
+              {weekOffset === 0 && <small> · {t('review.thisWeek')}</small>}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Where you are, and how much is left. A review with no visible end is
@@ -153,17 +204,32 @@ export function ReviewView({ onOpen }: ReviewViewProps) {
              waiting. A step you walked past is done even if you left things
              in it — you answered it by deciding not to. */
           const done = s.clear || finished || i < index;
+          /* A number only where a number means "still to deal with". The
+             reporting steps carry a mark, not a tally: "142" beside a tick
+             read as a hundred and forty-two things done. */
+          const outstanding = s.reports ? null : countOf(s);
+          const opensHalf = cadence === 'weekly'
+            && s.half !== null
+            && (i === 0 || steps[i - 1].half !== s.half);
+
           return (
-            <li key={s.id}>
+            <li key={s.id} className={opensHalf ? 'opens' : undefined}>
+              {opensHalf && (
+                <span className="reviewhalf">
+                  {t(`review.half.${s.half as ReviewHalf}` as TranslationKey)}
+                </span>
+              )}
               <button
-                className={`reviewpip${current ? ' current' : ''}${done ? ' done' : ''}`}
+                className={`reviewpip${current ? ' current' : ''}${done ? ' done' : ''}${s.reports ? ' reports' : ''}`}
                 aria-current={current ? 'step' : undefined}
                 onClick={() => { setIndex(i); setFinished(false); }}
               >
                 <span className="reviewpip-dot" aria-hidden="true">
-                  {done && !current
-                    ? <Icon name="check" size="sm" />
-                    : <b>{countOf(s)}</b>}
+                  {outstanding === null
+                    ? <Icon name={done && !current ? 'check' : 'bars'} size="sm" />
+                    : done && !current
+                      ? <Icon name="check" size="sm" />
+                      : <b>{outstanding}</b>}
                 </span>
                 <span className="reviewpip-label">
                   {t(`review.step.${s.id}` as TranslationKey)}
@@ -184,7 +250,9 @@ export function ReviewView({ onOpen }: ReviewViewProps) {
               anything is. */}
           <section className="reviewstep" key={step.id}>
             <h2>{t(`review.step.${step.id}` as TranslationKey)}</h2>
-            <p className="reviewask">{t(`review.ask.${step.id}` as TranslationKey)}</p>
+            <p className="reviewask">
+              {t(`review.ask.${step.id}` as TranslationKey, { days: prefs.quietAfterDays })}
+            </p>
             <div className="reviewbody">{body()}</div>
           </section>
 
@@ -213,12 +281,32 @@ export function ReviewView({ onOpen }: ReviewViewProps) {
     </div>
   );
 
+  /** The number on a step's pip: how many things it is still asking about. */
+  function countOf(s: ReviewStep): number {
+    if (s.id === 'load') return s.items.length;
+    return s.items.length + s.projects.length + s.completed.length;
+  }
+
   function body() {
     if (!step) return null;
 
     if (step.id === 'stats') return <Stats />;
     if (step.id === 'done') return <DoneList />;
     if (step.id === 'quiet') return <Quiet />;
+    if (step.id === 'email') return <Mail />;
+    if (step.id === 'unestimated') {
+      /* Keyed on the step, so moving away and back starts a fresh pass rather
+         than reviving drafts for a list that has since changed. */
+      return (
+        <Estimates
+          key="unestimated"
+          items={step.items}
+          projects={snapshot.projects}
+          onOpen={onOpen}
+        />
+      );
+    }
+    if (step.id === 'load') return <Load step={step} />;
 
     if (step.items.length === 0) return <Settled />;
 
@@ -254,7 +342,7 @@ export function ReviewView({ onOpen }: ReviewViewProps) {
           <span className="ttitle">{item.content}</span>
           <span className="meta">
             {due && (
-              <span className={s.id === 'overdue' || s.id === 'slipped' ? 'late' : undefined}>
+              <span className={s.id === 'overdue' ? 'late' : undefined}>
                 <Icon name="calendar" />{formatRelativeDay(due, locale)}
               </span>
             )}
@@ -280,24 +368,6 @@ export function ReviewView({ onOpen }: ReviewViewProps) {
               options={fileDestinations}
             />
           </span>
-        ) : s.estimable ? (
-          /* The thing missing here is a number, so the field is on the row and
-             the row leaves the list the moment it has one. */
-          <span className="reviewest">
-            <EstimateField
-              minutes={null}
-              onCommit={(value) => {
-                if (value === null) return;
-                void updateTask(item.id, { labels: withEstimate(item.labels, value) });
-              }}
-              onAdvance={(field) => {
-                const fields = Array.from(
-                  field.closest('.reviewlist')?.querySelectorAll('input') ?? [],
-                );
-                fields[fields.indexOf(field) + 1]?.focus();
-              }}
-            />
-          </span>
         ) : (
           <span className="reviewactions">
             {s.actions.map((action) => (
@@ -307,7 +377,7 @@ export function ReviewView({ onOpen }: ReviewViewProps) {
                 aria-pressed={current === action}
                 onClick={() => {
                   setChosen((prev) => ({ ...prev, [item.id]: action }));
-                  void sendTo(item.id, TARGETS[action], null);
+                  void sendTo(item.id, targetFor(action), null);
                 }}
               >
                 {t(`review.to.${action}` as TranslationKey)}
@@ -315,6 +385,74 @@ export function ReviewView({ onOpen }: ReviewViewProps) {
             ))}
           </span>
         )}
+      </div>
+    );
+  }
+
+  /**
+   * The week ahead, weighed.
+   *
+   * Load is the idea the whole product is built on, and the ritual meant to
+   * steer it never mentioned it. The step closes the weekly pass with the one
+   * question worth ending on — does the next week fit — and lets you take work
+   * out of it on the spot, because a step that only states a problem is a step
+   * that gets skipped.
+   */
+  function Load({ step: s }: { step: ReviewStep }) {
+    const load = summariseLoad(s.items, childrenOf, capacity);
+    const level = load.level === 'over' ? 'over' : load.level === 'tight' ? 'warn' : 'ok';
+
+    return (
+      <>
+        <div className="reviewload">
+          <span className={`loadpill ${level}`}>{load.percentage ?? 0}%</span>
+          <span className="reviewload-figures">
+            <b>{formatDuration(load.estimatedMinutes, locale)}</b>
+            <small>
+              {t('review.load.against', { capacity: formatDuration(capacity, locale) })}
+            </small>
+          </span>
+          {load.unestimatedCount > 0 && (
+            <small className="reviewload-note">
+              {t('metrics.unestimated', { count: load.unestimatedCount })}
+            </small>
+          )}
+        </div>
+
+        {s.items.length === 0 ? (
+          <Settled />
+        ) : (
+          <div className="reviewlist scrolls">
+            {s.items.map((item) => <Row key={item.id} item={item} step={s} />)}
+          </div>
+        )}
+      </>
+    );
+  }
+
+  /**
+   * The mail, which this app cannot see.
+   *
+   * It is placed before the Inbox because that is where the tasks it produces
+   * land, and a review that files the inbox before the mail has been read is
+   * filing half of it. The step claims nothing it cannot know: it states the
+   * pass and takes your word for it.
+   */
+  function Mail() {
+    return (
+      <div className={`reviewmail${mailCleared ? ' cleared' : ''}`}>
+        <span className="reviewclear-mark" aria-hidden="true">
+          <Icon name={mailCleared ? 'check' : 'inbox'} />
+        </span>
+        <strong>{t(mailCleared ? 'review.mail.done' : 'review.mail.todo')}</strong>
+        <span>{t('review.mail.how')}</span>
+        <button
+          className={`btn${mailCleared ? ' quiet' : ' primary'}`}
+          aria-pressed={mailCleared}
+          onClick={() => setMailCleared((v) => !v)}
+        >
+          {t(mailCleared ? 'review.mail.undo' : 'review.mail.confirm')}
+        </button>
       </div>
     );
   }
@@ -517,7 +655,7 @@ export function ReviewView({ onOpen }: ReviewViewProps) {
               <span className="ttitle">{project.name}</span>
             </button>
             <span className="reviewquiet">
-              {t('review.quietFor', { days: QUIET_AFTER_DAYS })}
+              {t('review.quietFor', { days: prefs.quietAfterDays })}
             </span>
           </div>
         ))}
@@ -556,4 +694,138 @@ export function ReviewView({ onOpen }: ReviewViewProps) {
       </section>
     );
   }
+}
+
+/**
+ * Putting a number on everything in play, in one pass.
+ *
+ * This step used to write an `item_update` per task, which meant the row you
+ * were typing in left the list the moment you pressed Enter and the next one
+ * jumped under the cursor. It now holds drafts the way the Unestimated sheet
+ * does: the list stays still, Tab walks down it, the total gathers at the
+ * foot, and one request goes out at the end.
+ *
+ * It lives outside the view rather than inside it because a component declared
+ * inside a render is a new component type on every render, and React throws
+ * away its state: a background sync landing mid-pass would have wiped the
+ * numbers already typed.
+ */
+function Estimates({
+  items, projects, onOpen,
+}: {
+  items: Item[];
+  projects: Record<string, Project>;
+  onOpen: (id: string) => void;
+}) {
+  const { t, locale } = useT();
+  const setEstimates = useStore((s) => s.setEstimates);
+  const listRef = useRef<HTMLDivElement>(null);
+  const [drafts, setDrafts] = useState<Record<string, number>>({});
+  const [saving, setSaving] = useState(false);
+  /* The list is fixed when the step opens. Writing the estimates changes what
+     the step would contain, and a list that empties itself under your hands is
+     the thing this is fixing. */
+  const [frozen] = useState(() => items);
+
+  const filled = Object.entries(drafts);
+  const total = filled.reduce((sum, [, minutes]) => sum + minutes, 0);
+
+  const record = (id: string, minutes: number | null) =>
+    setDrafts((prev) => {
+      if (minutes === null) {
+        if (!(id in prev)) return prev;
+        const { [id]: _removed, ...rest } = prev;
+        return rest;
+      }
+      if (prev[id] === minutes) return prev;
+      return { ...prev, [id]: minutes };
+    });
+
+  const move = (field: HTMLInputElement, direction: 1 | -1) => {
+    const fields = Array.from(listRef.current?.querySelectorAll('input') ?? []);
+    const next = fields[fields.indexOf(field) + direction];
+    if (next) next.focus();
+    else if (direction === 1) field.blur();
+  };
+
+  if (frozen.length === 0) {
+    return (
+      <div className="reviewclear">
+        <span className="reviewclear-mark" aria-hidden="true"><Icon name="check" /></span>
+        <strong>{t('review.settled')}</strong>
+        <span>{t('review.clear.unestimated')}</span>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="reviewlist scrolls" ref={listRef}>
+        {frozen.map((item, at) => {
+          const project = projects[item.project_id];
+          return (
+            <div
+              className={`reviewrow${drafts[item.id] !== undefined ? ' filled' : ''}`}
+              key={item.id}
+            >
+              <span
+                className={`check p${toDisplayPriority(item.priority)}`}
+                aria-hidden="true"
+              >
+                <Icon name="check" />
+              </span>
+              <button className="reviewname" tabIndex={-1} onClick={() => onOpen(item.id)}>
+                <span className="ttitle">{item.content}</span>
+                {project && !project.inbox_project && (
+                  <span className="meta">
+                    <span className="proj" style={markerStyle(project.color, false)}>
+                      #{project.name}
+                    </span>
+                  </span>
+                )}
+              </button>
+              <span className="reviewest">
+                <EstimateField
+                  minutes={null}
+                  autoFocus={at === 0}
+                  onChange={(value) => record(item.id, value)}
+                  onCommit={(value) => record(item.id, value)}
+                  onAdvance={move}
+                />
+              </span>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="reviewtally">
+        <span>
+          {t('issues.estimateFilled', { count: filled.length, total: frozen.length })}
+          {total > 0 && <b>{formatDuration(total, locale)}</b>}
+        </span>
+        <button
+          className="btn primary"
+          disabled={filled.length === 0 || saving}
+          onClick={() => {
+            setSaving(true);
+            void setEstimates(filled.map(([id, minutes]) => ({ id, minutes })))
+              .finally(() => setSaving(false));
+          }}
+        >
+          {t('common.save')}
+        </button>
+      </div>
+    </>
+  );
+}
+
+/**
+ * True in the first two days of a week.
+ *
+ * A review done then is almost certainly about the week that has just ended:
+ * the new one has barely happened and there is nothing in it to read.
+ */
+function earlyInTheWeek(startDay: number, now = new Date()): boolean {
+  const since = (now.getDay() - (startDay % 7) + 7) % 7;
+  return since <= 1;
 }

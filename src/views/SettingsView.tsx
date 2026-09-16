@@ -251,6 +251,21 @@ export function SettingsView() {
               />
             </Row>
 
+            <Row title={t('settings.quietAfter')} hint={t('settings.quietAfterHint')}>
+              <input
+                className="estinput"
+                inputMode="numeric"
+                defaultValue={String(prefs.quietAfterDays)}
+                aria-label={t('settings.quietAfter')}
+                onBlur={(event) => {
+                  const days = Number.parseInt(event.target.value, 10);
+                  const next = Number.isFinite(days) && days > 0 ? days : prefs.quietAfterDays;
+                  setPrefs({ quietAfterDays: next });
+                  event.target.value = String(next);
+                }}
+              />
+            </Row>
+
             <Row title={t('settings.capacityDefaults')} hint={t('settings.capacityDefaultsHint')}>
               <button
                 className="btn"

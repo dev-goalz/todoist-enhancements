@@ -596,3 +596,72 @@
 .rowmenu-date .fselect-face{
   width:100%;display:flex;align-items:center;gap:8px;justify-content:flex-start;
 }
+
+/* ==========================================================================
+   1.1.1 — the review
+   ========================================================================== */
+
+/* Which week is being closed, and the way back to the one before it. A weekly
+   review is almost never done inside the week it is about. */
+.reviewweek{display:flex;align-items:center;gap:var(--s3);flex-wrap:wrap}
+.reviewweek .rangelabel{
+  color:var(--text);font-size:var(--fs-13);font-weight:600;white-space:nowrap;
+}
+.reviewweek .rangelabel small{color:var(--faint);font-weight:500}
+
+/* The rail reads as two halves. The label sits above the first pip of each,
+   so "close" and "open" are seen before the steps under them. */
+.reviewrail{align-items:flex-end}
+.reviewrail li{display:grid;gap:2px}
+.reviewrail li.opens{margin-left:var(--s3)}
+.reviewrail li:first-child.opens{margin-left:0}
+.reviewhalf{
+  padding-left:6px;
+  color:var(--faint);font-size:var(--fs-11);font-weight:700;
+  letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;
+}
+
+/* A step that hands you something to read carries a mark, not a tally. The
+   two used to be the same circle with a number in it, which is how Someday
+   came to show a ticked pill reading "142". */
+.reviewpip.reports .reviewpip-dot{
+  border-style:dashed;border-color:var(--border-strong);color:var(--faint);
+}
+.reviewpip.reports.done .reviewpip-dot{border-color:var(--ok);color:var(--ok)}
+.reviewpip.reports.current .reviewpip-dot{
+  border-style:solid;border-color:var(--accent);background:var(--accent);color:#fff;
+}
+
+/* The estimates step keeps its answers until you save them, so it needs the
+   same running tally the Unestimated sheet has. */
+.reviewtally{
+  display:flex;align-items:center;justify-content:flex-end;gap:var(--s3);
+  margin-top:var(--s3);
+}
+.reviewtally > span{display:inline-flex;align-items:center;gap:8px}
+.reviewtally b{color:var(--text)}
+.reviewrow.filled{background:var(--subtle)}
+
+/* The week ahead, weighed. */
+.reviewload{
+  display:flex;align-items:center;gap:var(--s4);flex-wrap:wrap;
+  margin-bottom:var(--s4);padding:var(--s4);
+  border:1px solid var(--border);border-radius:var(--r-lg);background:var(--subtle);
+}
+.reviewload .loadpill{font-size:var(--fs-15);padding:4px 12px}
+.reviewload-figures{display:grid;gap:2px}
+.reviewload-figures b{font-size:var(--fs-20);font-weight:700;letter-spacing:-.015em}
+.reviewload-figures small,
+.reviewload-note{color:var(--muted);font-size:var(--fs-12)}
+.reviewload-note{margin-left:auto}
+
+/* The mail step, which has nothing to list and says so. */
+.reviewmail{
+  display:grid;justify-items:center;gap:8px;
+  padding:var(--s6) var(--s4);text-align:center;
+  border:1px dashed var(--border);border-radius:var(--r-lg);background:var(--subtle);
+}
+.reviewmail strong{color:var(--text);font-size:var(--fs-15);font-weight:700}
+.reviewmail > span{max-width:52ch;color:var(--muted);font-size:var(--fs-13);line-height:1.5}
+.reviewmail .reviewclear-mark{background:var(--accent)}
+.reviewmail.cleared .reviewclear-mark{background:var(--ok)}

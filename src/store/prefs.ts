@@ -76,6 +76,15 @@ export interface Preferences {
    * either rare enough or structural enough not to need the same courtesy.
    */
   weekLabel: string;
+  /**
+   * How long a project may go untouched before the weekly review mentions it.
+   *
+   * Fourteen days is a fair default and a poor constant: on a fast-moving board
+   * it is permanent noise, and on a slow one the warning never arrives at all.
+   * Either way the step gets ignored after three passes, which is worse than
+   * not asking.
+   */
+  quietAfterDays: number;
 }
 
 export const defaultPreferences = (locale: Locale): Preferences => ({
@@ -93,6 +102,7 @@ export const defaultPreferences = (locale: Locale): Preferences => ({
   upcomingHorizonDays: 15,
   weekLayout: 'unified',
   weekLabel: DEFAULT_WEEK_LABEL,
+  quietAfterDays: 14,
 });
 
 /** Reads the preferences for one view, falling back to the defaults. */
@@ -121,6 +131,9 @@ export function hydratePreferences(stored: unknown, locale: Locale): Preferences
     weekLabel: typeof s.weekLabel === 'string' && s.weekLabel.trim()
       ? s.weekLabel.trim()
       : base.weekLabel,
+    quietAfterDays: Number.isFinite(s.quietAfterDays) && (s.quietAfterDays as number) > 0
+      ? Math.round(s.quietAfterDays as number)
+      : base.quietAfterDays,
     views: s.views ?? {},
   };
 }
