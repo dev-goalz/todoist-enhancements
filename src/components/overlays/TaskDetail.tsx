@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { Overlay } from './Overlay';
 import { Icon } from '../Icon';
 import { useT } from '@/hooks/useT';
 import { useData } from '@/hooks/useData';
+import { navigate } from '@/hooks/useRoute';
 import { useStore } from '@/store/store';
 import { useConfirm } from './Confirm';
 import {
@@ -10,8 +12,10 @@ import {
 } from '@/domain/estimates';
 import { deadlineDate, dueDate, formatRelativeDay, toApiDate } from '@/domain/dates';
 import { renderMarkdown } from '@/domain/markdown';
+import { parseShorthand, type TextRange } from '@/domain/shorthand';
 import { dueForDate, readRecurrence } from '@/domain/recurrence';
 import { EstimateField } from '../EstimateField';
+import { TaskNameField } from '../TaskNameField';
 import { Select } from '../Select';
 import { DateField } from '../DateField';
 import { markerStyle } from '@/domain/colors';
@@ -96,6 +100,36 @@ interface TaskDetailProps {
   onOpen: (id: string) => void;
 }
 
+/** The id a subtask row registers under, in both of its roles. */
+export const subtaskRowId = (id: string): string => `subtask:${id}`;
+
+/**
+ * A subtask row that can be picked up and dropped onto another.
+ *
+ * It registers in the app's one drag context rather than opening a second, the
+ * way the sidebar's project rows do, and it is both the handle and the landing
+ * place — dropping one on another puts it in that one's position.
+ */
+function SubtaskRow({ id, children }: { id: string; children: React.ReactNode }) {
+  const rowId = subtaskRowId(id);
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: rowId });
+  const { setNodeRef: setDropRef, isOver } = useDroppable({ id: rowId });
+  const { t } = useT();
+
+  return (
+    <div
+      ref={setDropRef}
+      className={`subtaskrow${isDragging ? ' lifting' : ''}${isOver && !isDragging ? ' landing' : ''}`}
+    >
+      {/* Dragged by its handle, so the row's own controls keep working. */}
+      <span className="drag subdrag" title={t('detail.reorderSubtask')} ref={setNodeRef} {...attributes} {...listeners}>
+        <Icon name="drag" size="sm" />
+      </span>
+      {children}
+    </div>
+  );
+}
+
 /**
  * The full task.
  *
@@ -111,6 +145,10 @@ export function TaskDetail({ taskId, onClose, onOpen }: TaskDetailProps) {
   const toggleTask = useStore((s) => s.toggleTask);
   const removeTask = useStore((s) => s.removeTask);
   const createTask = useStore((s) => s.createTask);
+  const moveTask = useStore((s) => s.moveTask);
+  const setRecurrence = useStore((s) => s.setRecurrence);
+  const naturalDates = useStore((s) => s.prefs.naturalDates);
+  const toast = useStore((s) => s.toast);
   const confirm = useConfirm();
 
   const item = taskId ? snapshot.items[taskId] : null;
@@ -119,20 +157,25 @@ export function TaskDetail({ taskId, onClose, onOpen }: TaskDetailProps) {
   const [description, setDescription] = useState('');
   const [editingDescription, setEditingDescription] = useState(false);
   const [subtaskDraft, setSubtaskDraft] = useState('');
+  /** Readings of the title turned down while editing it. */
+  const [refusals, setRefusals] = useState<TextRange[]>([]);
   const [addingSubtask, setAddingSubtask] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [tagPickerOpen, setTagPickerOpen] = useState(false);
   const descriptionRef = useRef<HTMLTextAreaElement>(null);
-  const titleRef = useRef<HTMLTextAreaElement>(null);
-
+  const titleRef = useRef<HTMLTextAreaElement | HTMLInputElement>(null);
   /**
-   * Keeps the title box exactly as tall as its text, so nothing is clipped.
+   * Keeps the description box exactly as tall as its text, so leaving the
+   * field does not change the height of the panel.
    *
-   * The field is sized border-box, and scrollHeight excludes the border, so
-   * the border has to be added back or the last line is cropped.
+   * The editor was a fixed 96px box that scrolled, and the rendered view below
+   * it is as tall as the text — so clicking away from a long description made
+   * the panel jump open under the pointer, which is what it looked like when
+   * clicking "add subtask" right after pasting one in. Edited and rendered are
+   * the same height now, and nothing moves on the way between them.
    */
-  const fitTitle = useCallback(() => {
-    const el = titleRef.current;
+  const fitDescription = useCallback(() => {
+    const el = descriptionRef.current;
     if (!el) return;
     const style = getComputedStyle(el);
     const border =
@@ -149,6 +192,7 @@ export function TaskDetail({ taskId, onClose, onOpen }: TaskDetailProps) {
     setEditingDescription(false);
     setAddingSubtask(false);
     setSubtaskDraft('');
+    setRefusals([]);
     setMenuOpen(false);
     setTagPickerOpen(false);
   }, [item?.id]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -159,10 +203,12 @@ export function TaskDetail({ taskId, onClose, onOpen }: TaskDetailProps) {
 
   // Measured after layout, and again once webfonts settle, because the text
   // height is not final on the first paint.
-  useLayoutEffect(fitTitle, [fitTitle, title, taskId]);
+  useLayoutEffect(fitDescription, [fitDescription, description, editingDescription, taskId]);
+  // Measured again once webfonts settle: the text height is not final on the
+  // first paint.
   useEffect(() => {
-    void document.fonts?.ready.then(fitTitle);
-  }, [fitTitle]);
+    void document.fonts?.ready.then(fitDescription);
+  }, [fitDescription]);
 
   const descriptionHtml = useMemo(
     () => renderMarkdown(item?.description ?? ''),
@@ -176,6 +222,17 @@ export function TaskDetail({ taskId, onClose, onOpen }: TaskDetailProps) {
   const deadline = deadlineDate(item);
   const subtasks = childrenOf(item.id);
   const { minutes, computed } = effectiveEstimate(item, childrenOf);
+  /* The parents above this task, outermost first. Guarded against a cycle the
+     server should never send but which would otherwise hang the panel. */
+  const ancestors: Item[] = [];
+  for (
+    let parent = item.parent_id ? snapshot.items[item.parent_id] : null;
+    parent && ancestors.length < 10;
+    parent = parent.parent_id ? snapshot.items[parent.parent_id] : null
+  ) {
+    ancestors.unshift(parent);
+  }
+
   const project = snapshot.projects[item.project_id];
   const section = item.section_id ? snapshot.sections[item.section_id] : null;
   const comments = Object.values(snapshot.notes)
@@ -186,9 +243,86 @@ export function TaskDetail({ taskId, onClose, onOpen }: TaskDetailProps) {
     .filter((l) => !l.is_deleted && !l.name.startsWith('est-'))
     .sort((a, b) => a.item_order - b.item_order);
 
+  /**
+   * Saves the title, and everything the title turned out to be saying.
+   *
+   * Typing "call the plumber tomorrow p1 #Home" into a task's name should do
+   * what typing it into the composer does. What the readers claim is taken out
+   * of the name and written to the field it belongs to; what they do not claim
+   * stays in the name exactly as it was typed.
+   */
+  /** Whether the title holds an edit that has not been saved yet. */
+  const titleDirty = title !== item.content;
+
+  /* Both ways out of an edit also let the field go: a title that has just been
+     saved is not being edited any more, and a box still wearing its focus ring
+     says it is. */
+  const releaseTitle = () => { titleRef.current?.blur(); };
+
+  const cancelTitle = () => {
+    setTitle(item.content);
+    setRefusals([]);
+    releaseTitle();
+  };
+
   const commitTitle = () => {
-    const next = title.trim();
-    if (next && next !== item.content) void updateTask(item.id, { content: next });
+    const read = parseShorthand(title, snapshot, naturalDates, refusals);
+    const next = read.content.trim();
+    if (!next) {
+      // Nothing left to call it by: the edit is dropped rather than the name.
+      setTitle(item.content);
+      return;
+    }
+
+    const fields: Record<string, unknown> = {};
+    if (next !== item.content) fields.content = next;
+    if (read.date) fields.due = dueForDate(item.due, read.date);
+    if (read.priority) fields.priority = toTodoistPriority(read.priority);
+
+    let labels = item.labels;
+    if (read.labels.length > 0) labels = [...new Set([...labels, ...read.labels])];
+    if (read.minutes !== null) labels = withEstimate(labels, read.minutes);
+    if (labels !== item.labels) fields.labels = labels;
+
+    if (Object.keys(fields).length > 0) void updateTask(item.id, fields);
+
+    /* A repeat is not an `item_update` field like the others: Todoist resolves
+       the rule, so it is sent on its own and the date is left to it. */
+    if (read.recurrence) void setRecurrence(item.id, read.recurrence);
+
+    const movingProject = read.projectId && read.projectId !== item.project_id;
+    const movingSection = read.sectionId && read.sectionId !== item.section_id;
+    if (movingProject || movingSection) {
+      void moveTask(
+        item.id,
+        read.sectionId ? { section_id: read.sectionId } : { project_id: read.projectId! },
+      );
+    }
+
+    /*
+     * What the title turned out to be saying, said back.
+     *
+     * The words are taken out of the name as they are saved, so a title typed
+     * "… demain" and saved comes back one word shorter — which on its own is
+     * indistinguishable from the edit having been thrown away. The line names
+     * what was set instead, and the panel on the right shows it.
+     */
+    const applied = [
+      read.date
+        ? formatRelativeDay(new Date(`${read.date.slice(0, 10)}T00:00:00`), locale)
+          + (read.date.includes('T') ? ` ${read.date.slice(11, 16)}` : '')
+        : null,
+      read.recurrence?.string ?? null,
+      read.projectId ? snapshot.projects[read.projectId]?.name ?? null : null,
+      read.priority ? `P${read.priority}` : null,
+      ...read.labels.map((label) => `@${label}`),
+      read.minutes !== null ? formatDuration(read.minutes, locale) : null,
+    ].filter(Boolean);
+    if (applied.length > 0) toast(applied.join(' · '));
+
+    setRefusals([]);
+    setTitle(next);
+    releaseTitle();
   };
   const commitDescription = () => {
     setEditingDescription(false);
@@ -208,15 +342,42 @@ export function TaskDetail({ taskId, onClose, onOpen }: TaskDetailProps) {
   return (
     <Overlay open onClose={onClose} label={t('detail.title')}>
       <header className="detail-top">
-        <div className="crumb">
+        {/*
+          * Where the task is, as the way back rather than as a caption.
+          *
+          * A subtask opened from its parent used to be a dead end: the panel
+          * said which project it was in and nothing about the task it belongs
+          * to, and closing was the only way back up. Each ancestor is a link
+          * now, the project included. The section is not one, because there is
+          * no page that is a section.
+          */}
+        <nav className="crumb" aria-label={t('detail.whereItIs')}>
           {project && (
-            <>
+            <button
+              className="crumblink"
+              onClick={() => { onClose(); navigate('project', project.id); }}
+            >
               <span className="hash" style={markerStyle(project.color)}>#</span>
               {project.name}
+            </button>
+          )}
+          {section && (
+            <>
+              <span className="crumb-sep">/</span>
+              <span className="crumbhere">{section.name}</span>
             </>
           )}
-          {section && <span className="crumb-sep">/ {section.name}</span>}
-        </div>
+          {ancestors.map((parent) => (
+            <span className="crumbstep" key={parent.id}>
+              <span className="crumb-sep">/</span>
+              <button className="crumblink" onClick={() => onOpen(parent.id)}>
+                {parent.content}
+              </button>
+            </span>
+          ))}
+          <span className="crumb-sep">/</span>
+          <span className="crumbhere" aria-current="page">{item.content}</span>
+        </nav>
 
         <div className="detail-tools">
           <div className="menuwrap">
@@ -290,21 +451,54 @@ export function TaskDetail({ taskId, onClose, onOpen }: TaskDetailProps) {
             </span>
 
             <div className="detail-content">
-              <textarea
-                className="titlefield"
+              {/* The same field the composer uses, so a title edited here
+                  reads what a title typed there reads: a date, a repeat, a
+                  project, a tag, a priority — marked as you type and taken out
+                  of the name when it is saved. */}
+              <TaskNameField
                 value={title}
-                rows={1}
-                aria-label={t('detail.title')}
-                ref={titleRef}
-                onChange={(e) => { setTitle(e.target.value); fitTitle(); }}
-                onBlur={commitTitle}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    e.currentTarget.blur();
-                  }
-                }}
+                onChange={setTitle}
+                onSubmit={commitTitle}
+                onCancel={cancelTitle}
+                placeholder={t('detail.title')}
+                ariaLabel={t('detail.title')}
+                snapshot={snapshot}
+                naturalDates={naturalDates}
+                refusals={refusals}
+                onRefusals={setRefusals}
+                multiline
+                fieldClassName="titlefield"
+                fieldRef={titleRef}
               />
+
+              {/*
+                * An edit to the title is finished on purpose.
+                *
+                * It used to save itself when the field lost the caret, which
+                * is fine for a name and wrong for a name that also carries a
+                * date, a project and a priority: clicking anywhere rewrote
+                * four things at once, and the panel on the right only caught
+                * up afterwards. Enter saves, Escape puts it back, and the two
+                * buttons say so for anyone who does neither.
+                */}
+              {titleDirty && (
+                <div className="titleactions">
+                  {/* Pressed before the field can lose the caret, or the blur
+                      would land on the field and the click on nothing. */}
+                  <button
+                    className="btn sm"
+                    onMouseDown={(e) => { e.preventDefault(); cancelTitle(); }}
+                  >
+                    {t('common.cancel')}
+                  </button>
+                  <button
+                    className="btn sm primary"
+                    onMouseDown={(e) => { e.preventDefault(); commitTitle(); }}
+                  >
+                    {t('common.save')}
+                  </button>
+                </div>
+              )}
 
               {editingDescription ? (
                 <textarea
@@ -352,7 +546,7 @@ export function TaskDetail({ taskId, onClose, onOpen }: TaskDetailProps) {
             </h3>
 
             {subtasks.map((child) => (
-              <div className="subtaskrow" key={child.id}>
+              <SubtaskRow id={child.id} key={child.id}>
                 <span
                   className={`check p${toDisplayPriority(child.priority)}`}
                   role="checkbox"
@@ -368,7 +562,7 @@ export function TaskDetail({ taskId, onClose, onOpen }: TaskDetailProps) {
                     {child.content}
                   </span>
                 </button>
-              </div>
+              </SubtaskRow>
             ))}
 
             {addingSubtask ? (

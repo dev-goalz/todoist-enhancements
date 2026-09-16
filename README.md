@@ -153,8 +153,26 @@ moves every future occurrence and says nothing about it. The rule can be edited
 from the task panel afterwards, and giving a repeating task a single date moves
 that occurrence without ending the series.
 
-Reading dates from the text can be switched off in settings. `#project`, `p1`
-and `@tag` are explicit syntax and always apply.
+Reading dates from the text can be switched off in settings. `#project`,
+`#project/section`, `p1` and `@tag` are explicit syntax and always apply.
+
+An hour can be named as well as a day: "tomorrow 12:14", and "tomorrow
+morning", "this evening", "demain soir" — the parts of the day are read at the
+hours Todoist uses for them.
+
+Every reading is marked inside the name as you type, in the colour of the thing
+it names — the project's own, the tag's, the priority's, the accent for a date
+or a repeat, which are the two the app guessed rather than read. A guess can be
+wrong: clicking a mark, or pressing Backspace against it, turns that reading
+back into ordinary text and takes its value out of the fields below. It refuses
+that one occurrence and no other, so `Weekly review weekly` can keep its title
+and still repeat, and a second click brings the reading back. A name carries
+one project, one priority and one day, so the last one typed is the one that
+counts; tags are the exception, because a task can carry several.
+
+The same field is a task's title. Editing it reads all of the above, marks it
+as you type, and writes it to the fields when the title is saved — with Enter,
+or with the Save beside it.
 
 ### Things to settle
 

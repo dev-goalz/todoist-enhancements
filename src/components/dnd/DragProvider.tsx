@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import {
   DndContext, DragOverlay, PointerSensor, pointerWithin, useSensor, useSensors,
-  type DragEndEvent, type DragMoveEvent, type DragStartEvent,
+  type CollisionDetection, type DragEndEvent, type DragMoveEvent, type DragStartEvent,
 } from '@dnd-kit/core';
 import type { Modifier } from '@dnd-kit/core';
 import { useStore } from '@/store/store';
@@ -26,6 +26,50 @@ const anchorLeftOfCursor: Modifier = ({
     x: transform.x + clientX - activeNodeRect.left - 12,
     y: transform.y + clientY - activeNodeRect.top - draggingNodeRect.height / 2,
   };
+};
+
+/**
+ * What is being dragged, and what will take it.
+ *
+ * Four different things are dragged in this app and they are not
+ * interchangeable: a task goes to a destination, a section into a slot, a
+ * sidebar project onto another row, a subtask onto one of its siblings. They
+ * all share one drag context, so every droppable in the app is a candidate for
+ * every drag — and a drop is decided by where the pointer is, which means a
+ * region of the page behind a dialog can win a drop aimed at a row inside it.
+ * Each drag is therefore only offered what it could possibly mean.
+ */
+const dragKind = (id: string): 'subtask' | 'section' | 'project' | 'task' =>
+  (id.startsWith('subtask:') ? 'subtask'
+    : id.startsWith('section:') ? 'section'
+      : id.startsWith('project-row:') ? 'project' : 'task');
+
+const dropKind = (id: string): 'subtask' | 'slot' | 'project' | 'target' =>
+  (id.startsWith('subtask:') ? 'subtask'
+    : id.startsWith('slot:') ? 'slot'
+      : id.startsWith('project-row:') ? 'project' : 'target');
+
+const ACCEPTS: Record<ReturnType<typeof dragKind>, Array<ReturnType<typeof dropKind>>> = {
+  subtask: ['subtask'],
+  section: ['slot'],
+  /* A sidebar row is both a position in the list and a project destination,
+     and a project dragged onto either means the same landing. */
+  project: ['project', 'target'],
+  task: ['target'],
+};
+
+/**
+ * Where the pointer is, among the places this drag could actually land.
+ *
+ * Collisions are decided by the cursor rather than by overlap, because a task
+ * row is as wide as the page and by area it always beat the narrow sidebar
+ * destinations.
+ */
+const collisionsForKind: CollisionDetection = (args) => {
+  const accepted = ACCEPTS[dragKind(String(args.active.id))];
+  return pointerWithin(args).filter(
+    (collision) => accepted.includes(dropKind(String(collision.id))),
+  );
 };
 
 /**
@@ -63,6 +107,7 @@ export function DragProvider({ children }: { children: ReactNode }) {
   const setDragging = useStore((s) => s.setDragging);
   const moveSection = useStore((s) => s.moveSection);
   const reorderProjects = useStore((s) => s.reorderProjects);
+  const reorderSubtasks = useStore((s) => s.reorderSubtasks);
   const setDraggingSection = useStore((s) => s.setDraggingSection);
   const nestProject = useStore((s) => s.nestProject);
   const setNesting = useStore((s) => s.setNesting);
@@ -77,10 +122,12 @@ export function DragProvider({ children }: { children: ReactNode }) {
     const id = String(event.active.id);
     const isSection = id.startsWith('section:');
     const isProject = id.startsWith('project-row:');
+    const isSubtask = id.startsWith('subtask:');
     setDraggingId(id);
-    // Neither a section nor a sidebar project is a task, so the "a task is in
-    // flight" flag stays down and the empty drop zones stay closed.
-    setDragging(isSection || isProject ? null : id);
+    /* None of these is a task being filed somewhere, so the "a task is in
+       flight" flag stays down and the empty drop zones stay closed. A subtask
+       being reordered is moving inside its parent, not out of it. */
+    setDragging(isSection || isProject || isSubtask ? null : id);
     setDraggingSection(isSection ? id.slice('section:'.length) : null);
     setDraggingProject(isProject ? id.slice('project-row:'.length) : null);
   }
@@ -109,6 +156,32 @@ export function DragProvider({ children }: { children: ReactNode }) {
       const overId = String(event.over.id);
       if (!overId.startsWith('slot:')) return;
       await moveSection(activeId.slice('section:'.length), Number(overId.split(':')[2]));
+      return;
+    }
+
+    /* A subtask dragged in the task panel is reordered among its siblings, and
+       goes nowhere else: the panel is one parent's list of children. */
+    if (activeId.startsWith('subtask:')) {
+      const overId = String(event.over.id);
+      if (!overId.startsWith('subtask:')) return;
+      const from = activeId.slice('subtask:'.length);
+      const to = overId.slice('subtask:'.length);
+      if (from === to) return;
+
+      const parentId = snapshot.items[from]?.parent_id;
+      if (!parentId || snapshot.items[to]?.parent_id !== parentId) return;
+
+      const siblings = Object.values(snapshot.items)
+        .filter((child) => child.parent_id === parentId && !child.is_deleted)
+        .sort((a, b) => a.child_order - b.child_order)
+        .map((child) => child.id);
+
+      const at = siblings.indexOf(from);
+      const onto = siblings.indexOf(to);
+      if (at < 0 || onto < 0) return;
+      const next = [...siblings];
+      next.splice(onto, 0, ...next.splice(at, 1));
+      await reorderSubtasks(next);
       return;
     }
 
@@ -184,22 +257,19 @@ export function DragProvider({ children }: { children: ReactNode }) {
     });
   }
 
-  const dragging = draggingId && !draggingId.startsWith('section:')
-    ? snapshot.items[draggingId]
-    : null;
+  const dragging = draggingId?.startsWith('subtask:')
+    ? snapshot.items[draggingId.slice('subtask:'.length)]
+    : draggingId && !draggingId.startsWith('section:')
+      ? snapshot.items[draggingId]
+      : null;
   const draggingSection = draggingId?.startsWith('section:')
     ? snapshot.sections[draggingId.slice('section:'.length)]
     : null;
 
   return (
-    /* Collisions are decided by where the cursor is, not by which droppable a
-       row overlaps most. A task row is as wide as the page, so by area it
-       always beat the narrow sidebar destinations: dropping onto Inbox,
-       Upcoming or Someday simply never registered. The overlay already snaps
-       to the cursor, so this is also what the drag looks like. */
     <DndContext
       sensors={sensors}
-      collisionDetection={pointerWithin}
+      collisionDetection={collisionsForKind}
       onDragStart={onDragStart}
       onDragMove={onDragMove}
       onDragEnd={onDragEnd}

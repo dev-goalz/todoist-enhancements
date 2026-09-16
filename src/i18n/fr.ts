@@ -215,6 +215,8 @@ export const fr: Record<TranslationKey, string> = {
   'detail.labels': 'Tags',
   'detail.estimate': 'Estimation',
   'detail.subtasks': 'Sous-tâches',
+  'detail.whereItIs': 'Où se trouve cette tâche',
+  'detail.reorderSubtask': 'Glisser pour réordonner',
   'detail.addSubtask': 'Ajouter une sous-tâche',
   'detail.comments': 'Commentaires',
   'detail.noComments': 'Aucun commentaire.',

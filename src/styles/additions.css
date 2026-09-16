@@ -793,3 +793,76 @@
 .movemenu .opt.on{background:var(--accent-soft);color:var(--accent-dark)}
 .movemenu .opt.on small{color:var(--accent-dark)}
 .movemenu .menuhint{padding:6px 8px}
+
+/* ---------- Subtasks that can be put in order ---------- */
+/* The handle sits in the gutter the panel already has, so the row itself does
+   not move to make room for it. */
+/* The row reaches out over its own handle: a drop is decided by where the
+   pointer is, and a handle drawn outside the row's box is a pointer that is
+   never over the row it is dragging onto. */
+.subtaskrow{position:relative;padding-left:22px;margin-left:-22px}
+.subtaskrow .subdrag{
+  position:absolute;left:0;top:50%;transform:translateY(-50%);
+  display:flex;align-items:center;color:var(--faint);
+  opacity:0;transition:opacity .12s ease;cursor:grab;
+}
+.subtaskrow:hover .subdrag,
+.subtaskrow:focus-within .subdrag{opacity:1}
+.subtaskrow.lifting{opacity:.45}
+/* Where it would land: the same line the sidebar draws for the same gesture. */
+.subtaskrow.landing{box-shadow:inset 0 2px 0 0 var(--accent)}
+
+/* ---------- The task panel's breadcrumb ---------- */
+/* A trail that is walked, not read: every ancestor is a link, and only the
+   task you are on is plain. It wraps rather than pushing the tools off the
+   line, and each link is truncated before the row is. */
+.detail-top .crumb{flex-wrap:wrap;row-gap:2px;min-width:0}
+.crumblink{
+  display:inline-flex;align-items:center;gap:4px;max-width:28ch;
+  padding:2px 4px;margin:0 -4px;border-radius:var(--r-sm);
+  color:var(--muted);font:inherit;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.crumblink:hover{color:var(--accent-dark);background:var(--accent-tint)}
+/* One step of the trail: its separator and its link travel together, and the
+   row's own gap applies between steps rather than inside them. */
+.crumbstep{display:inline-flex;align-items:center;gap:6px}
+.crumbhere{
+  max-width:32ch;color:var(--text);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+
+/* ---------- The same marked field, wrapping ---------- */
+/* The task panel's title is the composer's field in another shape: it wraps
+   instead of scrolling. Both layers are given the metrics in one rule, because
+   a single pixel of difference between them is a mark sliding off its word. */
+.namefield.multiline{margin-left:-6px}
+.namefield.multiline .titlefield,
+.namefield.multiline .namemirror{
+  width:100%;box-sizing:border-box;display:block;
+  padding:2px 6px;margin:0;border:1px solid transparent;border-radius:var(--r-sm);
+  font:inherit;font-size:var(--fs-20);font-weight:700;line-height:1.3;
+  letter-spacing:-.01em;
+  white-space:pre-wrap;overflow-wrap:anywhere;overflow:hidden;
+}
+.namefield.multiline .titlefield{
+  position:relative;z-index:1;resize:none;background:transparent;color:var(--text);
+}
+.namefield.multiline .namemirror{
+  position:absolute;inset:0;z-index:0;color:transparent;pointer-events:none;user-select:none;
+}
+/* Two weights of the same grey: the field says "you could type here" under
+   the pointer, and "you are typing here" while the caret is in it. */
+.namefield.multiline .titlefield:hover{border-color:var(--border)}
+.namefield.multiline .titlefield:focus{
+  outline:none;border-color:var(--border-strong);background:transparent;
+}
+.namefield.multiline .titlefield:focus:hover{border-color:var(--border-strong)}
+
+/* ---------- Finishing an edit to a title ---------- */
+/* Under the field, on the field's own left edge, and only while there is
+   something to save. */
+/* At the field's right edge, where the button that ends a form belongs, and
+   with the one that commits carrying the weight. */
+.titleactions{display:flex;justify-content:flex-end;gap:var(--s2);margin:var(--s2) 0 0}
+.titleactions .btn{min-height:28px;padding:0 12px;font-size:var(--fs-13)}
