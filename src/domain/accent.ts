@@ -21,11 +21,13 @@
  * until they clear what red already clears. A custom colour cannot be
  * illegible; the worst it can be is not to your taste.
  *
- * The picker takes a hue and a saturation. Lightness is the recipe's, not the
- * picked colour's: a pastel and a near-black of the same hue have to end up
- * with the same readable ink, or picking a dark colour would produce a page
- * you cannot read. The swatch shows the result rather than the input, so what
- * you approve is what you get.
+ * The colour you pick IS `--accent`, exactly, whenever white text on it
+ * already clears 4.5:1 — which most deliberate choices do. It is darkened only
+ * when it does not, and then only as far as it has to be. Everything else in
+ * the family is derived: the washes and the ink keep the recipe's lightness,
+ * because a wash has to stay a wash whatever it was derived from, and take the
+ * picked hue and saturation so a muted choice gives a muted family and a grey
+ * one gives a genuinely grey one.
  */
 
 export const ACCENT_TOKENS = [
@@ -137,20 +139,17 @@ function solve(h: number, s: number, l: number, on: string, target: number, step
   return out;
 }
 
-/**
- * The whole family for one hue, in one scheme.
- *
- * `saturation` is a multiplier on the recipe's own, taken from the picked
- * colour so that choosing something muted gives something muted. It is
- * clamped: a fully grey pick still needs an accent you can see, and a fully
- * saturated one must not turn the washes into surfaces of their own.
- */
-export function accentFamily(
-  hue: number, saturation: number, scheme: 'light' | 'dark',
-): Record<AccentToken, string> {
+/** The whole family for one picked colour, in one scheme. */
+export function accentFamily(hex: string, scheme: 'light' | 'dark'): Record<AccentToken, string> {
+  const picked = hexToHsl(hex) ?? { h: 4, s: 62, l: 52.5 };
   const profile = scheme === 'light' ? LIGHT : DARK;
   const page = scheme === 'light' ? '#ffffff' : '#1e1e1e';
-  const scale = clamp(saturation / 62, 0.3, 1.25);
+  const hue = picked.h;
+
+  /* Relative to the red family's own saturation, and allowed all the way to
+     zero: a grey picked on purpose has to come out grey rather than be nudged
+     back onto a hue it does not have. */
+  const scale = clamp(picked.s / 62, 0, 1.6);
 
   const out = {} as Record<AccentToken, string>;
 
@@ -171,9 +170,12 @@ export function accentFamily(
     let l = baseL;
 
     if (token === 'accent') {
-      // Darkening alone turns a bright hue muddy — orange at 4.5:1 with white
-      // is a brown — so the fill is saturated first and only then taken down.
-      s = clamp(72 * scale, 18, 88);
+      /* The colour itself, untouched, as long as the white glyphs it carries
+         are readable on it. Reaching for the recipe here was the bug: #676767
+         clears 5.7:1 on its own and was still being replaced by a lighter,
+         faintly pink approximation of itself. */
+      s = picked.s;
+      l = picked.l;
       l = solve(h, s, l, '#ffffff', TEXT_MIN, -0.5);
     } else if (token === 'accent-dark') {
       if (scheme === 'dark') s = Math.min(s, 80);

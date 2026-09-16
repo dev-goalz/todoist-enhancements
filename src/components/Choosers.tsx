@@ -185,11 +185,10 @@ function AccentPreview() {
  * the same values, by the same recipe, reaching only this one element.
  */
 function customPreviewStyle(custom: string): React.CSSProperties | undefined {
-  const hsl = hexToHsl(custom);
-  if (!hsl) return undefined;
+  if (!hexToHsl(custom)) return undefined;
   const scheme = document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
   return Object.fromEntries(
-    Object.entries(accentFamily(hsl.h, hsl.s, scheme)).map(([k, v]) => [`--${k}`, v]),
+    Object.entries(accentFamily(custom, scheme)).map(([k, v]) => [`--${k}`, v]),
   ) as React.CSSProperties;
 }
 
