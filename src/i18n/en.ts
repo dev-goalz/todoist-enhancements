@@ -613,10 +613,7 @@ export const en = {
   'review.thisWeek': 'this week',
   'review.load.against': 'of {capacity} available',
   'review.mail.todo': 'Read your mail to the bottom.',
-  'review.mail.done': 'Mail dealt with.',
   'review.mail.how': 'Anything that takes two minutes, do it. Anything longer becomes a task here. Anything else is filed or gone. This app cannot see your mail, so it takes your word for it.',
-  'review.mail.confirm': 'Inbox is empty',
-  'review.mail.undo': 'Not yet',
   'settings.quietAfter': 'A project is quiet after',
   'settings.quietAfterHint': 'Days without anything finished in it before the weekly review mentions it. Fourteen suits most people; a fast board wants fewer and a slow one more.',
 

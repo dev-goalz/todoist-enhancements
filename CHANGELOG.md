@@ -26,8 +26,10 @@ after 1.1 went out.
   where the nesting the sidebar already drew was supposed to come from. The
   project menu moves one back out.
 - **A task's date can be typed.** Its schedule menu opens on a field with the
-  caret already in it: "tomorrow", "next sunday", "12 April". A calendar sits
-  under the three shortcuts for the dates that are easier to point at than to
+  caret already in it: "tomorrow", "next sunday", "12 April". What you type
+  narrows a short row of words underneath — "to" offers today and tomorrow,
+  "tom" only one of them — each carrying the day it would produce. A calendar
+  sits under the three shortcuts for the dates easier to point at than to
   name.
 - **The composer reads an estimate out of a name**, written in brackets:
   "Call Anne (25)".
@@ -74,10 +76,10 @@ after 1.1 went out.
   weighs. It used to end on Someday, the longest and least engaging list in the
   app, placed exactly where people stop, and then claim the next week was ready
   when nothing had set it up.
-- **It ends on the load**, the idea the whole product is built on and the one
-  thing the ritual meant to steer it never mentioned: the coming week's hours
-  against the hours you said you have, with each task offering a way out of the
-  week on the spot.
+- **Both passes end on the load**, the idea the whole product is built on and
+  the one thing the ritual meant to steer it never mentioned: the day's hours
+  or the week's, against the hours you said you have, with each task offering a
+  way out on the spot.
 - **A mail step in both passes**, immediately before the inbox, because a good
   part of what is sitting in the inbox arrived as an email and filing the inbox
   first files half of it. It claims nothing it cannot know — this app cannot

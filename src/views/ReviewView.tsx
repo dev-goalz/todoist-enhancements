@@ -85,8 +85,6 @@ export function ReviewView({ onOpen }: ReviewViewProps) {
   const [index, setIndex] = useState(0);
   const [finished, setFinished] = useState(false);
   const [doneOrder, setDoneOrder] = useState<DoneOrder>('date');
-  /** Ticked when the mail has been dealt with. It lives only for this pass. */
-  const [mailCleared, setMailCleared] = useState(false);
   /**
    * Which week is under review: 0 is the one in progress, -1 the one before.
    *
@@ -154,7 +152,6 @@ export function ReviewView({ onOpen }: ReviewViewProps) {
     setIndex(0);
     setFinished(false);
     setChosen({});
-    setMailCleared(false);
   }, [cadence]);
 
   const step = steps[index];
@@ -165,22 +162,11 @@ export function ReviewView({ onOpen }: ReviewViewProps) {
     <div className="page review">
       <div className="reviewhead">
         <h1 className="ptitle">{t('review.title')}</h1>
-        <div className="segmented small reviewcadence" role="group" aria-label={t('review.title')}>
-          {(['daily', 'weekly'] as const).map((value) => (
-            <button
-              key={value}
-              aria-pressed={cadence === value}
-              onClick={() => setCadence(value)}
-            >
-              {t(`review.cadence.${value}` as TranslationKey)}
-            </button>
-          ))}
-        </div>
-
-        {/* Which week is being closed, on a line of its own beneath the
-            title. Beside the cadence control it pushed the control somewhere
-            new every time the cadence changed, which made the one button you
-            press twice a minute move under your hand. */}
+        {/* Which week is being closed, to the left of the cadence control and
+            on the same line. Given a row of its own it pushed the rail and
+            everything under it down the moment the weekly pass was chosen, so
+            the one control that held still was surrounded by things that did
+            not. */}
         {cadence === 'weekly' && (
           <div className="reviewweek">
             <span className="pager">
@@ -209,6 +195,18 @@ export function ReviewView({ onOpen }: ReviewViewProps) {
             </span>
           </div>
         )}
+
+        <div className="segmented small reviewcadence" role="group" aria-label={t('review.title')}>
+          {(['daily', 'weekly'] as const).map((value) => (
+            <button
+              key={value}
+              aria-pressed={cadence === value}
+              onClick={() => setCadence(value)}
+            >
+              {t(`review.cadence.${value}` as TranslationKey)}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Where you are, and how much is left. A review with no visible end is
@@ -318,7 +316,13 @@ export function ReviewView({ onOpen }: ReviewViewProps) {
         />
       );
     }
-    if (step.id === 'load') return <Load step={step} />;
+    /* Today is a day's worth of work measured against a day's hours; the last
+       step of the weekly is a week's against a week's. Same question, same
+       block, two capacities. */
+    if (step.id === 'load') return <Load step={step} capacity={capacity} />;
+    if (step.id === 'today') {
+      return <Load step={step} capacity={prefs.dailyCapacity[new Date().getDay()]} />;
+    }
 
     if (step.items.length === 0) return <Settled />;
 
@@ -410,8 +414,8 @@ export function ReviewView({ onOpen }: ReviewViewProps) {
    * out of it on the spot, because a step that only states a problem is a step
    * that gets skipped.
    */
-  function Load({ step: s }: { step: ReviewStep }) {
-    const load = summariseLoad(s.items, childrenOf, capacity);
+  function Load({ step: s, capacity: against }: { step: ReviewStep; capacity: number }) {
+    const load = summariseLoad(s.items, childrenOf, against);
     const level = load.level === 'over' ? 'over' : load.level === 'tight' ? 'warn' : 'ok';
 
     return (
@@ -421,7 +425,7 @@ export function ReviewView({ onOpen }: ReviewViewProps) {
           <span className="reviewload-figures">
             <b>{formatDuration(load.estimatedMinutes, locale)}</b>
             <small>
-              {t('review.load.against', { capacity: formatDuration(capacity, locale) })}
+              {t('review.load.against', { capacity: formatDuration(against, locale) })}
             </small>
           </span>
           {load.unestimatedCount > 0 && (
@@ -452,11 +456,11 @@ export function ReviewView({ onOpen }: ReviewViewProps) {
    */
   function Mail() {
     return (
-      <div className={`reviewmail${mailCleared ? ' cleared' : ''}`}>
+      <div className="reviewmail">
         <span className="reviewclear-mark" aria-hidden="true">
-          <Icon name={mailCleared ? 'check' : 'inbox'} />
+          <Icon name="inbox" />
         </span>
-        <strong>{t(mailCleared ? 'review.mail.done' : 'review.mail.todo')}</strong>
+        <strong>{t('review.mail.todo')}</strong>
         <span>{t('review.mail.how')}</span>
 
         {/* The step cannot open your mail, but it can save you looking for it.
@@ -475,14 +479,6 @@ export function ReviewView({ onOpen }: ReviewViewProps) {
             </a>
           ))}
         </div>
-
-        <button
-          className={`btn${mailCleared ? ' quiet' : ' primary'}`}
-          aria-pressed={mailCleared}
-          onClick={() => setMailCleared((v) => !v)}
-        >
-          {t(mailCleared ? 'review.mail.undo' : 'review.mail.confirm')}
-        </button>
       </div>
     );
   }

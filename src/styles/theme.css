@@ -1179,11 +1179,6 @@
 .namemirror{
   font:inherit;font-size:var(--fs-16);font-weight:600;
   line-height:1.4;letter-spacing:normal;
-  /* Every space in this field is worth about three. A marked word takes a
-     space's width of air inside its background and still leaves a space's
-     width of gap before the next one. Set on both layers, or the marks slide
-     off the words they belong to. */
-  word-spacing:8px;
   padding:6px 0;border:0;
   white-space:pre;overflow-x:auto;
   scrollbar-width:none;
@@ -1198,10 +1193,15 @@
 
 .nmark{
   color:transparent;background:var(--subtle);
-  /* Padding widens the background without moving the text: the negative
-     margin gives back exactly what the padding took, so the mirror still
-     lines up character for character with the input in front of it. */
-  padding:2px 4px;margin:0 -4px;border-radius:6px;
+  /* Air around the marked word, and nothing else: the padding is given back
+     by the negative margin, so the mirror still lines up character for
+     character with the input in front of it and the ordinary spaces of the
+     sentence keep their ordinary width. The ring is the field's own colour,
+     drawn outside the box, which is what keeps two marked words separated
+     when only one space stands between them — it costs no width, because a
+     shadow takes none. */
+  padding:3px 2px;margin:0 -2px;border-radius:5px;
+  box-shadow:0 0 0 1px var(--surface);
 }
 /* A date is the one the parser guessed rather than one you spelled out, so it
    is the one that has to be impossible to miss. */
@@ -1540,7 +1540,7 @@
    weekly no longer moves the button you just pressed. The week pager takes a
    row of its own underneath. */
 .reviewhead{
-  display:grid;grid-template-columns:minmax(0,1fr) auto;
+  display:grid;grid-template-columns:minmax(0,1fr) auto auto;
   align-items:center;gap:var(--s2) var(--s4);margin-bottom:var(--s4);
 }
 .reviewcadence{width:auto;grid-auto-columns:max-content}

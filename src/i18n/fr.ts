@@ -615,10 +615,7 @@ export const fr: Record<TranslationKey, string> = {
   'review.thisWeek': 'semaine en cours',
   'review.load.against': 'sur {capacity} disponibles',
   'review.mail.todo': 'Descendez votre boîte mail jusqu’en bas.',
-  'review.mail.done': 'Emails traités.',
   'review.mail.how': 'Ce qui prend deux minutes, faites-le. Ce qui prend plus devient une tâche ici. Le reste est classé ou supprimé. Cette application ne voit pas vos emails : elle vous croit sur parole.',
-  'review.mail.confirm': 'Ma boîte est vide',
-  'review.mail.undo': 'Pas encore',
   'settings.quietAfter': 'Un projet est silencieux après',
   'settings.quietAfterHint': 'Nombre de jours sans rien de terminé dedans avant que la revue hebdomadaire le signale. Quatorze convient à la plupart ; un rythme rapide en demande moins, un rythme lent davantage.',
 

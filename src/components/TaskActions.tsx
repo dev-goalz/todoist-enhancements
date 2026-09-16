@@ -9,11 +9,17 @@ import { EstimateField } from './EstimateField';
 import { DateField } from './DateField';
 import { formatDayOrName, toApiDate } from '@/domain/dates';
 import { readNaturalDate } from '@/domain/nlp';
+import { dateSuggestions, type DateSuggestion } from '@/domain/dateWords';
 import { weekLabel } from '@/domain/types';
 import { markerStyle } from '@/domain/colors';
 import { dropMutation, type DropTarget } from '@/domain/dnd';
 import { updateItem, moveItem } from '@/api/commands';
 import type { Item, Snapshot } from '@/domain/types';
+
+/** Two words that are the same word once accents and case are set aside. */
+const sameWord = (a: string, b: string): boolean =>
+  a.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  === b.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
 interface TaskActionsProps {
   item: Item;
@@ -40,11 +46,13 @@ export function TaskActions({ item, childrenOf, onOpen }: TaskActionsProps) {
   const [menu, setMenu] = useState<'none' | 'schedule' | 'more' | 'estimate' | 'move'>('none');
   /** What has been typed into the schedule field, before it is a date. */
   const [typed, setTyped] = useState('');
+  /** Which suggestion the keyboard is on; -1 means "what I typed". */
+  const [pick, setPick] = useState(-1);
   const ref = useRef<HTMLSpanElement>(null);
 
   // A menu that opens holding the last thing typed into it is a menu lying
   // about what it will do if you press Enter.
-  useEffect(() => { if (menu !== 'schedule') setTyped(''); }, [menu]);
+  useEffect(() => { if (menu !== 'schedule') { setTyped(''); setPick(-1); } }, [menu]);
 
   useEffect(() => {
     if (menu === 'none') return;
@@ -107,7 +115,13 @@ export function TaskActions({ item, childrenOf, onOpen }: TaskActionsProps) {
    */
   const reading = useMemo(() => (typed.trim() ? readNaturalDate(typed) : null), [typed]);
 
-  function commitTyped() {
+  /* What the words could still turn into. Narrowing as you type is the whole
+     point: "to" is both today and tomorrow, "tom" is only one of them. */
+  const suggestions = useMemo(() => dateSuggestions(typed, locale), [typed, locale]);
+  const chosen = pick >= 0 ? suggestions[pick] : undefined;
+
+  function commitTyped(override?: DateSuggestion) {
+    const reading = override?.reading ?? chosen?.reading ?? currentReading();
     if (!reading) return;
     setMenu('none');
     setTyped('');
@@ -141,6 +155,9 @@ export function TaskActions({ item, childrenOf, onOpen }: TaskActionsProps) {
       );
     });
   }
+
+  /** The reading the field currently stands for, so the commit path has one. */
+  function currentReading() { return reading; }
 
   function schedule(date: Date | null) {
     setMenu('none');
@@ -225,19 +242,55 @@ export function TaskActions({ item, childrenOf, onOpen }: TaskActionsProps) {
             value={typed}
             placeholder={t('task.typeDate')}
             aria-label={t('task.schedule')}
-            onChange={(e) => setTyped(e.target.value)}
+            onChange={(e) => { setTyped(e.target.value); setPick(-1); }}
             onKeyDown={(e) => {
               e.stopPropagation();
+              if (e.key === 'ArrowDown' && suggestions.length > 0) {
+                e.preventDefault();
+                setPick((at) => (at + 1) % suggestions.length);
+                return;
+              }
+              if (e.key === 'ArrowUp' && suggestions.length > 0) {
+                e.preventDefault();
+                setPick((at) => (at <= 0 ? suggestions.length - 1 : at - 1));
+                return;
+              }
               if (e.key === 'Enter') { e.preventDefault(); commitTyped(); }
               if (e.key === 'Escape') setMenu('none');
             }}
           />
+
+          {/* Not a dropdown covering the menu: a row of words under the field,
+              each carrying the day it would produce. */}
           {typed.trim() !== '' && (
-            <p className={`schedulepreview${reading ? '' : ' none'}`}>
-              {reading
-                ? formatDayOrName(new Date(reading.date.slice(0, 10)), locale, dateFormat)
-                : t('task.dateNotRead')}
-            </p>
+            suggestions.length > 0 ? (
+              <div className="schedulesuggest">
+                {suggestions.map((option, at) => (
+                  <button
+                    key={option.label}
+                    className={`chip${at === pick ? ' on' : ''}`}
+                    onMouseDown={(e) => { e.preventDefault(); commitTyped(option); }}
+                    onMouseEnter={() => setPick(at)}
+                  >
+                    {option.label}
+                    {/* The day it produces, unless the word already is the
+                        day: "demain — Demain" says one thing twice. */}
+                    {(() => {
+                      const day = formatDayOrName(
+                        new Date(option.reading.date.slice(0, 10)), locale, dateFormat,
+                      );
+                      return sameWord(day, option.label) ? null : <small>{day}</small>;
+                    })()}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className={`schedulepreview${reading ? '' : ' none'}`}>
+                {reading
+                  ? formatDayOrName(new Date(reading.date.slice(0, 10)), locale, dateFormat)
+                  : t('task.dateNotRead')}
+              </p>
+            )
           )}
 
           <button

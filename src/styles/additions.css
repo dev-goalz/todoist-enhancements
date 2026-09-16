@@ -551,14 +551,21 @@
    Nesting draws the same line, half the width and pushed right, which is
    where the row itself is about to move to. */
 .navrow.nesting::after{
-  content:"";position:absolute;left:auto;right:4px;width:45%;bottom:-1px;height:2px;
+  content:"";position:absolute;left:24px;right:4px;bottom:-1px;height:2px;
   border-radius:1px;background:var(--accent);
 }
 
 /* A row you picked out is a row you are holding, not a row that is wrong:
    grey, with a rule down the side to say it is one of a set. */
-.task.picked{background:#eeedec;box-shadow:inset 3px 0 0 var(--border-strong)}
-.task.picked:hover{background:#e7e5e4}
+/* The tint is wider than the row it marks, so the checkbox sits inside it
+   with room around rather than on its edge. The padding is given back by the
+   margin and the width, so nothing on the row moves when it is picked. */
+.task.picked{
+  background:#f6f6f6;border-radius:var(--r-sm);border-bottom-color:transparent;
+  padding-left:12px;padding-right:12px;
+  margin-left:-12px;margin-right:-12px;width:calc(100% + 24px);
+}
+.task.picked:hover{background:#f6f6f6}
 
 .bulkbar{
   position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:60;
@@ -602,9 +609,19 @@
 
 /* Which week is being closed, and the way back to the one before it. A weekly
    review is almost never done inside the week it is about. */
-.reviewweek{
-  grid-column:1/-1;justify-self:end;
-  display:flex;align-items:center;gap:var(--s3);
+/* Beside the cadence control rather than under it. On its own row it pushed
+   the rail and everything below it down whenever the weekly pass was chosen,
+   so the one control that stayed put was surrounded by things that did not.
+   The columns are stated rather than left to source order: the cadence takes
+   the last one in both passes, so it does not slide left when the pager
+   appears beside it. */
+.reviewweek{grid-column:2;display:flex;align-items:center;gap:var(--s3)}
+.reviewcadence{grid-column:3}
+@media (max-width:720px){
+  /* Three things do not fit across a phone; the pager takes a row of its own. */
+  .reviewhead{grid-template-columns:minmax(0,1fr) auto}
+  .reviewcadence{grid-column:2}
+  .reviewweek{grid-column:1/-1;justify-self:end}
 }
 .reviewweek .rangelabel{
   color:var(--text);font-size:var(--fs-13);font-weight:600;white-space:nowrap;
@@ -677,14 +694,13 @@
    card lifts: a darker edge, a shadow, and a shade of ground behind it. */
 .col .taskwrap:hover{
   border-color:var(--border-strong);
-  background:var(--subtle);
-  box-shadow:0 2px 6px rgba(28,25,23,.08);
+  box-shadow:0 2px 6px rgba(28,25,23,.10);
 }
 
 /* ---------- Scheduling a task by typing the date ---------- */
 /* No heading: the field says what the menu is for, and a label above a thing
    that is already obvious was most of the space this menu was wasting. */
-.schedulemenu{padding:6px}
+.schedulemenu{min-width:252px;padding:6px}
 .schedulefield{
   width:100%;box-sizing:border-box;min-height:34px;padding:0 10px;
   border:1px solid var(--border-strong);border-radius:var(--r-sm);
@@ -706,3 +722,26 @@
 .setunit{display:inline-flex;align-items:center;gap:8px}
 .setunit .estinput{width:72px}
 .setunit > span{color:var(--muted);font-size:var(--fs-13)}
+
+/* The words the field could still be completed into, each carrying the day it
+   would produce. A row under the field rather than a list over the menu: four
+   short words read faster side by side than stacked. */
+.schedulesuggest{display:flex;flex-wrap:wrap;gap:4px;padding:6px 2px 2px}
+.schedulesuggest .chip{
+  /* Wrap rather than squeeze: a chip narrowed to fit is a word cut in half.
+     The width and height are stated because every button inside a row's
+     action cluster is otherwise a 30-pixel square icon button. */
+  flex:0 0 auto;width:auto;height:auto;
+  display:inline-flex;align-items:center;gap:6px;
+  min-height:26px;padding:0 9px;border-radius:var(--r-full);
+  border:1px solid var(--border);background:var(--surface);
+  font-size:var(--fs-12);font-weight:600;color:var(--text);
+}
+.schedulesuggest .chip small{color:var(--faint);font-weight:400}
+.schedulesuggest .chip.on{
+  border-color:var(--accent);background:var(--accent-tint);color:var(--accent-dark);
+}
+.schedulesuggest .chip.on small{color:var(--accent-dark)}
+
+/* The mail step stopped asking to be ticked: Next already means "done". */
+.reviewmail{padding-bottom:var(--s5)}
