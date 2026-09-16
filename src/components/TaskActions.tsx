@@ -537,7 +537,7 @@ export function TaskActions({ item, childrenOf, onOpen }: TaskActionsProps) {
               >
                 <span>
                   {destination.hint ? (
-                    <Icon name="group" size="sm" />
+                    <Icon name="section" size="sm" />
                   ) : (
                     <span className="hash" style={markerStyle(destination.colour)}>#</span>
                   )}
