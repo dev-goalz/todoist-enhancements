@@ -55,3 +55,31 @@ export function ProjectRowSortable({
     </div>
   );
 }
+
+/**
+ * A row that can be dropped onto but never picked up.
+ *
+ * A folder is a place, not a thing you reorder: it holds projects, and the
+ * only useful answer to a project landing on one is to put it inside. It
+ * registers under the same id a project row does, so the drop is read by the
+ * same code that reads every other sidebar drop.
+ */
+export function ProjectDropRow({
+  projectId, className = '', children,
+}: {
+  projectId: string;
+  className?: string;
+  children: ReactNode;
+}) {
+  const { setNodeRef, isOver } = useDroppable({ id: projectRowId(projectId) });
+  const dragging = useStore((s) => s.draggingProjectId);
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`navrow${isOver && dragging ? ' nesting folderopen' : ''}${className}`}
+    >
+      {children}
+    </div>
+  );
+}

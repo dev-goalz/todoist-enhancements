@@ -73,6 +73,7 @@ export function DragProvider({ children }: { children: ReactNode }) {
   const setDraggingSection = useStore((s) => s.setDraggingSection);
   const nestProject = useStore((s) => s.nestProject);
   const setNesting = useStore((s) => s.setNesting);
+  const setDraggingProject = useStore((s) => s.setDraggingProject);
 
   // A short distance threshold keeps a plain click on a task from starting a drag.
   const sensors = useSensors(
@@ -88,6 +89,7 @@ export function DragProvider({ children }: { children: ReactNode }) {
     // flight" flag stays down and the empty drop zones stay closed.
     setDragging(isSection || isProject ? null : id);
     setDraggingSection(isSection ? id.slice('section:'.length) : null);
+    setDraggingProject(isProject ? id.slice('project-row:'.length) : null);
   }
 
   /* The indent has to be visible while it is being made, not discovered on
@@ -105,6 +107,7 @@ export function DragProvider({ children }: { children: ReactNode }) {
     setDraggingSection(null);
     const nesting = useStore.getState().nesting;
     setNesting(false);
+    setDraggingProject(null);
     if (!event.over) return;
 
     /* A section is dragged whole, into a slot between two others. It is not a
@@ -133,8 +136,10 @@ export function DragProvider({ children }: { children: ReactNode }) {
       const from = activeId.slice('project-row:'.length);
       if (from === over) return;
 
-      // Dragged out to the right: the row it landed on becomes its parent.
-      if (nesting) {
+      /* Dragged out to the right: the row it landed on becomes its parent.
+         A folder needs no such gesture — putting projects inside it is the
+         only thing a folder is for, so landing on one is enough. */
+      if (nesting || snapshot.projects[over]?.is_folder) {
         await nestProject(from, over);
         return;
       }

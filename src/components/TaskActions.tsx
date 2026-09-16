@@ -7,7 +7,7 @@ import { useConfirm } from './overlays/Confirm';
 import { withEstimate, effectiveEstimate } from '@/domain/estimates';
 import { EstimateField } from './EstimateField';
 import { DateField } from './DateField';
-import { formatDayOrName, toApiDate } from '@/domain/dates';
+import { formatDay, formatDayOrName, toApiDate } from '@/domain/dates';
 import { readNaturalDate } from '@/domain/nlp';
 import { dateSuggestions, type DateSuggestion } from '@/domain/dateWords';
 import { weekLabel } from '@/domain/types';
@@ -15,6 +15,11 @@ import { markerStyle } from '@/domain/colors';
 import { dropMutation, type DropTarget } from '@/domain/dnd';
 import { updateItem, moveItem } from '@/api/commands';
 import type { Item, Snapshot } from '@/domain/types';
+
+/** "Tuesday", for a date whose number is already on the line beside it. */
+const weekdayName = (date: Date, locale: 'en' | 'fr'): string =>
+  new Intl.DateTimeFormat(locale === 'fr' ? 'fr-FR' : 'en-GB', { weekday: 'long' })
+    .format(date);
 
 /** Two words that are the same word once accents and case are set aside. */
 const sameWord = (a: string, b: string): boolean =>
@@ -121,12 +126,11 @@ export function TaskActions({ item, childrenOf, onOpen }: TaskActionsProps) {
   const chosen = pick >= 0 ? suggestions[pick] : undefined;
 
   function commitTyped(override?: DateSuggestion) {
-    const reading = override?.reading ?? chosen?.reading ?? currentReading();
-    if (!reading) return;
+    const iso = override?.date ?? chosen?.date ?? currentReading()?.date;
+    if (!iso) return;
     setMenu('none');
     setTyped('');
 
-    const iso = reading.date;
     const before = { due: item.due, labels: item.labels };
     const update = {
       due: {
@@ -260,29 +264,35 @@ export function TaskActions({ item, childrenOf, onOpen }: TaskActionsProps) {
             }}
           />
 
-          {/* Not a dropdown covering the menu: a row of words under the field,
-              each carrying the day it would produce. */}
+          {/* A short list under the field, at most three long, each line
+              saying what it would do. A word shows the day it resolves to; a
+              bare day of the month shows the date and the weekday, which is
+              the part you actually want to know before choosing between three
+              fifteenths. */}
           {typed.trim() !== '' && (
             suggestions.length > 0 ? (
-              <div className="schedulesuggest">
-                {suggestions.map((option, at) => (
-                  <button
-                    key={option.label}
-                    className={`chip${at === pick ? ' on' : ''}`}
-                    onMouseDown={(e) => { e.preventDefault(); commitTyped(option); }}
-                    onMouseEnter={() => setPick(at)}
-                  >
-                    {option.label}
-                    {/* The day it produces, unless the word already is the
-                        day: "demain — Demain" says one thing twice. */}
-                    {(() => {
-                      const day = formatDayOrName(
-                        new Date(option.reading.date.slice(0, 10)), locale, dateFormat,
-                      );
-                      return sameWord(day, option.label) ? null : <small>{day}</small>;
-                    })()}
-                  </button>
-                ))}
+              <div className="schedulesuggest" role="listbox">
+                {suggestions.map((option, at) => {
+                  const day = new Date(`${option.date.slice(0, 10)}T00:00:00`);
+                  const named = formatDayOrName(day, locale, dateFormat);
+                  const label = option.word ?? formatDay(day, locale, dateFormat);
+                  const hint = option.word
+                    ? (sameWord(named, option.word) ? null : named)
+                    : weekdayName(day, locale);
+                  return (
+                    <button
+                      key={option.date + (option.word ?? '')}
+                      role="option"
+                      aria-selected={at === pick}
+                      className={`scheduleoption${at === pick ? ' on' : ''}`}
+                      onMouseDown={(e) => { e.preventDefault(); commitTyped(option); }}
+                      onMouseEnter={() => setPick(at)}
+                    >
+                      <span>{label}</span>
+                      {hint && <small>{hint}</small>}
+                    </button>
+                  );
+                })}
               </div>
             ) : (
               <p className={`schedulepreview${reading ? '' : ' none'}`}>

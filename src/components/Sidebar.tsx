@@ -13,7 +13,7 @@ import type { DropTarget } from '@/domain/dnd';
 import type { TranslationKey } from '@/i18n';
 import { SyncStatus } from './SyncStatus';
 import { Droppable } from './dnd/Droppable';
-import { ProjectRowSortable } from './dnd/ProjectRowSortable';
+import { ProjectDropRow, ProjectRowSortable } from './dnd/ProjectRowSortable';
 import { COFFEE_URL, FEEDBACK_URL } from '@/app-info';
 import { ProjectMenu } from './ProjectMenu';
 import type { ProjectSheetTarget } from './overlays/ProjectSheet';
@@ -172,15 +172,20 @@ export function Sidebar({
       const isOpen = openFolders[project.id] ?? true;
       return (
         <div key={`${keyPrefix}folder-${project.id}`}>
-          <button
-            className="navitem folderitem"
-            aria-expanded={isOpen}
-            onClick={() => setOpenFolders((prev) => ({ ...prev, [project.id]: !isOpen }))}
-          >
-            <Icon name="project" />
-            <span className="label">{project.name}</span>
-            <Icon name={isOpen ? 'caret-up' : 'caret'} size="sm" className="disclose" />
-          </button>
+          {/* A folder takes a project dropped on it, which is the only thing a
+              folder is for and was the one place in the sidebar you could not
+              drag a project into. */}
+          <ProjectDropRow projectId={project.id}>
+            <button
+              className="navitem folderitem"
+              aria-expanded={isOpen}
+              onClick={() => setOpenFolders((prev) => ({ ...prev, [project.id]: !isOpen }))}
+            >
+              <Icon name="project" />
+              <span className="label">{project.name}</span>
+              <Icon name={isOpen ? 'caret-up' : 'caret'} size="sm" className="disclose" />
+            </button>
+          </ProjectDropRow>
           {isOpen && children.map((child) => projectNode(child, keyPrefix, depth + 1))}
         </div>
       );

@@ -23,14 +23,14 @@ after 1.1 went out.
   at the foot of the window sends the lot to today, to this week, to Someday or
   to a date, or deletes them — one request, one undo.
 - **Projects nest by dragging them to the right** in the sidebar, which is
-  where the nesting the sidebar already drew was supposed to come from. The
-  project menu moves one back out.
+  where the nesting the sidebar already drew was supposed to come from — and
+  onto a folder, where no sideways gesture is needed because holding projects
+  is the whole of what a folder is. The project menu moves one back out.
 - **A task's date can be typed.** Its schedule menu opens on a field with the
-  caret already in it: "tomorrow", "next sunday", "12 April". What you type
-  narrows a short row of words underneath — "to" offers today and tomorrow,
-  "tom" only one of them — each carrying the day it would produce. A calendar
-  sits under the three shortcuts for the dates easier to point at than to
-  name.
+  caret already in it, and what you type narrows a short list underneath: "to"
+  offers today and tomorrow, "tom" only one of them, and a bare "15" offers the
+  next three fifteenths with the weekday each falls on. A calendar sits under
+  the three shortcuts for the dates easier to point at than to name.
 - **The composer reads an estimate out of a name**, written in brackets:
   "Call Anne (25)".
 - **A date format setting** — 12 sept. 2026, sept. 12, 2026, 2026 sept. 12, or

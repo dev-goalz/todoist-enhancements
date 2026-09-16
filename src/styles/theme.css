@@ -727,7 +727,11 @@
   position:absolute;bottom:0;right:0;z-index:1;
   margin-top:0;justify-self:auto;
   border-radius:var(--r-sm);background:var(--surface);
-  box-shadow:0 0 0 4px var(--surface);
+  /* An edge and a shadow, because this is a white panel floating over a white
+     card: without them the buttons appear to be lying on the card's text. The
+     white ring stays — it is what clears the words underneath. */
+  border:1px solid var(--border);
+  box-shadow:0 0 0 3px var(--surface),0 2px 6px rgba(28,25,23,.12);
   /* The box itself must go, not only its buttons: with the buttons merely
      invisible its opaque background and halo stayed painted over the title. */
   visibility:hidden;
@@ -1193,14 +1197,17 @@
 
 .nmark{
   color:transparent;background:var(--subtle);
-  /* Air around the marked word, and nothing else: the padding is given back
-     by the negative margin, so the mirror still lines up character for
-     character with the input in front of it and the ordinary spaces of the
-     sentence keep their ordinary width. The ring is the field's own colour,
-     drawn outside the box, which is what keeps two marked words separated
-     when only one space stands between them — it costs no width, because a
-     shadow takes none. */
-  padding:3px 2px;margin:0 -2px;border-radius:5px;
+  /* Air around the marked word, and nothing else.
+     The padding is given back by the negative margin, so the mirror still
+     lines up character for character with the input in front of it and the
+     ordinary spaces of the sentence keep their ordinary width. Vertically
+     there is nothing to trade against, so the padding there is as generous as
+     the line allows; horizontally the ceiling is the width of a real space —
+     two marked words separated by one space have 4px between them to share,
+     and a background that took more than half of it each would meet its
+     neighbour. The ring is the field's own colour, drawn outside the box, and
+     it is what keeps them apart: a shadow takes no width. */
+  padding:4px 2px;margin:0 -2px;border-radius:7px;
   box-shadow:0 0 0 1px var(--surface);
 }
 /* A date is the one the parser guessed rather than one you spelled out, so it

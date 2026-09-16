@@ -182,6 +182,9 @@ interface AppState {
   /** True while a dragged sidebar project would nest rather than reorder. */
   nesting: boolean;
   setNesting: (nesting: boolean) => void;
+  /** The sidebar project in flight, so folders can offer themselves. */
+  draggingProjectId: string | null;
+  setDraggingProject: (id: string | null) => void;
 
   /**
    * The tasks picked out for a change made to all of them at once.
@@ -243,6 +246,7 @@ export const useStore = create<AppState>((set, get) => ({
   draggingTaskId: null,
   draggingSectionId: null,
   nesting: false,
+  draggingProjectId: null,
   selection: [],
   demo: false,
 
@@ -852,7 +856,9 @@ export const useStore = create<AppState>((set, get) => ({
        branch with no root while it waited to find out. */
     if (parentId) {
       const parent = projects[parentId];
-      if (!parent || parent.is_folder) return;
+      /* A folder is a perfectly good parent — holding projects is the whole of
+         what a folder is — but it cannot itself be filed inside something. */
+      if (!parent || project.is_folder) return;
       for (let at: string | null = parentId; at; at = projects[at]?.parent_id ?? null) {
         if (at === id) return;
       }
@@ -1201,6 +1207,10 @@ export const useStore = create<AppState>((set, get) => ({
 
   setNesting(nesting) {
     if (get().nesting !== nesting) set({ nesting });
+  },
+
+  setDraggingProject(id) {
+    if (get().draggingProjectId !== id) set({ draggingProjectId: id });
   },
 
   toggleSelection(id) {

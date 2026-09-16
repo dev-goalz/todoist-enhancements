@@ -689,14 +689,6 @@
    1.1.1 — the second pass
    ========================================================================== */
 
-/* A board is white cards on a white column, and a resting border of one hairline
-   is not enough to tell a card from the space beside it. Under the pointer the
-   card lifts: a darker edge, a shadow, and a shade of ground behind it. */
-.col .taskwrap:hover{
-  border-color:var(--border-strong);
-  box-shadow:0 2px 6px rgba(28,25,23,.10);
-}
-
 /* ---------- Scheduling a task by typing the date ---------- */
 /* No heading: the field says what the menu is for, and a label above a thing
    that is already obvious was most of the space this menu was wasting. */
@@ -723,25 +715,22 @@
 .setunit .estinput{width:72px}
 .setunit > span{color:var(--muted);font-size:var(--fs-13)}
 
-/* The words the field could still be completed into, each carrying the day it
-   would produce. A row under the field rather than a list over the menu: four
-   short words read faster side by side than stacked. */
-.schedulesuggest{display:flex;flex-wrap:wrap;gap:4px;padding:6px 2px 2px}
-.schedulesuggest .chip{
-  /* Wrap rather than squeeze: a chip narrowed to fit is a word cut in half.
-     The width and height are stated because every button inside a row's
-     action cluster is otherwise a 30-pixel square icon button. */
-  flex:0 0 auto;width:auto;height:auto;
-  display:inline-flex;align-items:center;gap:6px;
-  min-height:26px;padding:0 9px;border-radius:var(--r-full);
-  border:1px solid var(--border);background:var(--surface);
-  font-size:var(--fs-12);font-weight:600;color:var(--text);
+/* What the field could still become: a short list, not a row of pills. Three
+   lines at most — a fourth is a menu, and this is a hint. */
+.schedulesuggest{display:grid;gap:2px;padding:6px 0 2px}
+.schedulesuggest .scheduleoption{
+  /* Stated, because every button inside a row's action cluster is otherwise a
+     thirty-pixel square icon button. */
+  width:100%;height:auto;
+  display:flex;align-items:baseline;justify-content:space-between;gap:var(--s3);
+  min-height:30px;padding:0 8px;border-radius:var(--r-sm);
+  font-size:var(--fs-13);color:var(--text);text-align:left;
 }
-.schedulesuggest .chip small{color:var(--faint);font-weight:400}
-.schedulesuggest .chip.on{
-  border-color:var(--accent);background:var(--accent-tint);color:var(--accent-dark);
+.schedulesuggest .scheduleoption small{
+  color:var(--faint);font-size:var(--fs-12);white-space:nowrap;
 }
-.schedulesuggest .chip.on small{color:var(--accent-dark)}
+.schedulesuggest .scheduleoption.on{background:var(--accent-soft);color:var(--accent-dark)}
+.schedulesuggest .scheduleoption.on small{color:var(--accent-dark)}
 
 /* The mail step stopped asking to be ticked: Next already means "done". */
 .reviewmail{padding-bottom:var(--s5)}
