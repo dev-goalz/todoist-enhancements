@@ -92,9 +92,27 @@
 .hash{
   width:20px;height:20px;flex:0 0 auto;display:grid;place-items:center;
   border-radius:var(--r-sm);font-size:var(--fs-14);font-weight:700;
-  color:var(--marker,#808080);background:var(--marker-soft,transparent);
+  color:var(--marker,var(--faint));background:var(--marker-soft,transparent);
 }
-.taglabel{color:var(--marker,#808080)}
+.taglabel{color:var(--marker,var(--faint))}
+
+/* ---------- Todoist's own colours, on a dark page ----------
+   A project or tag colour is chosen in Todoist and is not ours to change: the
+   same board has to be recognisable in both themes. Several of them — berry
+   red, grape, green — are picked to sit on white and fall to around 2:1 on a
+   dark one, which is a label you cannot read rather than a label in a colour.
+   Mixing each one toward white keeps the hue, and with it the recognition,
+   while carrying it back over 4.5:1. The pale chip behind a marker is already
+   the colour at 12% opacity, so it follows on its own. */
+:root[data-theme="dark"] .hash,
+:root[data-theme="dark"] .taglabel,
+:root[data-theme="dark"] .tag .ic,
+:root[data-theme="dark"] .meta .proj,
+:root[data-theme="dark"] .logmeta,
+:root[data-theme="dark"] .logrow .logmeta,
+:root[data-theme="dark"] .tagcard{
+  color:color-mix(in srgb,var(--marker,var(--faint)) 66%,#ffffff);
+}
 
 /* ---------- Overlays ---------- */
 .sheet{border-radius:var(--r-lg)}
@@ -460,7 +478,7 @@
 }
 .bar{
   flex:1 1 0;min-width:3px;border-radius:4px 4px 0 0;   /* rounded data-end */
-  background:var(--series-1,#2a78d6);opacity:.85;
+  background:var(--series-1);opacity:.85;
   transition:opacity .12s ease-out;
 }
 /* The same day of the week before, drawn across the bar. A bar says how much;
@@ -508,7 +526,7 @@
 .stat-hint{font-size:var(--fs-12);color:var(--muted)}
 
 .ringstat{display:flex;align-items:center;gap:var(--s4)}
-.ring{background:conic-gradient(var(--ringcolor,#2a78d6) var(--ring,0%),var(--c-track) 0)}
+.ring{background:conic-gradient(var(--ringcolor,var(--series-1)) var(--ring,0%),var(--c-track) 0)}
 .ringtext{display:grid;gap:2px}
 
 /* The period picker above the boards. */
@@ -657,14 +675,14 @@
   border-radius:var(--r-lg);
 }
 .group.accent-late{background:var(--accent-wash)}
-.group.accent-quick{background:#f5f8fd}
+.group.accent-quick{background:var(--wash-quick-deep)}
 /* A count sitting on a wash needs its own chip, or it disappears. */
 .group.accent-late .gcount{color:var(--accent-dark);background:var(--accent-badge)}
 /* Inside a callout the heading no longer needs its own rule to stand out. */
 .group.accent-late .gheadblock,
 .group.accent-quick .gheadblock{border-bottom-color:transparent}
 .group.accent-late .task,
-.group.accent-quick .task{border-bottom-color:rgba(32,32,32,.07)}
+.group.accent-quick .task{border-bottom-color:var(--row-line-on-wash)}
 
 /* ---------- Kanban ---------- */
 /* Columns keep one width and the board scrolls sideways when there are more
@@ -731,7 +749,7 @@
      card: without them the buttons appear to be lying on the card's text. The
      white ring stays — it is what clears the words underneath. */
   border:1px solid var(--border);
-  box-shadow:0 0 0 3px var(--surface),0 2px 6px rgba(28,25,23,.12);
+  box-shadow:0 0 0 3px var(--surface),0 2px 6px var(--sh-float);
   /* The box itself must go, not only its buttons: with the buttons merely
      invisible its opaque background and halo stayed painted over the title. */
   visibility:hidden;
@@ -941,7 +959,7 @@
   padding:20px 22px;
   border-radius:16px;
   border-color:var(--border);
-  box-shadow:0 1px 2px rgba(28,25,23,.04);
+  box-shadow:0 1px 2px var(--sh-hair);
   /* Cards sharing a row share a height; a short tile next to a tall chart
      looked like a mistake rather than a choice. */
   display:flex;flex-direction:column;
@@ -1131,10 +1149,10 @@
 .tagcard{
   position:relative;display:flex;align-items:center;
   border:1px solid var(--border);border-radius:14px;background:var(--surface);
-  box-shadow:0 1px 2px rgba(28,25,23,.04);
+  box-shadow:0 1px 2px var(--sh-hair);
   transition:border-color .14s ease-out,box-shadow .14s ease-out;
 }
-.tagcard:hover{border-color:var(--border-strong);box-shadow:0 2px 8px rgba(28,25,23,.07)}
+.tagcard:hover{border-color:var(--border-strong);box-shadow:0 2px 8px var(--sh-hair-strong)}
 /* The row in flight rides above the ones it passes. */
 .tagcard.dragging{position:relative;z-index:2;box-shadow:var(--sh-md);border-color:var(--accent)}
 .tagcard-grip{
@@ -1213,10 +1231,10 @@
 /* A date is the one the parser guessed rather than one you spelled out, so it
    is the one that has to be impossible to miss. */
 .nmark.date{background:var(--accent-tint)}
-.nmark.project{background:#eaf2fd}
-.nmark.label{background:#f2edfb}
+.nmark.project{background:var(--tag-blue-soft)}
+.nmark.label{background:var(--tag-purple-soft)}
 .nmark.priority{background:var(--accent-tint)}
-.nmark.duration{background:#e6f2ea}
+.nmark.duration{background:var(--tag-teal-soft)}
 
 /* The list that opens on @ or #. */
 .namepicker{

@@ -41,6 +41,45 @@
   /* chart palette — ONE palette, used by every chart in the product */
   --c1:#dc4c3e; --c2:#e0a33c; --c3:#4f8f52; --c4:#4a7fd0; --c5:#8a6fc7;
   --c-track:#eae7e3;
+  /* categorical series, in the fixed order the charts assign them */
+  --series-1:#2a78d6; --series-2:#eb6834; --series-3:#1baf7a; --series-4:#eda100;
+  --series-5:#e87ba4; --series-6:#008300; --series-7:#4a3aa7; --series-8:#e34948;
+
+  /* project and tag inks, each with the pale chip it sits on */
+  --tag-green:#4c8631;  --tag-green-soft:#edf6e9;
+  --tag-orange:#a4650c; --tag-orange-soft:#fdf2e2;
+  --tag-purple:#7656bb; --tag-purple-soft:#f2edfb;
+  --tag-red:#c2443b;    --tag-red-soft:#fdefed;
+  --tag-blue:#3972bf;   --tag-blue-soft:#eaf2fd;
+  --tag-gray:#6b6864;   --tag-gray-soft:#f1efed;
+  --tag-teal-soft:#e6f2ea;
+
+  /* quieter surfaces and marks that only a few components use */
+  --wash-late:#fdf8f6;
+  --wash-quick:#f6f8fb;
+  --wash-quick-deep:#f5f8fd;
+  --today-line:#f0cdc6; --today-wash:#fdf7f5;
+  --cal-text:#245ca8;   --cal-wash:#edf3fd; --cal-late-text:#a33c32;
+  --deadline:#7a5cb9;
+  --row-hover:rgba(28,25,23,.022);
+  --row-line-on-wash:rgba(32,32,32,.07);
+  --picked:#f6f6f6;
+  --check-quiet:#b6b2ad;
+  --switch-off:#c9c5c0;
+  --knob:#ffffff;
+  --tb-on-line:#f2c8c2;
+  --field-muted:#676767;
+  --field-hover:#eae7e3;
+  --kbd:#e5e5e5;
+  --note-text:#6f6a66; --note-strong:#4b4743; --note-line:#dedbd7;
+  --placeholder:#757575;
+  --privacy-bg:#f2f2f2; --privacy-text:#818181;
+  --scrollbar:#d7d4d1;
+  --scrim:rgba(28,25,23,.3);
+  /* a hairline card shadow, too faint to see on a dark page */
+  --sh-hair:rgba(28,25,23,.04);
+  --sh-hair-strong:rgba(28,25,23,.07);
+  --sh-float:rgba(28,25,23,.12);
 
   /* radii */
   --r-xs:4px; --r-sm:6px; --r-md:8px; --r-ctl:10px; --r-lg:12px; --r-full:999px;
@@ -64,6 +103,95 @@
   color:var(--text);
   background:var(--bg);
   -webkit-font-smoothing:antialiased;
+  color-scheme:light;
+}
+
+/* ==========================================================================
+   1b. DARK
+   ==========================================================================
+   The same tokens, redrawn for a dark room. The app writes a concrete
+   data-theme on <html> — it resolves "system" itself rather than leaving it to
+   a media query — so the dark palette lives in exactly one place and nothing
+   below this block ever asks what the theme is.
+
+   Brand fills keep their white glyphs; inks lighten far enough to hold
+   contrast on a dark surface, and every pale chip becomes a deep one. */
+:root[data-theme="dark"]{
+  --bg:#1e1e1e;
+  --surface:#1e1e1e;
+  --sidebar:#242323;
+  --rail:#222222;
+  --subtle:#262626;
+  --hover:#2d2d2d;
+  --border:#393939;
+  --border-strong:#4b4b4b;
+
+  --text:#e6e6e6;
+  --muted:#ababab;
+  --faint:#8c8c8c;
+
+  /* The accent keeps its hue: it is the brand. What changes is the family
+     around it — "dark" is the readable ink on a dark page, and the washes go
+     from pale tints to deep ones. */
+  --accent:#d1453b;
+  --accent-dark:#ff8f85;
+  --accent-soft:#3b2523;
+  --accent-tint:#322120;
+  --accent-line:#4b3230;
+  --accent-wash:#2a1f1e;
+  --accent-wash-deep:#34211f;
+  --accent-badge:#5c302c;
+
+  --p1:#e8625a; --p2:#f09a2a; --p3:#5592f0; --p4:#8c8c8c;
+  --ok:#3f9143; --ok-soft:#1f3321;
+  --warn:#e3aa55; --warn-soft:#2d2518; --warn-border:#4a3b22;
+  --info:#5592f0;
+
+  --c1:#e2594c; --c2:#e6ad4a; --c3:#63a866; --c4:#6394e0; --c5:#a18ad9;
+  --c-track:#333231;
+  --series-1:#4c8ff0; --series-2:#f07a4a; --series-3:#2ec48d; --series-4:#f0b020;
+  --series-5:#ef8fb5; --series-6:#45ad45; --series-7:#8d7de6; --series-8:#ef6362;
+
+  --tag-green:#86c46a;  --tag-green-soft:#233020;
+  --tag-orange:#e3a456; --tag-orange-soft:#33291b;
+  --tag-purple:#ac92e3; --tag-purple-soft:#2a2438;
+  --tag-red:#ea7f76;    --tag-red-soft:#3a2523;
+  --tag-blue:#72a3eb;   --tag-blue-soft:#1f2a3a;
+  --tag-gray:#aba7a3;   --tag-gray-soft:#2c2b2a;
+  --tag-teal-soft:#1f2e26;
+
+  --wash-late:#271f1e;
+  --wash-quick:#1f232a;
+  --wash-quick-deep:#1f242c;
+  --today-line:#5a3430; --today-wash:#261e1d;
+  --cal-text:#8db6f0;   --cal-wash:#1f2a3a; --cal-late-text:#ef8f86;
+  --deadline:#ae95e6;
+  --row-hover:rgba(255,255,255,.03);
+  --row-line-on-wash:rgba(255,255,255,.07);
+  --picked:#2b2b2b;
+  --check-quiet:#6a6764;
+  --switch-off:#4a4846;
+  --knob:#f2f2f2;
+  --tb-on-line:#5c3430;
+  --field-muted:#a0a0a0;
+  --field-hover:#333333;
+  --kbd:#383838;
+  --note-text:#a09b97; --note-strong:#cfcac6; --note-line:#343230;
+  --placeholder:#8a8a8a;
+  --privacy-bg:#2a2a2a; --privacy-text:#a3a3a3;
+  --scrollbar:#474543;
+  --scrim:rgba(0,0,0,.55);
+
+  /* A shadow on a dark page has to be darker than the page, not a tint of
+     the page's own ink, or the card it lifts reads as flat. */
+  --sh-sm:0 1px 2px rgba(0,0,0,.35);
+  --sh-md:0 6px 20px rgba(0,0,0,.45);
+  --sh-lg:0 20px 56px rgba(0,0,0,.6);
+  --sh-hair:rgba(0,0,0,.4);
+  --sh-hair-strong:rgba(0,0,0,.5);
+  --sh-float:rgba(0,0,0,.5);
+
+  color-scheme:dark;
 }
 
 *{box-sizing:border-box}
@@ -110,8 +238,8 @@ ul{margin:0;padding:0;list-style:none}
    2. SHELL
    ========================================================================== */
 .protonote{height:34px;padding:0 var(--s4);display:flex;align-items:center;justify-content:space-between;gap:var(--s3);
-  color:#6f6a66;font-size:var(--fs-12);background:var(--bg);border-bottom:1px solid #dedbd7}
-.protonote strong{color:#4b4743;font-weight:600}
+  color:var(--note-text);font-size:var(--fs-12);background:var(--bg);border-bottom:1px solid var(--note-line)}
+.protonote strong{color:var(--note-strong);font-weight:600}
 .protonote span:last-child{white-space:nowrap}
 
 .app{width:min(1480px,100%);height:calc(100vh - 34px);min-height:680px;margin:0 auto;
@@ -152,10 +280,10 @@ ul{margin:0;padding:0;list-style:none}
 .menu hr{height:1px;margin:6px 0;border:0;background:var(--border)}
 
 .searchbtn{width:100%;min-height:36px;margin-bottom:var(--s3);padding:0 var(--s3);display:flex;align-items:center;gap:10px;
-  border:1px solid transparent;border-radius:var(--r-ctl);color:#676767;background:var(--hover);font-size:var(--fs-13)}
-.searchbtn:hover{border-color:var(--border-strong);background:#eae7e3}
+  border:1px solid transparent;border-radius:var(--r-ctl);color:var(--field-muted);background:var(--hover);font-size:var(--fs-13)}
+.searchbtn:hover{border-color:var(--border-strong);background:var(--field-hover)}
 .searchbtn kbd{margin-left:auto;padding:2px 5px;border:1px solid var(--border-strong);border-radius:var(--r-xs);
-  background:#e5e5e5;color:#676767;font-size:10px;font-family:inherit}
+  background:var(--kbd);color:var(--field-muted);font-size:10px;font-family:inherit}
 
 .side-scroll{flex:1;min-height:0;overflow:auto;scrollbar-width:none}
 .side-scroll::-webkit-scrollbar{display:none}
@@ -210,12 +338,12 @@ ul{margin:0;padding:0;list-style:none}
 /* A folder sits in the same 20px marker slot as a project's hash, or the two
    rows read as different indents. */
 .navitem.folderitem > .ic:first-child{width:20px;height:20px;padding:2px;box-sizing:border-box}
-.hash.green{color:#4c8631;background:#edf6e9}
-.hash.orange{color:#a4650c;background:#fdf2e2}
-.hash.purple{color:#7656bb;background:#f2edfb}
-.hash.red{color:#c2443b;background:#fdefed}
-.hash.blue{color:#3972bf;background:#eaf2fd}
-.hash.gray{color:#6b6864;background:#f1efed}
+.hash.green{color:var(--tag-green);background:var(--tag-green-soft)}
+.hash.orange{color:var(--tag-orange);background:var(--tag-orange-soft)}
+.hash.purple{color:var(--tag-purple);background:var(--tag-purple-soft)}
+.hash.red{color:var(--tag-red);background:var(--tag-red-soft)}
+.hash.blue{color:var(--tag-blue);background:var(--tag-blue-soft)}
+.hash.gray{color:var(--tag-gray);background:var(--tag-gray-soft)}
 .wsavatar{width:19px;height:19px;flex:0 0 auto;display:grid;place-items:center;border-radius:var(--r-sm);
   color:#fff;font-size:9px;font-weight:700}
 .ws{display:flex;align-items:center;gap:7px;min-width:0;color:var(--text);font-weight:600}
@@ -231,7 +359,7 @@ ul{margin:0;padding:0;list-style:none}
    4. WORKSPACE + PAGE HEADER — identical structure on every list view
    ========================================================================== */
 .workspace{position:relative;min-width:0;overflow:hidden}
-.screen{display:none;height:100%;overflow:auto;scrollbar-color:#d7d4d1 transparent}
+.screen{display:none;height:100%;overflow:auto;scrollbar-color:var(--scrollbar) transparent}
 .screen.active{display:block}
 .page{width:min(100%,1040px);min-height:100%;margin:0 auto;padding:44px 48px 96px}
 .page.wide{width:min(100%,1240px)}
@@ -293,7 +421,7 @@ ul{margin:0;padding:0;list-style:none}
    ========================================================================== */
 .toolbar{position:sticky;top:0;z-index:14;display:flex;align-items:center;flex-wrap:wrap;gap:var(--s3);
   padding:12px 0 14px;margin-bottom:var(--s1);
-  background:linear-gradient(var(--surface) 78%,rgba(255,255,255,0));
+  background:linear-gradient(var(--surface) 78%,transparent);
   border-bottom:1px solid var(--border)}
 
 /* toolbar buttons */
@@ -306,7 +434,7 @@ ul{margin:0;padding:0;list-style:none}
 /* a Display that is no longer at its default says so with a dot */
 .tb .mark{width:6px;height:6px;border-radius:var(--r-full);background:var(--accent)}
 /* a Filter that is removing rows says how many, in colour, permanently */
-.tb.on{color:var(--accent-dark);border-color:#f2c8c2;background:var(--accent-soft)}
+.tb.on{color:var(--accent-dark);border-color:var(--tb-on-line);background:var(--accent-soft)}
 .tb.on .ic{color:var(--accent-dark)}
 .tb .num{min-width:17px;height:17px;padding:0 4px;display:grid;place-items:center;border-radius:var(--r-full);
   color:#fff;background:var(--accent);font-size:10px;font-weight:700}
@@ -356,8 +484,8 @@ ul{margin:0;padding:0;list-style:none}
    ========================================================================== */
 .group{margin-top:36px;padding:0 var(--s2) var(--s2);border-radius:var(--r-lg)}
 .group:first-of-type{margin-top:var(--s5)}
-.group.tinted-late{padding:var(--s4) var(--s4) var(--s3);background:#fdf8f6}
-.group.tinted-quick{padding:var(--s4) var(--s4) var(--s3);background:#f6f8fb}
+.group.tinted-late{padding:var(--s4) var(--s4) var(--s3);background:var(--wash-late)}
+.group.tinted-quick{padding:var(--s4) var(--s4) var(--s3);background:var(--wash-quick)}
 
 /* No dead strip between the heading row and the rule under it: the toggle's
    own padding reaches the rule, so clicking anywhere on the row collapses the
@@ -397,7 +525,7 @@ ul{margin:0;padding:0;list-style:none}
 .task{position:relative;width:100%;display:grid;grid-template-columns:18px minmax(0,1fr) auto;gap:12px;
   padding:14px 10px 14px 32px;margin-left:-26px;width:calc(100% + 26px);
   min-height:62px;border-radius:var(--r-md);text-align:left;cursor:pointer}
-.task:hover{background:rgba(28,25,23,.022)}
+.task:hover{background:var(--row-hover)}
 .task.done .ttitle{color:var(--faint);text-decoration:line-through}
 .drag{position:absolute;left:0;top:50%;width:24px;height:40px;display:grid;place-items:center;
   border-radius:var(--r-sm);color:var(--faint);opacity:0;transform:translateY(-50%);cursor:grab}
@@ -411,7 +539,7 @@ ul{margin:0;padding:0;list-style:none}
 .check:hover{background:rgba(36,111,224,.16)}
 .check.p1{border-color:var(--p1);background:rgba(209,69,59,.07)}
 .check.p2{border-color:var(--p2);background:rgba(181,101,0,.07)}
-.check.p4{border-color:#b6b2ad;background:transparent}
+.check.p4{border-color:var(--check-quiet);background:transparent}
 .task.done .check,.tcard.done .check{color:#fff;border-color:var(--ok);background:var(--ok)}
 
 .tmain{display:block;min-width:0}
@@ -428,7 +556,7 @@ ul{margin:0;padding:0;list-style:none}
 /* The recurring marker and the project hash are centred badges, not rows. */
 .meta .repeatdot,.meta .hash{display:inline-grid;place-items:center}
 .meta .late{color:var(--accent)}
-.meta .deadline{color:#7a5cb9}
+.meta .deadline{color:var(--deadline)}
 .meta .at{color:var(--info)}
 /* A tag wears its own colour: the glyph in it, the chip a wash of it. Todoist
    holds a colour for every tag and the row is where it earns its keep. */
@@ -438,8 +566,8 @@ ul{margin:0;padding:0;list-style:none}
 /* project reference: ONE treatment everywhere (v1 had 3: coloured inline,
    plain grey inline, and a right-hand grey column) */
 .proj{display:inline-flex;align-items:center;gap:3px;font-weight:600}
-.proj.green{color:#4c8631}.proj.orange{color:#a4650c}.proj.purple{color:#7656bb}
-.proj.red{color:#c2443b}.proj.blue{color:#3972bf}.proj.gray{color:var(--muted)}
+.proj.green{color:var(--tag-green)}.proj.orange{color:var(--tag-orange)}.proj.purple{color:var(--tag-purple)}
+.proj.red{color:var(--tag-red)}.proj.blue{color:var(--tag-blue)}.proj.gray{color:var(--muted)}
 
 /* duration: one chip, one slot, one icon — and a visibly different state
    when it is missing, because a missing estimate is an action, not a value */
@@ -474,7 +602,7 @@ ul{margin:0;padding:0;list-style:none}
 
 .col{min-width:0;display:flex;flex-direction:column;padding:var(--s4);border:1px solid var(--border);
   border-radius:var(--r-lg);background:var(--subtle)}
-.col.today{border-color:#f0cdc6;background:#fdf7f5}
+.col.today{border-color:var(--today-line);background:var(--today-wash)}
 .chead{display:flex;align-items:flex-start;justify-content:space-between;gap:var(--s2);margin-bottom:10px}
 .chead strong{display:block;font-size:var(--fs-13);font-weight:700}
 .chead small{display:block;margin-top:1px;color:var(--muted);font-size:var(--fs-11)}
@@ -509,9 +637,9 @@ ul{margin:0;padding:0;list-style:none}
   overflow:hidden;border:1px solid var(--border);border-radius:var(--r-lg);background:var(--border)}
 .calday{min-height:148px;padding:var(--s2);background:var(--surface)}
 .calday strong{display:block;margin-bottom:var(--s2);font-size:var(--fs-12)}
-.caltask{margin-top:5px;padding:5px 6px;border-radius:var(--r-xs);background:#edf3fd;color:#245ca8;
+.caltask{margin-top:5px;padding:5px 6px;border-radius:var(--r-xs);background:var(--cal-wash);color:var(--cal-text);
   font-size:var(--fs-11);line-height:1.3}
-.caltask.late{color:#a33c32;background:#fdefed}
+.caltask.late{color:var(--cal-late-text);background:var(--tag-red-soft)}
 
 .stack{max-width:820px;margin:var(--s4) auto 0;display:grid;gap:10px}
 .stackcard{padding:18px 20px;border:1px solid var(--border);border-radius:var(--r-lg);background:var(--surface);
@@ -632,8 +760,8 @@ ul{margin:0;padding:0;list-style:none}
 /* The hint belongs to the row's own label column. Left unscoped, this rule
    also caught the text inside any control sitting in the row and broke it. */
 .setrow > div > span{display:block;margin-top:2px;color:var(--muted);font-size:var(--fs-12)}
-.switch{width:38px;height:22px;flex:0 0 auto;padding:2px;border-radius:var(--r-full);background:#c9c5c0}
-.switch::after{content:"";display:block;width:18px;height:18px;border-radius:var(--r-full);background:#fff;
+.switch{width:38px;height:22px;flex:0 0 auto;padding:2px;border-radius:var(--r-full);background:var(--switch-off)}
+.switch::after{content:"";display:block;width:18px;height:18px;border-radius:var(--r-full);background:var(--knob);
   box-shadow:var(--sh-sm);transition:margin .15s ease}
 .switch[aria-checked="true"]{background:var(--accent)}
 .switch[aria-checked="true"]::after{margin-left:16px}
@@ -643,7 +771,7 @@ ul{margin:0;padding:0;list-style:none}
    ========================================================================== */
 .overlay{position:fixed;inset:0;z-index:80;display:grid;pointer-events:none}
 .overlay.open{pointer-events:auto}
-.scrim{position:absolute;inset:0;background:rgba(28,25,23,.3);opacity:0;transition:opacity .2s ease-out}
+.scrim{position:absolute;inset:0;background:var(--scrim);opacity:0;transition:opacity .2s ease-out}
 .overlay.open .scrim{opacity:1}
 
 .sheet{position:relative;justify-self:center;align-self:center;width:min(1040px,calc(100vw - 56px));

@@ -11,8 +11,8 @@ import { useId, useState, type ReactNode } from 'react';
 
 /** Categorical slots, in fixed order. Validated for colour-vision separation. */
 export const SERIES = [
-  '#2a78d6', '#eb6834', '#1baf7a', '#eda100',
-  '#e87ba4', '#008300', '#4a3aa7', '#e34948',
+  'var(--series-1)', 'var(--series-2)', 'var(--series-3)', 'var(--series-4)',
+  'var(--series-5)', 'var(--series-6)', 'var(--series-7)', 'var(--series-8)',
 ] as const;
 
 export const seriesColor = (index: number): string => SERIES[index % SERIES.length];
@@ -323,7 +323,9 @@ export function Donut({
               cx="50"
               cy="50"
               r={R}
-              stroke={arc.color}
+              /* A custom property is not a colour as far as the `stroke`
+                 attribute is concerned; only the CSS property reads one. */
+              style={{ stroke: arc.color }}
               strokeDasharray={`${arc.dash} ${arc.rest}`}
               strokeDashoffset={arc.offset}
               className={`donutarc${hover && hover !== arc.key ? ' dim' : ''}`}

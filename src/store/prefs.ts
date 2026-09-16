@@ -26,6 +26,19 @@ export type Density = (typeof DENSITIES)[number];
 export const isDensity = (value: unknown): value is Density =>
   typeof value === 'string' && (DENSITIES as readonly string[]).includes(value);
 
+/**
+ * Light, dark, or whatever the device is set to.
+ *
+ * "system" is a standing instruction rather than a value: the app resolves it
+ * against the device every time the device changes its mind, which is why the
+ * concrete scheme is never what gets stored here.
+ */
+export const THEMES = ['system', 'light', 'dark'] as const;
+export type Theme = (typeof THEMES)[number];
+
+export const isTheme = (value: unknown): value is Theme =>
+  typeof value === 'string' && (THEMES as readonly string[]).includes(value);
+
 export const isHomeView = (value: unknown): value is HomeView =>
   typeof value === 'string' && (HOME_VIEWS as readonly string[]).includes(value);
 
@@ -66,6 +79,8 @@ export interface Preferences {
   sidebarCollapsed: boolean;
   /** How much room a list gives each task. */
   density: Density;
+  /** The colour scheme; "system" follows the device. */
+  theme: Theme;
   /** Filters, grouping, sorting and mode are remembered per view. */
   views: Record<string, ViewPrefs>;
   upcomingHorizonDays: number;
@@ -102,6 +117,7 @@ export const defaultPreferences = (locale: Locale): Preferences => ({
   conflicts: defaultConflictSettings(),
   sidebarCollapsed: false,
   density: 'comfortable',
+  theme: 'system',
   views: {},
   upcomingHorizonDays: 15,
   weekLayout: 'unified',
@@ -131,6 +147,7 @@ export function hydratePreferences(stored: unknown, locale: Locale): Preferences
     // A homepage stored by an older build may name a view that no longer exists.
     homepage: isHomeView(s.homepage) ? s.homepage : base.homepage,
     density: isDensity(s.density) ? s.density : base.density,
+    theme: isTheme(s.theme) ? s.theme : base.theme,
     dateFormat: (DATE_FORMATS as readonly string[]).includes(s.dateFormat as string)
       ? (s.dateFormat as DateFormat)
       : base.dateFormat,

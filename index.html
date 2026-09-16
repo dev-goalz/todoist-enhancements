@@ -18,6 +18,24 @@
     <meta name="application-name" content="Enhanced" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#d1453b" />
+    <meta name="color-scheme" content="light dark" />
+    <script>
+      /*
+        The theme, before the first paint.
+
+        Preferences live in IndexedDB and arrive a moment after the page does.
+        Without this the app opens white and turns dark once they load, which
+        is a flash of the wrong theme on every single launch. Only the choice
+        is stored; "system" is still resolved against the device here, the
+        same way the app resolves it afterwards.
+      */
+      try {
+        var choice = localStorage.getItem('theme');
+        var dark = choice === 'dark' ||
+          (choice !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+      } catch (e) {}
+    </script>
     <meta name="description" content="Enhanced for Todoist is an independent project. It is not created by, affiliated with, or supported by Todoist. An alternative, local-first client built around planning a week." />
     <title>Enhanced for Todoist</title>
 

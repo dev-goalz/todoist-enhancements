@@ -23,6 +23,7 @@ import { ReviewView } from './views/ReviewView';
 import { SettingsView } from './views/SettingsView';
 import { ConnectView } from './views/ConnectView';
 import { useStore } from './store/store';
+import type { Theme } from './store/prefs';
 import { useT } from './hooks/useT';
 import { useData } from './hooks/useData';
 import { navigate, useRoute, type Route } from './hooks/useRoute';
@@ -40,6 +41,7 @@ export function App() {
   const startPolling = useStore((s) => s.startPolling);
   const locale = useStore((s) => s.prefs.locale);
   const homepage = useStore((s) => s.prefs.homepage);
+  const theme = useStore((s) => s.prefs.theme);
   const toasts = useStore((s) => s.toasts);
   const dismissToast = useStore((s) => s.dismissToast);
 
@@ -66,6 +68,7 @@ export function App() {
     if (ready && !window.location.hash.replace(/^#\/?/, '')) navigate(homepage);
   }, [ready, homepage]);
   useEffect(() => { document.documentElement.lang = locale; }, [locale]);
+  useEffect(() => applyTheme(theme), [theme]);
   useEffect(() => (connected ? startPolling() : undefined), [connected, startPolling]);
 
   // Search and quick add are reached constantly, so both have a shortcut.
@@ -192,6 +195,33 @@ export interface ComposerPlacement {
   projectId?: string;
   sectionId?: string;
   date?: string;
+}
+
+/**
+ * Writes a concrete light or dark scheme onto the document.
+ *
+ * The stylesheet is never asked what the device prefers: `data-theme` always
+ * names one of the two real themes, and resolving "system" — including
+ * following the device when it changes its mind mid-session — happens here.
+ * One place decides, so there is one dark palette rather than two that drift.
+ *
+ * The resolved choice is mirrored into local storage because index.html reads
+ * it before the first paint. Without that the page opens white and turns dark
+ * a moment later, once preferences have loaded out of IndexedDB.
+ */
+function applyTheme(theme: Theme): (() => void) | undefined {
+  const root = document.documentElement;
+  const media = window.matchMedia('(prefers-color-scheme: dark)');
+  const apply = () => {
+    const resolved = theme === 'system' ? (media.matches ? 'dark' : 'light') : theme;
+    root.dataset.theme = resolved;
+    try { localStorage.setItem('theme', theme); } catch { /* storage may be blocked */ }
+  };
+  apply();
+  // Only "system" is a standing question. A fixed choice has nothing to listen for.
+  if (theme !== 'system') return undefined;
+  media.addEventListener('change', apply);
+  return () => media.removeEventListener('change', apply);
 }
 
 function AppShell({

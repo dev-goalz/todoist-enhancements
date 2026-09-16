@@ -8,8 +8,8 @@ import { formatDuration, parseDurationInput } from '@/domain/estimates';
 import { defaultCapacity, weeklyCapacity, type DailyCapacity } from '@/domain/load';
 import { DATE_FORMATS, formatDay, type DateFormat } from '@/domain/dates';
 import {
-  DENSITIES, HOME_VIEWS, WEEK_LAYOUTS,
-  type Density, type HomeView, type WeekLayout,
+  DENSITIES, HOME_VIEWS, THEMES, WEEK_LAYOUTS,
+  type Density, type HomeView, type Theme, type WeekLayout,
 } from '@/store/prefs';
 import { DEFAULT_WEEK_LABEL } from '@/domain/types';
 import type { Locale, TranslationKey } from '@/i18n';
@@ -160,6 +160,18 @@ export function SettingsView() {
                   /* The sample is the label: naming the orders "day, month,
                      year" explains less than showing one. */
                   label: formatDay(SAMPLE_DATE, locale, format),
+                }))}
+              />
+            </Row>
+
+            <Row title={t('settings.theme')} hint={t('settings.themeHint')}>
+              <Select
+                value={prefs.theme}
+                onChange={(value) => setPrefs({ theme: value as Theme })}
+                ariaLabel={t('settings.theme')}
+                options={THEMES.map((theme) => ({
+                  value: theme,
+                  label: t(`settings.theme.${theme}` as TranslationKey),
                 }))}
               />
             </Row>
