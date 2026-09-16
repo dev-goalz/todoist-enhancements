@@ -1,4 +1,7 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import {
+  createElement, useEffect, useLayoutEffect, useRef, useState,
+  type ChangeEvent, type KeyboardEvent, type MouseEvent, type SyntheticEvent,
+} from 'react';
 import { Icon } from './Icon';
 import { markerStyle } from '@/domain/colors';
 import {
@@ -34,6 +37,17 @@ interface TaskNameFieldProps {
   ariaLabel: string;
   snapshot: Snapshot;
   naturalDates: boolean;
+  /**
+   * A field that wraps rather than scrolling, for the task panel's title.
+   *
+   * The mirror follows: both layers wrap at the same width with the same
+   * metrics, so a mark stays on its word however many lines the title takes.
+   */
+  multiline?: boolean;
+  /** The class the field itself carries, so a caller can keep its own look. */
+  fieldClassName?: string;
+  /** Called when the field loses the caret, for a title that saves on blur. */
+  onBlur?: () => void;
   /** The readings turned down so far, as positions in `value`. */
   refusals: TextRange[];
   /**
@@ -63,11 +77,11 @@ interface TaskNameFieldProps {
  */
 export function TaskNameField({
   value, onChange, onSubmit, placeholder, ariaLabel, snapshot, naturalDates,
-  refusals, onRefusals,
+  refusals, onRefusals, multiline = false, fieldClassName, onBlur,
 }: TaskNameFieldProps) {
   const { t } = useT();
   const createLabel = useStore((s) => s.createLabel);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLInputElement & HTMLTextAreaElement>(null);
   const mirrorRef = useRef<HTMLDivElement>(null);
   const [caret, setCaret] = useState(0);
   const [pick, setPick] = useState(0);
@@ -230,6 +244,15 @@ export function TaskNameField({
     return () => input.removeEventListener('scroll', sync);
   }, [value]);
 
+  /* A wrapping field is exactly as tall as its text, so the mirror behind it —
+     which is the height of the box — cannot end up a line short. */
+  useLayoutEffect(() => {
+    const el = inputRef.current;
+    if (!multiline || !el) return;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight}px`;
+  }, [multiline, value]);
+
   const choose = (name: string, isNew = false) => {
     if (!token) return;
     // Made before it is inserted, so the tag it names exists by the time the
@@ -298,7 +321,7 @@ export function TaskNameField({
   };
 
   return (
-    <div className="namefield">
+    <div className={`namefield${multiline ? ' multiline' : ''}`}>
       <div className="namemirror" ref={mirrorRef} aria-hidden="true">
         {pieces.map((piece, index) =>
           piece.kind && !piece.refused
@@ -321,14 +344,16 @@ export function TaskNameField({
         <span>{'\u200b'}</span>
       </div>
 
-      <input
-        ref={inputRef}
-        className="composer-name"
-        placeholder={placeholder}
-        aria-label={ariaLabel}
-        autoFocus
-        value={value}
-        onChange={(e) => {
+      {createElement(multiline ? 'textarea' : 'input', {
+        ref: inputRef,
+        className: fieldClassName ?? 'composer-name',
+        placeholder,
+        'aria-label': ariaLabel,
+        autoFocus: !multiline,
+        rows: multiline ? 1 : undefined,
+        onBlur,
+        value,
+        onChange: (e: ChangeEvent<HTMLInputElement>) => {
           /* The refusals are positions in the text being edited, so they move
              with it before anything is read from it again. */
           const next = e.target.value;
@@ -339,14 +364,14 @@ export function TaskNameField({
           }
           onChange(next);
           track(e.target);
-        }}
-        onSelect={(e) => track(e.currentTarget)}
-        onClick={(e) => {
+        },
+        onSelect: (e: SyntheticEvent<HTMLInputElement>) => track(e.currentTarget),
+        onClick: (e: MouseEvent<HTMLInputElement>) => {
           track(e.currentTarget);
           clicked(e.currentTarget.selectionStart ?? 0);
-        }}
-        onKeyUp={(e) => track(e.currentTarget)}
-        onKeyDown={(e) => {
+        },
+        onKeyUp: (e: KeyboardEvent<HTMLInputElement>) => track(e.currentTarget),
+        onKeyDown: (e: KeyboardEvent<HTMLInputElement>) => {
           if (options.length > 0) {
             if (e.key === 'ArrowDown') {
               e.preventDefault();
@@ -390,8 +415,8 @@ export function TaskNameField({
             e.preventDefault();
             onSubmit();
           }
-        }}
-      />
+        },
+      })}
 
       {options.length > 0 && (
         <div className="popover namepicker" role="listbox">

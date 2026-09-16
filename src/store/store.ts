@@ -132,7 +132,9 @@ interface AppState {
   setWalkthrough: (open: boolean) => void;
   updateTask: (id: string, args: Record<string, unknown>) => Promise<void>;
   /** Gives a task a repeat rule, leaving the date for Todoist to resolve. */
-  setRecurrence: (id: string, rule: RecurrenceReading) => Promise<void>;
+  /* Takes the rule and the language it was written in, which is all Todoist
+     needs: where the reading came from is the caller's business. */
+  setRecurrence: (id: string, rule: Pick<RecurrenceReading, 'string' | 'lang'>) => Promise<void>;
   /**
    * Writes several estimates at once, as one request.
    *

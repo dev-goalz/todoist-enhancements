@@ -12,8 +12,10 @@ import {
 } from '@/domain/estimates';
 import { deadlineDate, dueDate, formatRelativeDay, toApiDate } from '@/domain/dates';
 import { renderMarkdown } from '@/domain/markdown';
+import { parseShorthand, type TextRange } from '@/domain/shorthand';
 import { dueForDate, readRecurrence } from '@/domain/recurrence';
 import { EstimateField } from '../EstimateField';
+import { TaskNameField } from '../TaskNameField';
 import { Select } from '../Select';
 import { DateField } from '../DateField';
 import { markerStyle } from '@/domain/colors';
@@ -143,6 +145,9 @@ export function TaskDetail({ taskId, onClose, onOpen }: TaskDetailProps) {
   const toggleTask = useStore((s) => s.toggleTask);
   const removeTask = useStore((s) => s.removeTask);
   const createTask = useStore((s) => s.createTask);
+  const moveTask = useStore((s) => s.moveTask);
+  const setRecurrence = useStore((s) => s.setRecurrence);
+  const naturalDates = useStore((s) => s.prefs.naturalDates);
   const confirm = useConfirm();
 
   const item = taskId ? snapshot.items[taskId] : null;
@@ -151,31 +156,15 @@ export function TaskDetail({ taskId, onClose, onOpen }: TaskDetailProps) {
   const [description, setDescription] = useState('');
   const [editingDescription, setEditingDescription] = useState(false);
   const [subtaskDraft, setSubtaskDraft] = useState('');
+  /** Readings of the title turned down while editing it. */
+  const [refusals, setRefusals] = useState<TextRange[]>([]);
   const [addingSubtask, setAddingSubtask] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [tagPickerOpen, setTagPickerOpen] = useState(false);
   const descriptionRef = useRef<HTMLTextAreaElement>(null);
-  const titleRef = useRef<HTMLTextAreaElement>(null);
-
   /**
-   * Keeps the title box exactly as tall as its text, so nothing is clipped.
-   *
-   * The field is sized border-box, and scrollHeight excludes the border, so
-   * the border has to be added back or the last line is cropped.
-   */
-  const fitTitle = useCallback(() => {
-    const el = titleRef.current;
-    if (!el) return;
-    const style = getComputedStyle(el);
-    const border =
-      Number.parseFloat(style.borderTopWidth) + Number.parseFloat(style.borderBottomWidth);
-    el.style.height = 'auto';
-    el.style.height = `${el.scrollHeight + border}px`;
-  }, []);
-
-  /**
-   * The same for the description, so leaving the field does not change the
-   * height of the panel.
+   * Keeps the description box exactly as tall as its text, so leaving the
+   * field does not change the height of the panel.
    *
    * The editor was a fixed 96px box that scrolled, and the rendered view below
    * it is as tall as the text — so clicking away from a long description made
@@ -201,6 +190,7 @@ export function TaskDetail({ taskId, onClose, onOpen }: TaskDetailProps) {
     setEditingDescription(false);
     setAddingSubtask(false);
     setSubtaskDraft('');
+    setRefusals([]);
     setMenuOpen(false);
     setTagPickerOpen(false);
   }, [item?.id]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -211,11 +201,12 @@ export function TaskDetail({ taskId, onClose, onOpen }: TaskDetailProps) {
 
   // Measured after layout, and again once webfonts settle, because the text
   // height is not final on the first paint.
-  useLayoutEffect(fitTitle, [fitTitle, title, taskId]);
   useLayoutEffect(fitDescription, [fitDescription, description, editingDescription, taskId]);
+  // Measured again once webfonts settle: the text height is not final on the
+  // first paint.
   useEffect(() => {
-    void document.fonts?.ready.then(fitTitle);
-  }, [fitTitle]);
+    void document.fonts?.ready.then(fitDescription);
+  }, [fitDescription]);
 
   const descriptionHtml = useMemo(
     () => renderMarkdown(item?.description ?? ''),
@@ -250,9 +241,50 @@ export function TaskDetail({ taskId, onClose, onOpen }: TaskDetailProps) {
     .filter((l) => !l.is_deleted && !l.name.startsWith('est-'))
     .sort((a, b) => a.item_order - b.item_order);
 
+  /**
+   * Saves the title, and everything the title turned out to be saying.
+   *
+   * Typing "call the plumber tomorrow p1 #Home" into a task's name should do
+   * what typing it into the composer does. What the readers claim is taken out
+   * of the name and written to the field it belongs to; what they do not claim
+   * stays in the name exactly as it was typed.
+   */
   const commitTitle = () => {
-    const next = title.trim();
-    if (next && next !== item.content) void updateTask(item.id, { content: next });
+    const read = parseShorthand(title, snapshot, naturalDates, refusals);
+    const next = read.content.trim();
+    if (!next) {
+      // Nothing left to call it by: the edit is dropped rather than the name.
+      setTitle(item.content);
+      return;
+    }
+
+    const fields: Record<string, unknown> = {};
+    if (next !== item.content) fields.content = next;
+    if (read.date) fields.due = dueForDate(item.due, read.date);
+    if (read.priority) fields.priority = toTodoistPriority(read.priority);
+
+    let labels = item.labels;
+    if (read.labels.length > 0) labels = [...new Set([...labels, ...read.labels])];
+    if (read.minutes !== null) labels = withEstimate(labels, read.minutes);
+    if (labels !== item.labels) fields.labels = labels;
+
+    if (Object.keys(fields).length > 0) void updateTask(item.id, fields);
+
+    /* A repeat is not an `item_update` field like the others: Todoist resolves
+       the rule, so it is sent on its own and the date is left to it. */
+    if (read.recurrence) void setRecurrence(item.id, read.recurrence);
+
+    const movingProject = read.projectId && read.projectId !== item.project_id;
+    const movingSection = read.sectionId && read.sectionId !== item.section_id;
+    if (movingProject || movingSection) {
+      void moveTask(
+        item.id,
+        read.sectionId ? { section_id: read.sectionId } : { project_id: read.projectId! },
+      );
+    }
+
+    setRefusals([]);
+    setTitle(next);
   };
   const commitDescription = () => {
     setEditingDescription(false);
@@ -381,20 +413,23 @@ export function TaskDetail({ taskId, onClose, onOpen }: TaskDetailProps) {
             </span>
 
             <div className="detail-content">
-              <textarea
-                className="titlefield"
+              {/* The same field the composer uses, so a title edited here
+                  reads what a title typed there reads: a date, a repeat, a
+                  project, a tag, a priority — marked as you type and taken out
+                  of the name when it is saved. */}
+              <TaskNameField
                 value={title}
-                rows={1}
-                aria-label={t('detail.title')}
-                ref={titleRef}
-                onChange={(e) => { setTitle(e.target.value); fitTitle(); }}
+                onChange={setTitle}
+                onSubmit={commitTitle}
                 onBlur={commitTitle}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    e.currentTarget.blur();
-                  }
-                }}
+                placeholder={t('detail.title')}
+                ariaLabel={t('detail.title')}
+                snapshot={snapshot}
+                naturalDates={naturalDates}
+                refusals={refusals}
+                onRefusals={setRefusals}
+                multiline
+                fieldClassName="titlefield"
               />
 
               {editingDescription ? (

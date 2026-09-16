@@ -1261,13 +1261,14 @@
      wider than the word under it without the mirror drifting off the input,
      and a space between two words is four pixels — so pills either touched or
      the sentence had to be stretched to make room for them, and a title typed
-     with gaps between every word is worse than a tight mark. What carries the
-     colour instead is a rule under the word, at full strength, over a tint so
-     light it never closes the gap. Nothing here reaches beyond the word, so
-     two marks side by side stay two marks. */
-  background:color-mix(in srgb, var(--mark) 12%, var(--surface));
-  box-shadow:inset 0 -2px 0 0 var(--mark);
-  padding:3px 1px 4px;margin:0 -1px;border-radius:4px 4px 3px 3px;
+     with gaps between every word is worse than a tight mark.
+     What is left is the tint alone, with as much air as the padding can take
+     back through the margin, and a hairline of the field's own colour drawn
+     outside the box — a shadow takes no width, so it is what keeps two marks
+     that nearly touch reading as two. */
+  background:color-mix(in srgb, var(--mark) 14%, var(--surface));
+  padding:4px 2px;margin:0 -2px;border-radius:5px;
+  box-shadow:0 0 0 1px var(--surface);
 }
 
 /* A guess has no colour of its own. A duration has none either: an estimate is

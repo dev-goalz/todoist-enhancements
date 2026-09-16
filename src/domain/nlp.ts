@@ -13,8 +13,10 @@ import { toApiDate } from './dates';
 export interface DateReading {
   /** `yyyy-MM-dd`, or with `THH:mm:ss` when a time of day was given. */
   date: string;
-  /** The exact text that produced it, so the caller can strip it. */
+  /** The exact text that produced it, as it appears, so the caller can strip it. */
   matched: string;
+  /** Where that text starts in what was read. */
+  index: number;
   /** True when the phrase carried a time as well as a day. */
   hasTime: boolean;
 }
@@ -31,8 +33,20 @@ const MONTHS: Record<'en' | 'fr', string[]> = {
     'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'],
 };
 
+/**
+ * Lowercased and stripped of accents, one character in for one character out.
+ *
+ * The length has to survive: every phrase below is found in the folded text
+ * and reported as a position in the original, and "après-demain" folded the
+ * ordinary way is one character shorter than it started — which is a mark
+ * drawn a character to the left of the word it belongs to.
+ */
 const fold = (text: string): string =>
-  text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  text
+    .toLowerCase()
+    .split('')
+    .map((ch) => ch.normalize('NFD')[0] ?? ch)
+    .join('');
 
 const addDays = (from: Date, days: number): Date => {
   const out = new Date(from);
@@ -40,22 +54,41 @@ const addDays = (from: Date, days: number): Date => {
   return out;
 };
 
+interface TimeReading {
+  hours: number;
+  minutes: number;
+  /** Where the time sits in the text it was read from. */
+  start: number;
+  end: number;
+}
+
 /** A time of day appearing anywhere in the phrase: "at 14:00", "2pm", "à 9h30". */
-function readTime(text: string): { hours: number; minutes: number; matched: string } | null {
+function readTime(text: string): TimeReading | null {
+  const span = (match: RegExpMatchArray) => {
+    /* The pattern may have eaten the space in front of the time, and that
+       space belongs to the sentence rather than to the reading. */
+    const raw = match[0];
+    const lead = raw.length - raw.trimStart().length;
+    return { start: match.index! + lead, end: match.index! + raw.length };
+  };
+
   const ampm = text.match(/\b(?:at|à|a)?\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b/i);
   if (ampm) {
     let hours = Number(ampm[1]) % 12;
     if (ampm[3].toLowerCase() === 'pm') hours += 12;
-    return { hours, minutes: Number(ampm[2] ?? 0), matched: ampm[0] };
+    return { hours, minutes: Number(ampm[2] ?? 0), ...span(ampm) };
   }
   const hm = text.match(/\b(?:at|à|a)?\s*(\d{1,2})\s*[h:]\s*(\d{2})?\b/i);
   if (hm) {
     const hours = Number(hm[1]);
     if (hours > 23) return null;
-    return { hours, minutes: Number(hm[2] ?? 0), matched: hm[0] };
+    return { hours, minutes: Number(hm[2] ?? 0), ...span(hm) };
   }
   return null;
 }
+
+/** How far a time may sit from its day and still belong to it. */
+const TIME_GAP = 3;
 
 /**
  * Finds a date phrase in `raw`.
@@ -67,13 +100,38 @@ export function readNaturalDate(raw: string, now = new Date()): DateReading | nu
   const text = fold(raw);
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-  const found = (day: Date, matched: string): DateReading => {
-    const time = readTime(raw);
-    if (!time) return { date: toApiDate(day), matched, hasTime: false };
+  /**
+   * A reading, reported as the exact stretch of `raw` that produced it.
+   *
+   * The phrase and the time are two matches that have to be given back as one
+   * range: the caller marks that range and takes it out of the task's name, so
+   * a range stitched together from two strings — "demain" and " 12:14" with the
+   * space counted twice — is a range that cannot be found in what was typed,
+   * and the whole reading used to be dropped on the floor because of it.
+   */
+  const found = (day: Date, match: RegExpMatchArray): DateReading => {
+    const start = match.index!;
+    const end = start + match[0].length;
+    const time = readTime(text);
+
+    /* A time is part of this phrase when it is beside it. One further off in
+       the sentence belongs to the sentence: "12:14 is the deadline, call
+       tomorrow" is a task for tomorrow, at no particular hour. */
+    const attached = time
+      && (time.start - end <= TIME_GAP && time.start >= end
+        || start - time.end <= TIME_GAP && time.end <= start);
+
+    if (!time || !attached) {
+      return { date: toApiDate(day), matched: raw.slice(start, end), index: start, hasTime: false };
+    }
+
+    const from = Math.min(start, time.start);
+    const to = Math.max(end, time.end);
     const pad = (n: number) => String(n).padStart(2, '0');
     return {
       date: `${toApiDate(day)}T${pad(time.hours)}:${pad(time.minutes)}:00`,
-      matched: `${matched} ${time.matched}`.trim(),
+      matched: raw.slice(from, to),
+      index: from,
       hasTime: true,
     };
   };
@@ -86,13 +144,13 @@ export function readNaturalDate(raw: string, now = new Date()): DateReading | nu
   ];
   for (const [pattern, offset] of plain) {
     const match = text.match(pattern);
-    if (match) return found(addDays(today, offset), match[0]);
+    if (match) return found(addDays(today, offset), match);
   }
 
   // "next week" / "la semaine prochaine" — the coming Monday
   const nextWeek = text.match(/\b(next week|semaine prochaine|la semaine prochaine)\b/);
   if (nextWeek) {
-    return found(addDays(today, ((8 - today.getDay()) % 7) || 7), nextWeek[0]);
+    return found(addDays(today, ((8 - today.getDay()) % 7) || 7), nextWeek);
   }
 
   // "in 3 days" / "dans 2 semaines"
@@ -100,7 +158,7 @@ export function readNaturalDate(raw: string, now = new Date()): DateReading | nu
   if (relative) {
     const count = Number(relative[1]);
     const weeks = relative[2].startsWith('week') || relative[2].startsWith('semaine');
-    return found(addDays(today, count * (weeks ? 7 : 1)), relative[0]);
+    return found(addDays(today, count * (weeks ? 7 : 1)), relative);
   }
 
   // A weekday name, in either language: the next one that is not today.
@@ -110,7 +168,7 @@ export function readNaturalDate(raw: string, now = new Date()): DateReading | nu
       const match = text.match(new RegExp(`\\b(?:next |prochain |le )?${name}\\b`));
       if (!match) continue;
       const delta = ((index - today.getDay() + 7) % 7) || 7;
-      return found(addDays(today, delta), match[0]);
+      return found(addDays(today, delta), match);
     }
   }
 
@@ -129,7 +187,7 @@ export function readNaturalDate(raw: string, now = new Date()): DateReading | nu
     let day = new Date(today.getFullYear(), month, dayOfMonth);
     if (day < today) day = new Date(today.getFullYear() + 1, month, dayOfMonth);
     if (day.getMonth() !== month) continue;   // 31 February and friends
-    return found(day, match[0]);
+    return found(day, match);
   }
 
   // "12/03" and "12/03/2026", read day-first as both interface languages do.
@@ -145,7 +203,7 @@ export function readNaturalDate(raw: string, now = new Date()): DateReading | nu
       const future = !numeric[3] && day < today
         ? new Date(year + 1, month, dayOfMonth)
         : day;
-      return found(future, numeric[0]);
+      return found(future, numeric);
     }
   }
 

@@ -171,14 +171,33 @@ export function parseShorthand(
      the two compete for the same words: "every monday" contains a weekday the
      date reader would otherwise take for next Monday, dating the task once
      instead of repeating it forever. Claiming the range first settles it. */
+  /*
+   * The same "last one wins" as the project and the priority, and for the same
+   * reason: a task happens once. Typing `demain` and then `mercredi` is
+   * changing your mind, so the reader keeps looking past what it has already
+   * found and marks the last phrase rather than the first — and refusing that
+   * one hands the day back to the one before it.
+   *
+   * Each candidate is blanked before looking again, so the search always moves
+   * forward and a phrase can never find itself.
+   */
   let recurrence: Shorthand['recurrence'] = null;
   if (naturalDates) {
-    const repeat = readRecurrence(mask(raw, [...ranges, ...refused]));
-    if (repeat) {
+    let text = mask(raw, [...ranges, ...refused]);
+    let last: { at: number; length: number; reading: ReturnType<typeof readRecurrence> } | null = null;
+    for (let guard = 0; guard < 8; guard += 1) {
+      const repeat = readRecurrence(text);
+      if (!repeat) break;
+      last = { at: repeat.index, length: repeat.matched.length, reading: repeat };
+      text = blank(text, repeat.index, repeat.matched.length);
+    }
+    if (last?.reading) {
       recurrence = {
-        string: repeat.string, lang: repeat.lang, fromCompletion: repeat.fromCompletion,
+        string: last.reading.string,
+        lang: last.reading.lang,
+        fromCompletion: last.reading.fromCompletion,
       };
-      claim(repeat.index, repeat.matched.length, 'recurrence');
+      claim(last.at, last.length, 'recurrence');
     }
   }
 
@@ -187,14 +206,17 @@ export function parseShorthand(
     /* The date is read from what the explicit syntax has not already claimed,
        blanked out rather than removed so every index still points at the same
        character of the original string. */
-    const masked = mask(raw, [...ranges, ...refused]);
-    const reading = readNaturalDate(masked);
-    if (reading) {
-      const at = masked.toLowerCase().indexOf(reading.matched.toLowerCase());
-      if (at >= 0) {
-        date = reading.date;
-        claim(at, reading.matched.length, 'date');
-      }
+    let text = mask(raw, [...ranges, ...refused]);
+    let last: { at: number; length: number; date: string } | null = null;
+    for (let guard = 0; guard < 8; guard += 1) {
+      const reading = readNaturalDate(text);
+      if (!reading) break;
+      last = { at: reading.index, length: reading.matched.length, date: reading.date };
+      text = blank(text, reading.index, reading.matched.length);
+    }
+    if (last) {
+      date = last.date;
+      claim(last.at, last.length, 'date');
     }
   }
 
@@ -250,6 +272,10 @@ function dedupe(ranges: Highlight[]): Highlight[] {
   }
   return clean;
 }
+
+/** The same text with one stretch of it turned to spaces. */
+const blank = (text: string, start: number, length: number): string =>
+  text.slice(0, start) + ' '.repeat(length) + text.slice(start + length);
 
 const mask = (raw: string, ranges: TextRange[]): string => {
   const out = raw.split('');
