@@ -45,11 +45,18 @@ export const isTheme = (value: unknown): value is Theme =>
  * A name, not a hex value: a theme is a family of nine tokens in two schemes,
  * and the stylesheet is the only thing that should know what any of them are.
  */
-export const ACCENTS = ['red', 'orange', 'green', 'blue', 'purple'] as const;
-export type Accent = (typeof ACCENTS)[number];
+export const ACCENTS = [
+  'red', 'orange', 'amber', 'green', 'teal', 'blue', 'indigo', 'purple', 'pink',
+] as const;
+export type Accent = (typeof ACCENTS)[number] | 'custom';
 
 export const isAccent = (value: unknown): value is Accent =>
-  typeof value === 'string' && (ACCENTS as readonly string[]).includes(value);
+  typeof value === 'string'
+  && (value === 'custom' || (ACCENTS as readonly string[]).includes(value));
+
+/** A hex colour, as typed or picked. Only the hue and saturation are used. */
+export const isHexColour = (value: unknown): value is string =>
+  typeof value === 'string' && /^#[0-9a-f]{6}$/i.test(value);
 
 export const isHomeView = (value: unknown): value is HomeView =>
   typeof value === 'string' && (HOME_VIEWS as readonly string[]).includes(value);
@@ -95,6 +102,13 @@ export interface Preferences {
   theme: Theme;
   /** The brand colour. Every accent exists in both schemes. */
   accent: Accent;
+  /**
+   * The colour behind `accent: 'custom'`.
+   *
+   * Kept even while a named accent is selected, so going back to Custom
+   * returns to the colour that was chosen rather than to a default.
+   */
+  accentCustom: string;
   /** Filters, grouping, sorting and mode are remembered per view. */
   views: Record<string, ViewPrefs>;
   upcomingHorizonDays: number;
@@ -133,6 +147,7 @@ export const defaultPreferences = (locale: Locale): Preferences => ({
   density: 'comfortable',
   theme: 'system',
   accent: 'red',
+  accentCustom: '#d1453b',
   views: {},
   upcomingHorizonDays: 15,
   weekLayout: 'unified',
@@ -164,6 +179,7 @@ export function hydratePreferences(stored: unknown, locale: Locale): Preferences
     density: isDensity(s.density) ? s.density : base.density,
     theme: isTheme(s.theme) ? s.theme : base.theme,
     accent: isAccent(s.accent) ? s.accent : base.accent,
+    accentCustom: isHexColour(s.accentCustom) ? s.accentCustom : base.accentCustom,
     dateFormat: (DATE_FORMATS as readonly string[]).includes(s.dateFormat as string)
       ? (s.dateFormat as DateFormat)
       : base.dateFormat,

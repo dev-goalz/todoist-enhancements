@@ -38,6 +38,16 @@
            arrives is the same wrong first paint in a different colour. */
         var accent = localStorage.getItem('accent');
         if (accent) document.documentElement.dataset.accent = accent;
+        /* A custom accent is not in the stylesheet — it is computed from one
+           colour. Both schemes were worked out and stored when it was chosen,
+           so the right one can be written here without repeating the recipe. */
+        if (accent === 'custom') {
+          var vars = JSON.parse(localStorage.getItem('accentVars') || 'null');
+          var set = vars && vars[dark ? 'dark' : 'light'];
+          for (var token in set) {
+            document.documentElement.style.setProperty('--' + token, set[token]);
+          }
+        }
       } catch (e) {}
     </script>
     <meta name="description" content="Enhanced for Todoist is an independent project. It is not created by, affiliated with, or supported by Todoist. An alternative, local-first client built around planning a week." />

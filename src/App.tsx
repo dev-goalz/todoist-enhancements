@@ -24,6 +24,7 @@ import { SettingsView } from './views/SettingsView';
 import { ConnectView } from './views/ConnectView';
 import { useStore } from './store/store';
 import type { Accent, Theme } from './store/prefs';
+import { ACCENT_TOKENS, accentFamily, hexToHsl } from './domain/accent';
 import { useT } from './hooks/useT';
 import { useData } from './hooks/useData';
 import { navigate, useRoute, type Route } from './hooks/useRoute';
@@ -43,6 +44,7 @@ export function App() {
   const homepage = useStore((s) => s.prefs.homepage);
   const theme = useStore((s) => s.prefs.theme);
   const accent = useStore((s) => s.prefs.accent);
+  const accentCustom = useStore((s) => s.prefs.accentCustom);
   const toasts = useStore((s) => s.toasts);
   const dismissToast = useStore((s) => s.dismissToast);
 
@@ -70,7 +72,9 @@ export function App() {
   }, [ready, homepage]);
   useEffect(() => { document.documentElement.lang = locale; }, [locale]);
   useEffect(() => applyTheme(theme), [theme]);
-  useEffect(() => applyAccent(accent), [accent]);
+  /* Also on `theme`: a custom accent is two families, and which one is
+     written depends on the scheme that ended up resolved. */
+  useEffect(() => applyAccent(accent, accentCustom), [accent, accentCustom, theme]);
   useEffect(() => (connected ? startPolling() : undefined), [connected, startPolling]);
 
   // Search and quick add are reached constantly, so both have a shortcut.
@@ -234,9 +238,37 @@ function applyTheme(theme: Theme): (() => void) | undefined {
  * of its two schemes applies — is the stylesheet's business, which is what
  * keeps a green accent from being a green mark on surfaces still tinted red.
  */
-function applyAccent(accent: Accent): void {
-  document.documentElement.dataset.accent = accent;
-  try { localStorage.setItem('accent', accent); } catch { /* storage may be blocked */ }
+function applyAccent(accent: Accent, custom: string): void {
+  const root = document.documentElement;
+  root.dataset.accent = accent;
+
+  /* A named accent is nine families already written in the stylesheet. A
+     custom one is built here, by the same recipe, and set as inline custom
+     properties — which is also why they are cleared again on the way out, or
+     the last custom colour would keep overriding the named one. */
+  for (const token of ACCENT_TOKENS) root.style.removeProperty(`--${token}`);
+
+  const hsl = accent === 'custom' ? hexToHsl(custom) : null;
+  if (hsl) {
+    const scheme = root.dataset.theme === 'dark' ? 'dark' : 'light';
+    for (const [token, value] of Object.entries(accentFamily(hsl.h, hsl.s, scheme))) {
+      root.style.setProperty(`--${token}`, value);
+    }
+  }
+
+  try {
+    localStorage.setItem('accent', accent);
+    localStorage.setItem('accentCustom', custom);
+    /* Both schemes, because index.html has to write these before the first
+       paint and cannot run the recipe. It picks the one it needs once it has
+       resolved the theme, the same way this function just did. */
+    localStorage.setItem('accentVars', hsl
+      ? JSON.stringify({
+        light: accentFamily(hsl.h, hsl.s, 'light'),
+        dark: accentFamily(hsl.h, hsl.s, 'dark'),
+      })
+      : '');
+  } catch { /* storage may be blocked */ }
   paintBrowserChrome();
 }
 

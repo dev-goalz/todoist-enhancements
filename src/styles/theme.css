@@ -1555,6 +1555,11 @@
    the whole setting, and it needs no adjective to explain it. */
 .setrow-wide{flex-wrap:wrap;align-items:flex-start}
 .setrow-wide > div:first-child{flex:1 1 100%}
+/* A row that opens into a panel of cards needs a floor under it. Without one
+   the cards sit directly against the next setting's label and the two read as
+   one control with a heading in the middle of it. */
+.setrow-wide{padding-bottom:var(--s5)}
+.setrow-wide + .setrow{border-top:1px solid var(--border)}
 .denschoice{display:flex;gap:var(--s3);margin-top:var(--s3);flex-wrap:wrap}
 .denscard{
   flex:0 1 190px;display:grid;gap:8px;padding:10px;
@@ -1595,6 +1600,47 @@
    its own data-accent, so every var() inside it resolves to that accent's
    family in whichever scheme the page is wearing — the card is a window, not
    a swatch pretending to be one. */
+/* ---------- Appearance ----------
+   Three pages in miniature. "Match device" is drawn as both schemes at once
+   because that is what it is — the card is split, not labelled. */
+.themechoice{display:flex;gap:var(--s3);margin-top:var(--s3);flex-wrap:wrap}
+.themecard{
+  flex:0 1 150px;display:grid;gap:8px;padding:10px;
+  border:1px solid var(--border);border-radius:var(--r-md);
+  background:var(--surface);text-align:left;
+}
+.themecard:hover{border-color:var(--border-strong)}
+.themecard:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.themecard.selected{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+
+.themepreview{
+  display:flex;height:76px;overflow:hidden;
+  border:1px solid var(--border);border-radius:var(--r-sm);
+}
+.themehalf{
+  flex:1;min-width:0;display:flex;flex-direction:column;gap:7px;
+  padding:9px 8px;overflow:hidden;
+}
+.themehalf.light{background:#ffffff}
+.themehalf.dark{background:#1e1e1e}
+/* Light and Dark show one scheme, so their second half is simply not there.
+   System keeps both, and the seam down the middle is the whole point. */
+.themepreview.light .themehalf.dark,
+.themepreview.dark .themehalf.light{display:none}
+.themebar{height:7px;width:70%;border-radius:3px;background:var(--accent)}
+.themeline{height:5px;border-radius:3px}
+.themeline.short{width:60%}
+.themehalf.light .themeline{background:#e2e0de}
+.themehalf.dark .themeline{background:#3d3d3d}
+
+.themelabel{
+  display:flex;align-items:center;justify-content:space-between;gap:6px;
+  color:var(--text);font-size:var(--fs-13);font-weight:600;
+}
+.themecard.selected .themelabel{color:var(--accent-dark)}
+.themecard.selected .themelabel .ic{color:var(--accent)}
+.themecard:not(.selected) .themelabel .ic{display:none}
+
 .accentchoice{display:flex;gap:var(--s3);margin-top:var(--s3);flex-wrap:wrap}
 .accentcard{
   flex:0 1 132px;display:grid;gap:8px;padding:10px;
@@ -1637,6 +1683,27 @@
 .accentcard.selected .accentlabel{color:var(--accent-dark)}
 .accentcard.selected .accentlabel .ic{color:var(--accent)}
 .accentcard:not(.selected) .accentlabel .ic{display:none}
+
+/* The custom card carries its own controls, so it is a little taller than the
+   presets and lines up with them at the top rather than stretching them. */
+.accentcard.custom{align-self:start}
+.accentpicker{display:flex;align-items:center;gap:6px}
+.accentpicker input[type="color"]{
+  width:28px;height:28px;flex:0 0 auto;padding:0;
+  border:1px solid var(--border-strong);border-radius:var(--r-sm);
+  background:transparent;cursor:pointer;
+}
+/* Every browser draws its own frame inside a colour input. Removing it is the
+   only way the swatch fills the square it was given. */
+.accentpicker input[type="color"]::-webkit-color-swatch-wrapper{padding:0}
+.accentpicker input[type="color"]::-webkit-color-swatch{border:0;border-radius:4px}
+.accenthex{
+  flex:1;min-width:0;width:100%;height:28px;padding:0 7px;
+  border:1px solid var(--border-strong);border-radius:var(--r-sm);
+  background:var(--surface);color:var(--text);
+  font-size:var(--fs-12);font-family:inherit;font-variant-numeric:tabular-nums;
+}
+.accenthex:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 
 /* ==========================================================================
    Review
