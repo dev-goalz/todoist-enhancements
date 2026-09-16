@@ -22,6 +22,8 @@ import { InsightsView } from './views/InsightsView';
 import { ReviewView } from './views/ReviewView';
 import { SettingsView } from './views/SettingsView';
 import { ConnectView } from './views/ConnectView';
+import { Walkthrough } from './components/overlays/Walkthrough';
+import { hasOnboarded } from './domain/onboarding';
 import { useStore } from './store/store';
 import type { Accent, Theme } from './store/prefs';
 import { ACCENT_TOKENS, accentFamily, hexToHsl } from './domain/accent';
@@ -45,6 +47,10 @@ export function App() {
   const theme = useStore((s) => s.prefs.theme);
   const accent = useStore((s) => s.prefs.accent);
   const accentCustom = useStore((s) => s.prefs.accentCustom);
+  const userId = useStore((s) => s.snapshot.user?.id);
+  const demo = useStore((s) => s.demo);
+  const walkthroughOpen = useStore((s) => s.walkthrough);
+  const setWalkthrough = useStore((s) => s.setWalkthrough);
   const toasts = useStore((s) => s.toasts);
   const dismissToast = useStore((s) => s.dismissToast);
 
@@ -76,6 +82,17 @@ export function App() {
      written depends on the scheme that ended up resolved. */
   useEffect(() => applyAccent(accent, accentCustom), [accent, accentCustom, theme]);
   useEffect(() => (connected ? startPolling() : undefined), [connected, startPolling]);
+
+  /* The first run, for a real account that has not had one. The demo is
+     excluded on purpose: it is the thing people open to decide whether they
+     want the app at all, and a setup dialog in front of it answers a question
+     they have not asked yet.
+
+     Opened here and closed by the dialog, so asking for it again from
+     Settings goes through the same door. */
+  useEffect(() => {
+    if (ready && connected && !demo && !hasOnboarded(userId)) setWalkthrough(true);
+  }, [ready, connected, demo, userId, setWalkthrough]);
 
   // Search and quick add are reached constantly, so both have a shortcut.
   useEffect(() => {
@@ -156,6 +173,10 @@ export function App() {
           />
         </DragProvider>
       </ConfirmProvider>
+
+      {/* Outside the shell, and above it. The choices it offers change the
+          page behind it, which is the point of showing them here. */}
+      <Walkthrough open={walkthroughOpen} onDone={() => setWalkthrough(false)} />
 
       {toasts.length > 0 && (
         <div className="toasts">
