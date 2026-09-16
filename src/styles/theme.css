@@ -155,7 +155,9 @@
 .descview.placeholder{color:var(--faint)}
 .descfield{
   width:calc(100% + 12px);margin:var(--s2) 0 0 -6px;padding:6px;
-  min-height:96px;resize:vertical;box-sizing:border-box;
+  /* The height is set from the text as it is typed, so the field and the
+     rendered description below it are never two different sizes. */
+  min-height:96px;resize:none;overflow:hidden;box-sizing:border-box;
   border:1px solid var(--border-strong);border-radius:var(--r-sm);
   background:var(--surface);color:var(--text);
   font:inherit;font-size:var(--fs-14);line-height:1.6;
@@ -1235,7 +1237,7 @@
 .namemirror{
   font:inherit;font-size:var(--fs-16);font-weight:600;
   line-height:1.4;letter-spacing:normal;
-  padding:6px 0;border:0;
+  padding:9px 0;border:0;
   white-space:pre;overflow-x:auto;
   scrollbar-width:none;
 }
@@ -1248,30 +1250,38 @@
 .namefield .composer-name{position:relative;z-index:1;width:100%;background:transparent}
 
 .nmark{
-  color:transparent;background:var(--subtle);
-  /* Air around the marked word, and nothing else.
-     The padding is given back by the negative margin, so the mirror still
-     lines up character for character with the input in front of it and the
-     ordinary spaces of the sentence keep their ordinary width. Vertically
-     there is nothing to trade against, so the padding there is as generous as
-     the line allows; horizontally the ceiling is the width of a real space —
-     two marked words separated by one space have 4px between them to share,
-     and a background that took more than half of it each would meet its
-     neighbour. The ring is the field's own colour, drawn outside the box, and
-     it is what keeps them apart: a shadow takes no width. */
-  padding:4px 2px;margin:0 -2px;border-radius:7px;
-  box-shadow:0 0 0 1px var(--surface);
+  color:transparent;
+  /* Every mark is drawn from one colour: the thing's own, handed down as
+     `--mark` by whoever recognised it, and the accent when the reading was a
+     guess about prose rather than something written on purpose. */
+  --mark:var(--accent);
+
+  /* A mark is a highlighted word, not a chip.
+     The chip was the wrong shape for the space available: a mark cannot be
+     wider than the word under it without the mirror drifting off the input,
+     and a space between two words is four pixels — so pills either touched or
+     the sentence had to be stretched to make room for them, and a title typed
+     with gaps between every word is worse than a tight mark.
+     What is left is the tint alone, with as much air as the padding can take
+     back through the margin, and a hairline of the field's own colour drawn
+     outside the box — a shadow takes no width, so it is what keeps two marks
+     that nearly touch reading as two. */
+  background:color-mix(in srgb, var(--mark) 14%, var(--surface));
+  /* Air on all four sides, out of a budget of four pixels.
+     Inner air and the gap between two marks come out of the same space — the
+     one the sentence puts between two words — so padding the box would take
+     the gap with it: at 2px a side, two marked words had half a pixel of
+     daylight between them. The sides are painted rather than padded instead:
+     a shadow spreads the fill a pixel and a half past the box and takes no
+     width at all, which leaves the words where they were and still leaves the
+     better part of a space between one mark and the next. */
+  padding:5px 0;margin:0;border-radius:5px;
+  box-shadow:0 0 0 1.5px color-mix(in srgb, var(--mark) 14%, var(--surface));
 }
-/* A date is the one the parser guessed rather than one you spelled out, so it
-   is the one that has to be impossible to miss. */
-.nmark.date{background:var(--accent-tint)}
-.nmark.project{background:var(--tag-blue-soft)}
-.nmark.label{background:var(--tag-purple-soft)}
-.nmark.priority{background:var(--accent-tint)}
-.nmark.duration{background:var(--tag-teal-soft)}
-/* A repeat is the one reading that changes the task forever rather than once,
-   so it is marked more firmly than a date is. */
-.nmark.recurrence{background:var(--tag-lavender-soft);box-shadow:0 0 0 2px var(--tag-lavender-soft)}
+
+/* A guess has no colour of its own. A duration has none either: an estimate is
+   a number, not a thing with a colour in Todoist. */
+.nmark.duration{--mark:var(--faint)}
 
 /* The list that opens on @ or #. */
 .namepicker{
