@@ -140,7 +140,10 @@ export function readNaturalDate(raw: string, now = new Date()): DateReading | nu
        tomorrow" is a task for tomorrow, at no particular hour. */
     const attached = time
       && (time.start - end <= TIME_GAP && time.start >= end
-        || start - time.end <= TIME_GAP && time.end <= start);
+        || start - time.end <= TIME_GAP && time.end <= start
+        /* Or the same words twice: "ce soir" is a day and an hour written as
+           one phrase, and the hour sits inside what the day matched. */
+        || time.start < end && time.end > start);
 
     if (!time || !attached) {
       return { date: toApiDate(day), matched: raw.slice(start, end), index: start, hasTime: false };
@@ -159,6 +162,10 @@ export function readNaturalDate(raw: string, now = new Date()): DateReading | nu
 
   // "today" / "tomorrow" / the day after
   const plain: Array<[RegExp, number]> = [
+    /* Today, said by naming a part of it. "ce soir" is the commonest way
+       anybody writes tonight, and it names the hour at the same time — the
+       time reader takes the same words a moment later. */
+    [/\b(ce soir|cette nuit|ce matin|cet? apres[- ]midi|this (?:morning|afternoon|evening)|tonight)\b/, 0],
     [/\b(today|aujourd'?hui|auj)\b/, 0],
     [/\b(tomorrow|demain)\b/, 1],
     [/\b(after tomorrow|apres-demain|apres demain)\b/, 2],

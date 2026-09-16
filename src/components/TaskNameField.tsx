@@ -1,6 +1,7 @@
 import {
   createElement, useEffect, useLayoutEffect, useRef, useState,
-  type ChangeEvent, type KeyboardEvent, type MouseEvent, type SyntheticEvent,
+  type ChangeEvent, type KeyboardEvent, type MouseEvent, type MutableRefObject,
+  type SyntheticEvent,
 } from 'react';
 import { Icon } from './Icon';
 import { markerStyle } from '@/domain/colors';
@@ -50,6 +51,8 @@ interface TaskNameFieldProps {
   onBlur?: () => void;
   /** Escape, when no list is open: for a field whose edit can be abandoned. */
   onCancel?: () => void;
+  /** The field's own element, for a caller that has to focus or release it. */
+  fieldRef?: MutableRefObject<(HTMLTextAreaElement | HTMLInputElement) | null>;
   /** The readings turned down so far, as positions in `value`. */
   refusals: TextRange[];
   /**
@@ -79,11 +82,11 @@ interface TaskNameFieldProps {
  */
 export function TaskNameField({
   value, onChange, onSubmit, placeholder, ariaLabel, snapshot, naturalDates,
-  refusals, onRefusals, multiline = false, fieldClassName, onBlur, onCancel,
+  refusals, onRefusals, multiline = false, fieldClassName, onBlur, onCancel, fieldRef,
 }: TaskNameFieldProps) {
   const { t } = useT();
   const createLabel = useStore((s) => s.createLabel);
-  const inputRef = useRef<HTMLInputElement & HTMLTextAreaElement>(null);
+  const inputRef = useRef<(HTMLInputElement & HTMLTextAreaElement) | null>(null);
   const mirrorRef = useRef<HTMLDivElement>(null);
   const [caret, setCaret] = useState(0);
   const [pick, setPick] = useState(0);
@@ -347,7 +350,10 @@ export function TaskNameField({
       </div>
 
       {createElement(multiline ? 'textarea' : 'input', {
-        ref: inputRef,
+        ref: (node: HTMLInputElement & HTMLTextAreaElement) => {
+          inputRef.current = node;
+          if (fieldRef) fieldRef.current = node;
+        },
         className: fieldClassName ?? 'composer-name',
         placeholder,
         'aria-label': ariaLabel,

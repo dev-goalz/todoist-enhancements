@@ -851,13 +851,18 @@
 .namefield.multiline .namemirror{
   position:absolute;inset:0;z-index:0;color:transparent;pointer-events:none;user-select:none;
 }
+/* Two weights of the same grey: the field says "you could type here" under
+   the pointer, and "you are typing here" while the caret is in it. */
 .namefield.multiline .titlefield:hover{border-color:var(--border)}
 .namefield.multiline .titlefield:focus{
   outline:none;border-color:var(--border-strong);background:transparent;
 }
+.namefield.multiline .titlefield:focus:hover{border-color:var(--border-strong)}
 
 /* ---------- Finishing an edit to a title ---------- */
 /* Under the field, on the field's own left edge, and only while there is
    something to save. */
-.titleactions{display:flex;gap:var(--s2);margin:var(--s2) 0 0}
+/* At the field's right edge, where the button that ends a form belongs, and
+   with the one that commits carrying the weight. */
+.titleactions{display:flex;justify-content:flex-end;gap:var(--s2);margin:var(--s2) 0 0}
 .titleactions .btn{min-height:28px;padding:0 12px;font-size:var(--fs-13)}

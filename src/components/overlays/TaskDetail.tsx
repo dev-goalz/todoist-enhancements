@@ -163,6 +163,7 @@ export function TaskDetail({ taskId, onClose, onOpen }: TaskDetailProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [tagPickerOpen, setTagPickerOpen] = useState(false);
   const descriptionRef = useRef<HTMLTextAreaElement>(null);
+  const titleRef = useRef<HTMLTextAreaElement | HTMLInputElement>(null);
   /**
    * Keeps the description box exactly as tall as its text, so leaving the
    * field does not change the height of the panel.
@@ -253,9 +254,15 @@ export function TaskDetail({ taskId, onClose, onOpen }: TaskDetailProps) {
   /** Whether the title holds an edit that has not been saved yet. */
   const titleDirty = title !== item.content;
 
+  /* Both ways out of an edit also let the field go: a title that has just been
+     saved is not being edited any more, and a box still wearing its focus ring
+     says it is. */
+  const releaseTitle = () => { titleRef.current?.blur(); };
+
   const cancelTitle = () => {
     setTitle(item.content);
     setRefusals([]);
+    releaseTitle();
   };
 
   const commitTitle = () => {
@@ -315,6 +322,7 @@ export function TaskDetail({ taskId, onClose, onOpen }: TaskDetailProps) {
 
     setRefusals([]);
     setTitle(next);
+    releaseTitle();
   };
   const commitDescription = () => {
     setEditingDescription(false);
@@ -460,6 +468,7 @@ export function TaskDetail({ taskId, onClose, onOpen }: TaskDetailProps) {
                 onRefusals={setRefusals}
                 multiline
                 fieldClassName="titlefield"
+                fieldRef={titleRef}
               />
 
               {/*
@@ -483,7 +492,7 @@ export function TaskDetail({ taskId, onClose, onOpen }: TaskDetailProps) {
                     {t('common.cancel')}
                   </button>
                   <button
-                    className="btn sm accent"
+                    className="btn sm primary"
                     onMouseDown={(e) => { e.preventDefault(); commitTitle(); }}
                   >
                     {t('common.save')}
