@@ -99,6 +99,15 @@ interface AppState {
 
   /* Mutations */
   apply: (commands: Command[], optimistic: (snapshot: Snapshot) => Snapshot) => Promise<void>;
+  /**
+   * Whether the first-run dialog is up.
+   *
+   * In the store rather than in App because two very different things open
+   * it: connecting an account that has never seen it, and asking for it again
+   * from Settings, which is three components away.
+   */
+  walkthrough: boolean;
+  setWalkthrough: (open: boolean) => void;
   updateTask: (id: string, args: Record<string, unknown>) => Promise<void>;
   /** Gives a task a repeat rule, leaving the date for Todoist to resolve. */
   setRecurrence: (id: string, rule: RecurrenceReading) => Promise<void>;
@@ -254,6 +263,7 @@ function explainFailure(error: string, locale: Locale): string {
 export const useStore = create<AppState>((set, get) => ({
   ready: false,
   connected: false,
+  walkthrough: false,
   snapshot: emptySnapshot(),
   prefs: defaultPreferences(detectLocale()),
   syncState: 'idle',
@@ -491,6 +501,8 @@ export const useStore = create<AppState>((set, get) => ({
       }
     }
   },
+
+  setWalkthrough(open) { set({ walkthrough: open }); },
 
   async updateTask(id, args) {
     await get().apply([updateItem(id, args)], (snapshot) => patchItem(snapshot, id, args));

@@ -38,7 +38,7 @@ export function PageHeader({
         {actions && <div className="pactions">{actions}</div>}
       </div>
 
-      <div className="metrics">
+      <div className="metrics" data-tour="metrics">
         <span className="metric">
           <Icon name="tasks" size="sm" />
           <b>{load.taskCount}</b> {t('metrics.taskWord', { count: load.taskCount })}

@@ -97,6 +97,15 @@ export function TaskRow({
         className={`task${settling ? ' done settling' : ''}${picked ? ' picked' : ''}`}
         role="button"
         tabIndex={0}
+        /* The tour lights up a parent together with the children under it,
+           because the two being one thing is the point being made. They are
+           siblings rather than nested — a wrapper here would have to fight the
+           group's own layout — so the row says "take my following siblings
+           too" and the tour works out the rectangle around the lot. */
+        data-tour={showSubtasks && expanded && openChildren.length > 0 ? 'subtasks' : undefined}
+        data-tour-extend={
+          showSubtasks && expanded && openChildren.length > 0 ? 'siblings' : undefined
+        }
         data-depth={depth > 0 ? depth : undefined}
         style={depth > 0 ? ({ '--depth': depth } as React.CSSProperties) : undefined}
         aria-selected={picked || undefined}

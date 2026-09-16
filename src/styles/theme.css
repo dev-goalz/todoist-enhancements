@@ -2033,3 +2033,99 @@
   .reviewfile{grid-column:2;justify-self:stretch}
   .reviewfile .fselect-face{min-width:0;max-width:none}
 }
+/* ==========================================================================
+   Walkthrough — the first run
+   ==========================================================================
+   One page: a greeting, three choices, one button. It deliberately does not
+   fill the window — the app stays visible behind it, because every choice in
+   here changes that page and watching it change is the explanation. */
+.walkthrough{
+  display:grid;gap:var(--s4);padding:var(--s5) var(--s5) var(--s4);
+  max-height:min(82vh,760px);
+}
+
+.wt-head{display:flex;align-items:flex-start;gap:var(--s3)}
+.wt-head > div{flex:1;min-width:0}
+.wt-head h2{font-size:var(--fs-20);font-weight:700;letter-spacing:-.022em}
+.wt-head p{margin-top:4px;max-width:58ch;color:var(--muted);font-size:var(--fs-13);line-height:1.55}
+.wt-mark{
+  width:44px;height:44px;flex:0 0 auto;display:grid;place-items:center;
+  border-radius:14px;color:#fff;background:var(--accent);
+}
+.wt-mark .ic{width:22px;height:22px;stroke-width:2}
+.wt-skip{
+  flex:0 0 auto;padding:4px 8px;border-radius:var(--r-sm);
+  color:var(--muted);font-size:var(--fs-12);font-weight:600;
+}
+.wt-skip:hover{background:var(--hover);color:var(--text)}
+
+/* Three sections on one page, so the page scrolls rather than the dialog
+   growing past the bottom of a laptop screen. */
+.wt-body{display:grid;gap:var(--s5);min-height:0;overflow-y:auto;padding-right:2px}
+.wt-body h3{
+  color:var(--muted);font-size:var(--fs-12);font-weight:700;
+  letter-spacing:.04em;text-transform:uppercase;
+}
+/* The choosers carry a top margin meant for a settings row; the heading above
+   them already provides it. */
+.wt-body .themechoice,
+.wt-body .accentchoice,
+.wt-body .denschoice{margin-top:10px}
+
+.wt-foot{display:flex;align-items:center;justify-content:flex-end;gap:var(--s2)}
+
+@media (max-width:560px){
+  .walkthrough{padding:var(--s4);max-height:88vh}
+  .themecard,.accentcard,.denscard{flex:1 1 140px}
+}
+
+
+/* ==========================================================================
+   Tour — the app, with one thing lit
+   ==========================================================================
+   Not a dialog describing a feature: the feature itself, in place, with
+   everything else dimmed. The dim layer is one element with an enormous
+   spread shadow, so there is a single rectangle to keep in step with the
+   page rather than four panels that have to agree with each other. */
+.tour{position:fixed;inset:0;z-index:95;pointer-events:none}
+.tour-hole{
+  position:fixed;border-radius:var(--r-md);
+  /* The cut-out. Everything outside it is covered; the rectangle itself is
+     untouched, so what is being explained is drawn by the app, not by this. */
+  box-shadow:0 0 0 9999px var(--scrim-tour),0 0 0 2px var(--accent) inset;
+  pointer-events:auto;   /* swallow clicks: the tour owns the screen */
+  transition:top .22s cubic-bezier(.16,1,.3,1),left .22s cubic-bezier(.16,1,.3,1),
+    width .22s cubic-bezier(.16,1,.3,1),height .22s cubic-bezier(.16,1,.3,1);
+}
+
+.tour-card{
+  position:fixed;z-index:96;display:grid;gap:8px;padding:16px 18px;
+  border-radius:var(--r-lg);background:var(--surface);
+  box-shadow:var(--sh-lg);pointer-events:auto;
+  animation:tourIn .22s cubic-bezier(.16,1,.3,1);
+}
+@keyframes tourIn{from{opacity:0;transform:translateY(6px)}}
+.tour-card h3{font-size:var(--fs-14);font-weight:700;letter-spacing:-.01em}
+.tour-card p{color:var(--muted);font-size:var(--fs-13);line-height:1.55}
+
+.tour-foot{display:flex;align-items:center;gap:var(--s2);margin-top:4px}
+.tour-dots{display:flex;align-items:center;gap:5px;margin-right:auto}
+.tour-dots i{
+  width:6px;height:6px;border-radius:var(--r-full);background:var(--border-strong);
+  transition:width .18s ease-out,background .18s ease-out;
+}
+.tour-dots i.done{background:var(--accent-badge)}
+.tour-dots i.on{width:16px;background:var(--accent)}
+.tour-skip{
+  padding:4px 8px;border-radius:var(--r-sm);
+  color:var(--muted);font-size:var(--fs-12);font-weight:600;
+}
+.tour-skip:hover{background:var(--hover);color:var(--text)}
+.tour-card .btn .ic{margin-left:2px}
+
+@media (max-width:520px){
+  /* No room to sit beside anything: the card takes the foot of the screen and
+     the highlight keeps doing its job above it. */
+  .tour-card{left:12px!important;right:12px;width:auto!important;
+    top:auto!important;bottom:12px}
+}

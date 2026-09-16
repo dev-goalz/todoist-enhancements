@@ -88,6 +88,7 @@
   --privacy-bg:#f2f2f2; --privacy-text:#818181;
   --scrollbar:#d7d4d1;
   --scrim:rgba(28,25,23,.3);
+  --scrim-tour:rgba(28,25,23,.58);
   /* a hairline card shadow, too faint to see on a dark page */
   --sh-hair:rgba(28,25,23,.04);
   --sh-hair-strong:rgba(28,25,23,.07);
@@ -201,6 +202,7 @@
   --privacy-bg:#2a2a2a; --privacy-text:#a3a3a3;
   --scrollbar:#474543;
   --scrim:rgba(0,0,0,.55);
+  --scrim-tour:rgba(0,0,0,.72);
 
   /* A shadow on a dark page has to be darker than the page, not a tint of
      the page's own ink, or the card it lifts reads as flat. */
