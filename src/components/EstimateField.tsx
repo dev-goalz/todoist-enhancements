@@ -36,6 +36,8 @@ export function EstimateField({
   const ref = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    // Not while it is being filled in — see EditableTitle for the same guard.
+    if (document.activeElement === ref.current) return;
     setDraft(minutes === null ? '' : String(minutes));
   }, [minutes]);
 

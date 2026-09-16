@@ -19,7 +19,11 @@ export function EditableTitle({ value, onCommit, label }: EditableTitleProps) {
   const [draft, setDraft] = useState(value);
   const ref = useRef<HTMLInputElement>(null);
 
-  useEffect(() => { setDraft(value); }, [value]);
+  /* Not while the caret is in here: a rename arriving from a sync would
+     otherwise replace half-typed text with the old name. */
+  useEffect(() => {
+    if (document.activeElement !== ref.current) setDraft(value);
+  }, [value]);
 
   function commit() {
     const next = draft.trim();
