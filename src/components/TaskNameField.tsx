@@ -1,74 +1,20 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Icon } from './Icon';
 import { markerStyle } from '@/domain/colors';
-import { readNaturalDate } from '@/domain/nlp';
+import { parseShorthand, type HighlightKind } from '@/domain/shorthand';
 import { useStore } from '@/store/store';
 import { useT } from '@/hooks/useT';
 import type { Snapshot } from '@/domain/types';
 
-export type HighlightKind = 'date' | 'project' | 'priority' | 'label';
-
-export interface Highlight {
-  start: number;
-  end: number;
-  kind: HighlightKind;
-}
-
-/**
- * Everything the name is carrying, with the exact text that carries it.
- *
- * The composer needs the ranges, not just the values: what it takes out of the
- * name has to be marked in the name, or the user only finds out after saving.
- */
-export function highlightRanges(
-  raw: string, snapshot: Snapshot, naturalDates: boolean,
-): Highlight[] {
-  const out: Highlight[] = [];
-
-  const project = raw.match(/#([\p{L}\p{N}_-]+)/u);
-  if (project) {
-    const wanted = project[1].toLowerCase().replace(/\s+/g, '');
-    const known = Object.values(snapshot.projects).some(
-      (p) => p.name.toLowerCase().replace(/\s+/g, '') === wanted,
-    );
-    if (known) out.push({ start: project.index!, end: project.index! + project[0].length, kind: 'project' });
-  }
-
-  const priority = raw.match(/\bp([1-4])\b/i);
-  if (priority) {
-    out.push({ start: priority.index!, end: priority.index! + priority[0].length, kind: 'priority' });
-  }
-
-  for (const label of raw.matchAll(/@([\p{L}\p{N}_-]+)/gu)) {
-    out.push({ start: label.index!, end: label.index! + label[0].length, kind: 'label' });
-  }
-
-  if (naturalDates) {
-    // The date is read from what is left once the syntax is taken out, so its
-    // index has to be found back in the original string.
-    const reading = readNaturalDate(raw);
-    if (reading) {
-      const at = raw.toLowerCase().indexOf(reading.matched.toLowerCase());
-      if (at >= 0) out.push({ start: at, end: at + reading.matched.length, kind: 'date' });
-    }
-  }
-
-  // Overlaps would break the mirror's markup, so the earliest wins.
-  const sorted = out.sort((a, b) => a.start - b.start);
-  const clean: Highlight[] = [];
-  for (const range of sorted) {
-    if (clean.length === 0 || range.start >= clean[clean.length - 1].end) clean.push(range);
-  }
-  return clean;
-}
-
-/** The `@tag` or `#project` the caret is currently inside, if any. */
-function tokenAtCaret(value: string, caret: number): { sigil: '@' | '#'; query: string; start: number } | null {
+/** The `@tag`, `#project` or `+person` the caret is currently inside, if any. */
+function tokenAtCaret(
+  value: string, caret: number,
+): { sigil: '@' | '#' | '+'; query: string; start: number } | null {
   const before = value.slice(0, caret);
-  const match = before.match(/(^|\s)([@#])([\p{L}\p{N}_-]*)$/u);
+  const match = before.match(/(^|\s)([@#+])([\p{L}\p{N}_.-]*)$/u);
   if (!match) return null;
   return {
-    sigil: match[2] as '@' | '#',
+    sigil: match[2] as '@' | '#' | '+',
     query: match[3].toLowerCase(),
     start: caret - match[3].length - 1,
   };
@@ -106,11 +52,25 @@ export function TaskNameField({
   const [caret, setCaret] = useState(0);
   const [pick, setPick] = useState(0);
 
-  const ranges = highlightRanges(value, snapshot, naturalDates);
+  const { ranges } = parseShorthand(value, snapshot, naturalDates);
   const token = tokenAtCaret(value, caret);
 
   const options = (() => {
     if (!token) return [];
+    if (token.sigil === '+') {
+      /* Assigning by name only works on a task somebody else can see, so the
+         list is exactly the people who share a project with you — which is
+         what Todoist gives us and nothing more. */
+      return Object.values(snapshot.collaborators)
+        .filter((person) =>
+          person.full_name.toLowerCase().includes(token.query) ||
+          person.email.toLowerCase().includes(token.query))
+        .slice(0, 6)
+        .map((person) => ({
+          id: person.id, name: person.full_name || person.email,
+          color: 'charcoal', sigil: '+' as const, isNew: false,
+        }));
+    }
     if (token.sigil === '#') {
       return Object.values(snapshot.projects)
         .filter((p) => !p.is_archived && !p.is_deleted && !p.is_folder)
@@ -157,7 +117,7 @@ export function TaskNameField({
     if (!token) return;
     // Made before it is inserted, so the tag it names exists by the time the
     // task carrying it is saved.
-    if (isNew) void createLabel(name);
+    if (isNew && token.sigil === '@') void createLabel(name);
     const needsQuotes = /\s/.test(name);
     const inserted = `${token.sigil}${needsQuotes ? name.replace(/\s+/g, '') : name} `;
     const next = value.slice(0, token.start) + inserted + value.slice(caret);
@@ -248,7 +208,9 @@ export function TaskNameField({
             >
               {option.sigil === '#'
                 ? <span className="hash" style={markerStyle(option.color)}>#</span>
-                : <Icon name={option.isNew ? 'plus' : 'tag'} size="sm" className="taglabel" style={markerStyle(option.color, false)} />}
+                : option.sigil === '+'
+                  ? <span className="hash">+</span>
+                  : <Icon name={option.isNew ? 'plus' : 'tag'} size="sm" className="taglabel" style={markerStyle(option.color, false)} />}
               <span>{option.name}</span>
               {option.isNew && <small className="namepicker-new">{t('labels.createNew')}</small>}
             </button>

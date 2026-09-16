@@ -508,3 +508,91 @@
    this the held-back state looked exactly like the ready one. */
 .btn:disabled{opacity:.4;cursor:default}
 .btn:disabled:hover{filter:none;transform:none}
+
+/* ==========================================================================
+   1.1.1
+   ========================================================================== */
+
+/* A task ticked off leans out rather than vanishing under the pointer. The
+   tick lands first and is legible for a beat, which is the difference between
+   "done" and "which one did I just hit?". */
+.task.settling{
+  opacity:.45;
+  transition:opacity .38s ease;
+  pointer-events:none;
+}
+.task.settling .ttitle{text-decoration:line-through;text-decoration-thickness:1px}
+@media (prefers-reduced-motion: reduce){
+  .task.settling{transition:none}
+}
+
+/* Things to settle, said rather than badged. An icon with a dot on it is
+   invisible at rest, which is exactly when it needs to be read. */
+.issuesline{
+  display:flex;align-items:center;gap:8px;width:100%;
+  padding:6px 8px;border-radius:var(--r-2);
+  color:var(--warn,#b56500);font-size:var(--fs-13);font-weight:600;
+  text-align:left;
+}
+.issuesline:hover{background:var(--hover)}
+.issuesline .ic{flex:0 0 auto}
+.issuesline .count{
+  margin-left:auto;padding:1px 7px;border-radius:var(--r-full);
+  background:var(--warn,#b56500);color:#fff;font-size:var(--fs-11,11px);font-weight:700;
+}
+
+/* A sidebar project being aimed at another one, to sit inside it. The two
+   readings of the same drop — reorder, and nest — need to look different or
+   nobody can tell which one they are about to get. */
+.navrow.nesting{
+  background:var(--hover);
+  box-shadow:inset 3px 0 0 var(--accent);
+}
+
+/* Multi-select. The selected rows are a set you are about to act on, so they
+   are marked as a set rather than one at a time. */
+.task.picked{background:rgba(36,111,224,.10);box-shadow:inset 3px 0 0 var(--accent)}
+.task.picked:hover{background:rgba(36,111,224,.15)}
+
+.bulkbar{
+  position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:60;
+  display:flex;align-items:center;gap:var(--s2);
+  padding:8px 10px;border-radius:var(--r-3);
+  background:var(--surface,#fff);border:1px solid var(--line);
+  box-shadow:0 12px 30px rgba(0,0,0,.18);
+}
+.bulkbar strong{font-size:var(--fs-13);white-space:nowrap;padding:0 4px}
+.bulkbar .sep{width:1px;align-self:stretch;background:var(--line)}
+@media (max-width: 720px){
+  .bulkbar{left:10px;right:10px;transform:none;flex-wrap:wrap;justify-content:center;bottom:78px}
+}
+
+/* What the composer is about to take out of the name, marked in the name.
+   The marks used to sit flush against the letters around them. The air comes
+   from the shadow's spread rather than from padding: the mirror has to line up
+   with the real input character for character, and padding would move it. */
+.nmark{border-radius:6px}
+.nmark,
+.nmark.date,
+.nmark.project,
+.nmark.label,
+.nmark.priority{box-shadow:0 0 0 4px var(--nmark-bg)}
+.nmark{--nmark-bg:var(--subtle)}
+.nmark.date{--nmark-bg:var(--accent-tint)}
+.nmark.project{--nmark-bg:#eaf2fd}
+.nmark.label{--nmark-bg:#f2edfb}
+.nmark.priority{--nmark-bg:var(--accent-tint)}
+/* The two the name can now carry: an estimate in brackets, and a person. */
+.nmark.duration{--nmark-bg:#e8f4ec}
+.nmark.assignee{--nmark-bg:#fdf0e3}
+.nmark{background:var(--nmark-bg)}
+
+/* The calendar inside the row's schedule menu, given the width of the menu
+   rather than the width of its own label. */
+.rowmenu-date{padding:4px 2px 2px}
+.rowmenu-date .datefield{width:100%}
+/* The menu's own rules turn every button into a grid, which stacked the
+   calendar's icon, its date and its caret into three lines. */
+.rowmenu-date .fselect-face{
+  width:100%;display:flex;align-items:center;gap:8px;justify-content:flex-start;
+}

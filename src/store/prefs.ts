@@ -1,12 +1,12 @@
 import type { Locale } from '@/i18n';
 import type { ViewId } from '@/domain/types';
-import { defaultViewPrefs, type ViewPrefs } from '@/domain/types';
+import { DEFAULT_WEEK_LABEL, defaultViewPrefs, type ViewPrefs } from '@/domain/types';
 import { defaultConflictSettings, type ConflictSettings } from '@/domain/conflicts';
 import { defaultCapacity, type DailyCapacity } from '@/domain/load';
 
 /** The views that make sense as a landing page: no view that needs an id. */
 export const HOME_VIEWS = [
-  'week', 'inbox', 'upcoming', 'someday', 'dashboard', 'insights', 'labels',
+  'week', 'today', 'inbox', 'upcoming', 'someday', 'dashboard', 'insights', 'labels',
 ] as const satisfies readonly ViewId[];
 
 export type HomeView = (typeof HOME_VIEWS)[number];
@@ -27,6 +27,21 @@ export const isDensity = (value: unknown): value is Density =>
 
 export const isHomeView = (value: unknown): value is HomeView =>
   typeof value === 'string' && (HOME_VIEWS as readonly string[]).includes(value);
+
+/**
+ * How the week is split in the sidebar.
+ *
+ * 'unified' is the product's own answer: one page holding today and the rest of
+ * the week, because deciding what today is means seeing what the week still
+ * owes. Some people want the older separation back, and there are two honest
+ * ways to draw it — a week that excludes today, or a week that still contains
+ * it — so both are offered rather than one being guessed at.
+ */
+export const WEEK_LAYOUTS = ['unified', 'split', 'splitWithToday'] as const;
+export type WeekLayout = (typeof WEEK_LAYOUTS)[number];
+
+export const isWeekLayout = (value: unknown): value is WeekLayout =>
+  typeof value === 'string' && (WEEK_LAYOUTS as readonly string[]).includes(value);
 
 /** Everything the user can tune. Stored on the device, never on a server. */
 export interface Preferences {
@@ -51,6 +66,16 @@ export interface Preferences {
   /** Filters, grouping, sorting and mode are remembered per view. */
   views: Record<string, ViewPrefs>;
   upcomingHorizonDays: number;
+  /** Whether Today has a page of its own beside My week. */
+  weekLayout: WeekLayout;
+  /**
+   * The tag that means "anytime this week".
+   *
+   * A board that already says `this_week` should not have to be relabelled to
+   * use this app. Anything else the product reads — `quick`, `est-*` — is
+   * either rare enough or structural enough not to need the same courtesy.
+   */
+  weekLabel: string;
 }
 
 export const defaultPreferences = (locale: Locale): Preferences => ({
@@ -66,6 +91,8 @@ export const defaultPreferences = (locale: Locale): Preferences => ({
   density: 'comfortable',
   views: {},
   upcomingHorizonDays: 15,
+  weekLayout: 'unified',
+  weekLabel: DEFAULT_WEEK_LABEL,
 });
 
 /** Reads the preferences for one view, falling back to the defaults. */
@@ -90,6 +117,10 @@ export function hydratePreferences(stored: unknown, locale: Locale): Preferences
     // A homepage stored by an older build may name a view that no longer exists.
     homepage: isHomeView(s.homepage) ? s.homepage : base.homepage,
     density: isDensity(s.density) ? s.density : base.density,
+    weekLayout: isWeekLayout(s.weekLayout) ? s.weekLayout : base.weekLayout,
+    weekLabel: typeof s.weekLabel === 'string' && s.weekLabel.trim()
+      ? s.weekLabel.trim()
+      : base.weekLabel,
     views: s.views ?? {},
   };
 }

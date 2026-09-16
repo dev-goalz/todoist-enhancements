@@ -1,4 +1,4 @@
-import { SYSTEM_LABELS, type Bucket, type Item } from './types';
+import { SYSTEM_LABELS, weekLabel, type Bucket, type Item } from './types';
 import { estimateOf } from './estimates';
 import { dueDate, hasTime, isFuture, isOverdue, isToday } from './dates';
 
@@ -36,7 +36,7 @@ export function bucketOf(item: Item, now = new Date()): Bucket {
     if (isToday(item, now)) return 'today';
     if (isFuture(item, now)) return 'upcoming';
   }
-  return hasLabel(item, SYSTEM_LABELS.week) ? 'anytime' : 'someday';
+  return hasLabel(item, weekLabel()) ? 'anytime' : 'someday';
 }
 
 /** Tasks that are open: not completed, not deleted. */

@@ -200,11 +200,31 @@ export const toTodoistPriority = (p: DisplayPriority): TodoistPriority =>
 
 /** The technical labels the product reads. These are never translated. */
 export const SYSTEM_LABELS = {
-  week: 'week',
   quick: 'quick',
   automation: 'automation',
   waiting: 'waiting',
 } as const;
+
+export const DEFAULT_WEEK_LABEL = 'week';
+
+/**
+ * The tag that means "committed to this week, but to no particular day".
+ *
+ * It is the one system label a board may already be using under another name —
+ * plenty of people wrote `this_week` long before this app existed — so it is a
+ * value rather than a constant. It lives here, next to the labels it belongs
+ * with, instead of being threaded through every pure function that reads it:
+ * `bucketOf` is called from a dozen places and none of them has any business
+ * knowing about preferences. The store sets it once when preferences load and
+ * again whenever the setting changes.
+ */
+let weekLabelName: string = DEFAULT_WEEK_LABEL;
+
+export const weekLabel = (): string => weekLabelName;
+
+export const setWeekLabel = (name: string): void => {
+  weekLabelName = name.trim() || DEFAULT_WEEK_LABEL;
+};
 
 export const ESTIMATE_PREFIX = 'est-';
 
@@ -214,6 +234,8 @@ export type Bucket = 'overdue' | 'today' | 'upcoming' | 'anytime' | 'someday';
 export type ViewId =
   | 'inbox'
   | 'week'
+  /** Today on its own, when the sidebar is set to separate it from the week. */
+  | 'today'
   | 'upcoming'
   | 'someday'
   | 'review'

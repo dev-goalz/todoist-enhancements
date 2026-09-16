@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { PageHeader } from '@/components/PageHeader';
+import { SubtasksProvider } from '@/components/TaskRow';
 import { DisplayMenu } from '@/components/DisplayMenu';
 import { ModeSurface } from '@/components/ModeSurface';
 import { TaskGroup } from '@/components/TaskGroup';
@@ -30,7 +31,7 @@ interface SimpleListViewProps {
  * Someday deliberately shows no capacity percentage: a backlog has no deadline
  * to measure itself against.
  */
-export function SimpleListView({
+function SimpleListBody({
   kind, labelName, onOpen, onInsights, onUnestimated, onAddTaskTo,
 }: SimpleListViewProps) {
   const { t } = useT();
@@ -105,5 +106,15 @@ export function SimpleListView({
         />
       )}
     </div>
+  );
+}
+
+export function SimpleListView(props: SimpleListViewProps) {
+  const prefs = useStore((s) => s.prefs);
+  const viewKey = props.kind === 'label' ? `label:${props.labelName}` : props.kind;
+  return (
+    <SubtasksProvider value={viewPrefs(prefs, viewKey).filters.showSubtasks}>
+      <SimpleListBody {...props} />
+    </SubtasksProvider>
   );
 }

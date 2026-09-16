@@ -2,6 +2,61 @@
 
 What changed in each version, newest first.
 
+## 1.1.1
+
+A round of fixes and small additions, all of them things that were reported
+after 1.1 went out.
+
+### Added
+
+- **Today can have a page of its own.** My week still holds the whole week by
+  default, because deciding what today is means seeing what the week still
+  owes; a setting now separates the two for anyone who would rather keep a page
+  for the day, either with today left out of the week or still inside it.
+- **The tag that means "anytime this week" can be renamed.** Boards that
+  already say `this_week` no longer have to be relabelled to be read here.
+- **Undo, on the keyboard.** Cmd+Z (Ctrl+Z) reverses the last change — a move,
+  a completion, a deletion, a drop — not only while its toast is on screen.
+  A deleted task and its subtasks are written back; they return under new ids,
+  which is the one thing Todoist gives no way to preserve.
+- **Several tasks at once.** Cmd+click (Ctrl+click) picks rows out, and a bar
+  at the foot of the window sends the lot to today, to this week, to Someday or
+  to a date, or deletes them — one request, one undo.
+- **Projects nest by dragging them to the right** in the sidebar, which is
+  where the nesting the sidebar already drew was supposed to come from. The
+  project menu moves one back out.
+- **A date picker on the row.** The three shortcuts in a task's schedule menu
+  answer most days and none of them answers "the 14th".
+- **The composer reads two more things out of a name**: an estimate in
+  brackets — "Call Anne (25)" — and a person with a plus, "+anne", on a shared
+  project.
+
+### Fixed
+
+- **What the composer read out of a name never reached the fields below it.**
+  Typing "Friday #Work p1" marked those words and left the date, project and
+  priority pickers showing something else, so the dialog could hold two
+  different tasks at once and only one of them was going to be created. The
+  name and the fields are now one reading, made once.
+- **"Show subtasks" did nothing.** The switch was drawn, stored and read by
+  nobody.
+- **Adding to the home screen on an iPhone gave a red tile with an E on it.**
+  iOS does not read the web manifest; it needs its own icon, and now has one.
+  The manifest also declares an identity and a full set of maskable icons, which
+  is what a desktop browser wants before it offers to install anything.
+- **A task ticked off vanished under the pointer**, which made a mis-click
+  indistinguishable from a correct one. The tick lands, and the row leaves a
+  beat later.
+- **The "no estimate" tab of Things to settle could only be read.** It now
+  holds the same batch editor the page header opens, instead of a weaker copy
+  of it.
+- **Things to settle was an icon with a dot on it**, equally quiet whether it
+  held nothing or fourteen contradictions. It says so in words when there is
+  something in it.
+- Giving a task a date from a row or a column now takes the week tag off it, as
+  dropping it on Today always did — the two together are the contradiction the
+  app reports rather than resolves.
+
 ## 1.1.0
 
 ### Added

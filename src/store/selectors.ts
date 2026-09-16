@@ -80,6 +80,7 @@ export function countActiveFilters(filters: ViewFilters): number {
   if (filters.priorities.length) count += 1;
   if (filters.estimated !== null) count += 1;
   if (!filters.includeScheduled) count += 1;
+  if (!filters.showSubtasks) count += 1;
   return count;
 }
 

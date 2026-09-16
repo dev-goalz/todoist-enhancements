@@ -1,4 +1,4 @@
-import { SYSTEM_LABELS, type Item } from './types';
+import { SYSTEM_LABELS, weekLabel, type Item } from './types';
 import { readEstimate, estimateOf } from './estimates';
 import { hasLabel, QUICK_THRESHOLD_MINUTES } from './views';
 
@@ -94,7 +94,7 @@ export function detectConflicts(
       });
     }
 
-    if (settings.dateAndWeek && item.due && hasLabel(item, SYSTEM_LABELS.week)) {
+    if (settings.dateAndWeek && item.due && hasLabel(item, weekLabel())) {
       out.push({
         id: `${item.id}:date-and-week`,
         kind: 'date-and-week',

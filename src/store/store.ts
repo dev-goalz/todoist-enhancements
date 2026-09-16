@@ -9,7 +9,7 @@ import {
 } from '@/api/commands';
 import * as idb from '@/db/idb';
 import {
-  emptySnapshot, toTodoistPriority,
+  emptySnapshot, setWeekLabel, toTodoistPriority,
   type DisplayPriority, type Item, type Snapshot, type ViewPrefs,
 } from '@/domain/types';
 import { withEstimate } from '@/domain/estimates';
@@ -34,6 +34,24 @@ export interface Toast {
   undo?: () => void;
 }
 
+/**
+ * One step backwards.
+ *
+ * Every change that could already be undone from its toast is also kept here,
+ * so the keyboard reaches what the mouse could: a toast lives eight seconds
+ * and a regret often takes longer than that. The stack is shallow on purpose —
+ * this is "that was wrong", not a document history — and it is never written
+ * to disk, because an undo that outlives the session would be undoing
+ * something Todoist may have changed twice over since.
+ */
+export interface UndoEntry {
+  id: string;
+  label: string;
+  run: () => void | Promise<void>;
+}
+
+const UNDO_DEPTH = 25;
+
 interface AppState {
   ready: boolean;
   connected: boolean;
@@ -43,6 +61,8 @@ interface AppState {
   syncError: string | null;
   pendingCount: number;
   toasts: Toast[];
+  /** The most recent reversible changes, newest last. */
+  undoStack: UndoEntry[];
   /** The task currently being dragged, so empty drop zones can reveal themselves. */
   draggingTaskId: string | null;
   /** True while a made-up account is loaded; nothing is sent to Todoist. */
@@ -73,6 +93,12 @@ interface AppState {
   setEstimates: (entries: Array<{ id: string; minutes: number }>) => Promise<void>;
   toggleTask: (id: string) => Promise<void>;
   removeTask: (id: string) => Promise<void>;
+  /** Deletes several tasks as one act, with one undo that puts them all back. */
+  removeTasks: (ids: string[]) => Promise<void>;
+  /** Writes deleted tasks back, subtrees included. They come back under new ids. */
+  restoreTasks: (items: Item[]) => Promise<void>;
+  /** Sends several tasks to the same destination, as one change and one undo. */
+  sendManyTo: (ids: string[], target: DropTarget, destination: string | null) => Promise<void>;
   createTask: (args: Record<string, unknown>) => Promise<void>;
   moveTask: (id: string, target: { project_id?: string; section_id?: string | null }) => Promise<void>;
   /**
@@ -102,6 +128,14 @@ interface AppState {
    * different parent or workspace is a different act and is not this.
    */
   reorderProjects: (ids: string[]) => Promise<void>;
+  /**
+   * Puts a project inside another one, or back at the top level.
+   *
+   * Todoist nests projects, and the sidebar has always drawn the nesting; what
+   * was missing was any way to make it from here. Passing null lifts the
+   * project back out to the root of its workspace.
+   */
+  nestProject: (id: string, parentId: string | null) => Promise<void>;
   skipOccurrence: (id: string) => Promise<void>;
   /** Creates a project, in a workspace when one is named and personal when not. */
   createProject: (
@@ -136,7 +170,29 @@ interface AppState {
   /* Toasts */
   toast: (message: string, undo?: () => void) => void;
   dismissToast: (id: string) => void;
+
+  /* Undo */
+  /** Records a step backwards without showing a toast for it. */
+  pushUndo: (label: string, run: () => void | Promise<void>) => void;
+  /** Runs the newest undoable change backwards. Does nothing when there is none. */
+  undo: () => Promise<void>;
+  /** Runs one particular entry, by id, and takes it off the stack. */
+  consumeUndo: (id: string) => Promise<void>;
   setDragging: (id: string | null) => void;
+  /** True while a dragged sidebar project would nest rather than reorder. */
+  nesting: boolean;
+  setNesting: (nesting: boolean) => void;
+
+  /**
+   * The tasks picked out for a change made to all of them at once.
+   *
+   * Held in the store rather than in a page, because the bar that acts on the
+   * selection is part of the shell and the rows that join it are several
+   * components deep inside a view.
+   */
+  selection: string[];
+  toggleSelection: (id: string) => void;
+  clearSelection: () => void;
   /** The section currently in flight, so the slots between sections can open up. */
   draggingSectionId: string | null;
   setDraggingSection: (id: string | null) => void;
@@ -183,8 +239,11 @@ export const useStore = create<AppState>((set, get) => ({
   syncError: null,
   pendingCount: 0,
   toasts: [],
+  undoStack: [],
   draggingTaskId: null,
   draggingSectionId: null,
+  nesting: false,
+  selection: [],
   demo: false,
 
   async init() {
@@ -195,6 +254,10 @@ export const useStore = create<AppState>((set, get) => ({
     ]);
 
     const prefs = hydratePreferences(storedPrefs, detectLocale());
+    /* The rules that read the week tag are pure functions called from
+       everywhere; they are told the name once, here, rather than being handed
+       preferences they have no other use for. */
+    setWeekLabel(prefs.weekLabel);
     const connected = auth.isConnected();
 
     // Show the cached copy immediately, then reconcile with Todoist.
@@ -304,6 +367,7 @@ export const useStore = create<AppState>((set, get) => ({
 
   setPrefs(patch) {
     const prefs = { ...get().prefs, ...patch };
+    if (patch.weekLabel !== undefined) setWeekLabel(prefs.weekLabel);
     set({ prefs });
     void idb.savePrefs(PREFS_KEY, prefs);
   },
@@ -432,15 +496,102 @@ export const useStore = create<AppState>((set, get) => ({
     const item = get().snapshot.items[id];
     if (!item) return;
     const checked = !item.checked;
-    const command = checked ? completeItem(id) : uncompleteItem(id);
-    await get().apply([command], (snapshot) => patchItem(snapshot, id, { checked }));
+    const cmd = checked ? completeItem(id) : uncompleteItem(id);
+    await get().apply([cmd], (snapshot) => patchItem(snapshot, id, { checked }));
+
+    /* No toast: ticking something off is the most common act in the app and a
+       message after every one would be a message after everything. It is still
+       the thing people most often wish they could take back, so the step is
+       recorded and Cmd+Z reaches it. */
+    get().pushUndo(item.content, async () => {
+      const back = checked ? uncompleteItem(id) : completeItem(id);
+      await get().apply([back], (snapshot) => patchItem(snapshot, id, { checked: !checked }));
+    });
   },
 
   async removeTask(id) {
-    await get().apply([deleteItem(id)], (snapshot) => {
-      const items = { ...snapshot.items };
-      delete items[id];
-      return { ...snapshot, items };
+    await get().removeTasks([id]);
+  },
+
+  /**
+   * Deletes tasks, and offers them back.
+   *
+   * Todoist has no undelete: the only way back is to write the task again, so
+   * everything worth keeping is read out of the snapshot before the delete
+   * goes out. Subtasks go with their parent when Todoist deletes it, so they
+   * are captured and rebuilt too — a restored task with its children missing
+   * would be a worse answer than no undo at all. The rebuilt tasks carry new
+   * ids, which is the one thing an undo here cannot preserve.
+   */
+  async removeTasks(ids) {
+    const snapshot = get().snapshot;
+    const wanted = ids.filter((id) => snapshot.items[id]);
+    if (wanted.length === 0) return;
+
+    // Every descendant, so the whole branch comes back rather than its top.
+    const doomed: Item[] = [];
+    const walk = (parentId: string) => {
+      for (const item of Object.values(snapshot.items)) {
+        if (item.parent_id === parentId && !item.is_deleted) {
+          doomed.push(item);
+          walk(item.id);
+        }
+      }
+    };
+    for (const id of wanted) {
+      doomed.push(snapshot.items[id]);
+      walk(id);
+    }
+
+    await get().apply(wanted.map(deleteItem), (current) => {
+      const items = { ...current.items };
+      for (const item of doomed) delete items[item.id];
+      return { ...current, items };
+    });
+
+    const label = wanted.length === 1
+      ? translate(get().prefs.locale, 'task.deletedOne', { name: snapshot.items[wanted[0]].content })
+      : translate(get().prefs.locale, 'task.deletedMany', { count: wanted.length });
+
+    get().toast(label, () => void get().restoreTasks(doomed));
+  },
+
+  async restoreTasks(items) {
+    if (items.length === 0) return;
+
+    /* Parents first, so a child's new parent id is known — or at least sent as
+       a temp id in the same call, which Todoist resolves inside one request. */
+    const tempIds = new Map(items.map((item) => [item.id, newUuid()]));
+    const ordered = [...items].sort((a, b) => {
+      if (a.parent_id === b.id) return 1;
+      if (b.parent_id === a.id) return -1;
+      return 0;
+    });
+
+    const commands = ordered.map((item) => addItem({
+      content: item.content,
+      description: item.description || undefined,
+      project_id: item.project_id,
+      section_id: item.section_id ?? undefined,
+      parent_id: item.parent_id ? (tempIds.get(item.parent_id) ?? item.parent_id) : undefined,
+      priority: item.priority,
+      labels: item.labels,
+      due: item.due ?? undefined,
+      deadline: item.deadline ?? undefined,
+      child_order: item.child_order,
+    }, tempIds.get(item.id)!));
+
+    await get().apply(commands, (current) => {
+      const restored = { ...current.items };
+      for (const item of ordered) {
+        const tempId = tempIds.get(item.id)!;
+        restored[tempId] = {
+          ...item,
+          id: tempId,
+          parent_id: item.parent_id ? (tempIds.get(item.parent_id) ?? item.parent_id) : null,
+        };
+      }
+      return { ...current, items: restored };
     });
   },
 
@@ -479,6 +630,52 @@ export const useStore = create<AppState>((set, get) => ({
     );
   },
 
+  /**
+   * The same destination, for a set of tasks.
+   *
+   * One request, one toast and one undo: a selection you moved on purpose is a
+   * single decision, and taking it back a task at a time would be absurd.
+   */
+  async sendManyTo(ids, target, destination) {
+    const snapshot = get().snapshot;
+    const changes = ids
+      .map((id) => {
+        const item = snapshot.items[id];
+        if (!item) return null;
+        const mutation = dropMutation(item, target);
+        if (!mutation?.update) return null;
+        return {
+          id,
+          update: mutation.update,
+          before: { due: item.due, labels: item.labels },
+        };
+      })
+      .filter((change): change is NonNullable<typeof change> => change !== null);
+
+    if (changes.length === 0) return;
+
+    const patchAll = (
+      fields: (change: (typeof changes)[number]) => Record<string, unknown>,
+    ) => (current: Snapshot): Snapshot =>
+      changes.reduce((acc, change) => patchItem(acc, change.id, fields(change)), current);
+
+    await get().apply(
+      changes.map((change) => updateItem(change.id, change.update)),
+      patchAll((change) => change.update),
+    );
+
+    if (destination === null) return;
+    get().toast(
+      translate(get().prefs.locale, 'task.movedManyTo', {
+        count: changes.length, destination,
+      }),
+      () => void get().apply(
+        changes.map((change) => updateItem(change.id, change.before)),
+        patchAll((change) => change.before as unknown as Record<string, unknown>),
+      ),
+    );
+  },
+
   async createTask(args) {
     const tempId = newUuid();
     // The task appears at once under a temporary id; the sync response that
@@ -504,7 +701,7 @@ export const useStore = create<AppState>((set, get) => ({
       added_at: new Date().toISOString(),
       completed_at: null,
       updated_at: new Date().toISOString(),
-      responsible_uid: null,
+      responsible_uid: (args.responsible_uid as string) ?? null,
     };
 
     /* Subtasks go out in the same batch, pointing at the parent's temp id.
@@ -642,6 +839,50 @@ export const useStore = create<AppState>((set, get) => ({
       }
       return { ...snapshot, projects: next };
     });
+  },
+
+  async nestProject(id, parentId) {
+    const projects = get().snapshot.projects;
+    const project = projects[id];
+    if (!project) return;
+    if ((project.parent_id ?? null) === parentId) return;
+
+    /* A project cannot be moved inside itself or inside something it already
+       contains: Todoist would refuse it, and the sidebar would be drawing a
+       branch with no root while it waited to find out. */
+    if (parentId) {
+      const parent = projects[parentId];
+      if (!parent || parent.is_folder) return;
+      for (let at: string | null = parentId; at; at = projects[at]?.parent_id ?? null) {
+        if (at === id) return;
+      }
+    }
+
+    const before = project.parent_id ?? null;
+    const patch = (to: string | null) => (snapshot: Snapshot): Snapshot => {
+      const current = snapshot.projects[id];
+      if (!current) return snapshot;
+      return {
+        ...snapshot,
+        projects: { ...snapshot.projects, [id]: { ...current, parent_id: to } },
+      };
+    };
+
+    /* Todoist reads a missing parent_id as "leave it where it is" and an
+       explicit null as "move it to the top", so null is sent rather than omitted. */
+    await get().apply([command('project_move', { id, parent_id: parentId })], patch(parentId));
+
+    get().toast(
+      parentId
+        ? translate(get().prefs.locale, 'project.nestedIn', {
+            name: project.name, parent: projects[parentId]?.name ?? '',
+          })
+        : translate(get().prefs.locale, 'project.movedToTop', { name: project.name }),
+      () => void get().apply(
+        [command('project_move', { id, parent_id: before })],
+        patch(before),
+      ),
+    );
   },
 
   async createProject(name, color, workspaceId = null, anchor = null, extra = {}) {
@@ -914,7 +1155,20 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   toast(message, undo) {
-    const entry: Toast = { id: newUuid(), message, undo };
+    const id = newUuid();
+    /* The toast's own button and Cmd+Z are two ways to the same single step,
+       so they share one entry: using either takes it off the stack and the
+       other one can no longer replay it. */
+    if (undo) {
+      set({
+        undoStack: [...get().undoStack, { id, label: message, run: undo }].slice(-UNDO_DEPTH),
+      });
+    }
+    const entry: Toast = {
+      id,
+      message,
+      undo: undo ? () => { void get().consumeUndo(id); } : undefined,
+    };
     set({ toasts: [...get().toasts, entry] });
     setTimeout(() => get().dismissToast(entry.id), undo ? 8000 : 4000);
   },
@@ -923,7 +1177,44 @@ export const useStore = create<AppState>((set, get) => ({
     set({ toasts: get().toasts.filter((t) => t.id !== id) });
   },
 
+  pushUndo(label, run) {
+    set({
+      undoStack: [...get().undoStack, { id: newUuid(), label, run }].slice(-UNDO_DEPTH),
+    });
+  },
+
+  async undo() {
+    const stack = get().undoStack;
+    const entry = stack[stack.length - 1];
+    if (!entry) return;
+    set({ undoStack: stack.slice(0, -1), toasts: get().toasts.filter((t) => t.id !== entry.id) });
+    await entry.run();
+  },
+
+  async consumeUndo(id) {
+    const entry = get().undoStack.find((e) => e.id === id);
+    set({ undoStack: get().undoStack.filter((e) => e.id !== id) });
+    await entry?.run();
+  },
+
   setDraggingSection(id) { set({ draggingSectionId: id }); },
+
+  setNesting(nesting) {
+    if (get().nesting !== nesting) set({ nesting });
+  },
+
+  toggleSelection(id) {
+    const current = get().selection;
+    set({
+      selection: current.includes(id)
+        ? current.filter((other) => other !== id)
+        : [...current, id],
+    });
+  },
+
+  clearSelection() {
+    if (get().selection.length > 0) set({ selection: [] });
+  },
 
   setDragging(id) {
     set({ draggingTaskId: id });

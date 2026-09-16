@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
+import { useStore } from '@/store/store';
 
 interface ProjectRowSortableProps {
   projectId: string;
@@ -37,13 +38,16 @@ export function ProjectRowSortable({
   const id = projectRowId(projectId);
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id, disabled: !sortable });
   const { setNodeRef: setDropRef, isOver } = useDroppable({ id, disabled: !sortable });
+  const nesting = useStore((s) => s.nesting);
 
   if (!sortable) return <div className={`navrow${className}`}>{children}</div>;
+
+  const landing = isOver && !isDragging;
 
   return (
     <div
       ref={(node) => { setNodeRef(node); setDropRef(node); }}
-      className={`navrow sortable${isDragging ? ' lifting' : ''}${isOver ? ' landing' : ''}${className}`}
+      className={`navrow sortable${isDragging ? ' lifting' : ''}${landing ? (nesting ? ' nesting' : ' landing') : ''}${className}`}
       {...attributes}
       {...listeners}
     >

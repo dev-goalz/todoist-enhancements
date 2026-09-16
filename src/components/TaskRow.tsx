@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Icon } from './Icon';
 import { TaskActions } from './TaskActions';
 import { useT } from '@/hooks/useT';
@@ -8,6 +8,28 @@ import { effectiveEstimate, formatDuration } from '@/domain/estimates';
 import { deadlineDate, dueDate, formatRelativeDay, formatTime, hasTime, isOverdue, isToday, overdueBy } from '@/domain/dates';
 import { markerStyle } from '@/domain/colors';
 import { renderInlineMarkdown } from '@/domain/markdown';
+
+/**
+ * Whether rows draw the subtasks nested under them.
+ *
+ * "Show subtasks" is a per-view filter, and a row three components deep has no
+ * way of knowing which view it is in. A context carries the answer down instead
+ * of a boolean being handed through every list, group and board column on the
+ * way — the rows never had to know, and now they still do not.
+ */
+/**
+ * How long a finished task stays on screen before it goes.
+ *
+ * Long enough to see the tick land and read it as "yes, that one", short
+ * enough that nobody waits for it. Instant removal makes a mis-click
+ * indistinguishable from a correct one: the row is simply gone and you are
+ * left wondering which one you hit.
+ */
+const COMPLETION_LINGER_MS = 420;
+
+const ShowSubtasks = createContext(true);
+
+export const SubtasksProvider = ShowSubtasks.Provider;
 
 interface TaskRowProps {
   item: Item;
@@ -26,8 +48,26 @@ export function TaskRow({
   const snapshot = useStore((s) => s.snapshot);
   const hour12 = useStore((s) => s.prefs.hour12);
   const toggleTask = useStore((s) => s.toggleTask);
+  const picked = useStore((s) => s.selection.includes(item.id));
+  const toggleSelection = useStore((s) => s.toggleSelection);
+  const showSubtasks = useContext(ShowSubtasks);
 
   const [expanded, setExpanded] = useState(true);
+  /** Ticked here, not yet ticked at Todoist: the pause between the two. */
+  const [settling, setSettling] = useState(false);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
+
+  /* Re-opening a task needs no pause — nothing disappears — so only the
+     completing direction waits. A second click while it is waiting is ignored
+     rather than queueing a second toggle that would undo the first. */
+  const complete = () => {
+    if (item.checked) { void toggleTask(item.id); return; }
+    if (settling) return;
+    setSettling(true);
+    timer.current = setTimeout(() => { void toggleTask(item.id); }, COMPLETION_LINGER_MS);
+  };
 
   const children = childrenOf(item.id);
   const openChildren = children.filter((c) => !c.checked);
@@ -54,15 +94,27 @@ export function TaskRow({
   return (
     <>
       <div
-        className="task"
+        className={`task${settling ? ' done settling' : ''}${picked ? ' picked' : ''}`}
         role="button"
         tabIndex={0}
         data-depth={depth > 0 ? depth : undefined}
         style={depth > 0 ? ({ '--depth': depth } as React.CSSProperties) : undefined}
-        onClick={() => onOpen(item.id)}
+        aria-selected={picked || undefined}
+        /* Cmd (or Ctrl) and a click picks the row out instead of opening it:
+           the same gesture every file list has used for thirty years, and the
+           only one that does not cost the plain click its meaning. */
+        onClick={(e) => {
+          if (e.metaKey || e.ctrlKey) {
+            e.preventDefault();
+            toggleSelection(item.id);
+            return;
+          }
+          onOpen(item.id);
+        }}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
+            if (e.metaKey || e.ctrlKey) { toggleSelection(item.id); return; }
             onOpen(item.id);
           }
         }}
@@ -76,18 +128,18 @@ export function TaskRow({
         <span
           className={`check p${priority}`}
           role="checkbox"
-          aria-checked={item.checked}
+          aria-checked={item.checked || settling}
           aria-label={t('task.complete')}
           tabIndex={0}
           onClick={(e) => {
             e.stopPropagation();
-            void toggleTask(item.id);
+            complete();
           }}
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
               e.preventDefault();
               e.stopPropagation();
-              void toggleTask(item.id);
+              complete();
             }
           }}
         >
@@ -162,7 +214,7 @@ export function TaskRow({
         </span>
 
         <span className="trow-end">
-          {openChildren.length > 0 && (
+          {showSubtasks && openChildren.length > 0 && (
             <button
               className="iconbtn subcaret"
               aria-expanded={expanded}
@@ -180,7 +232,7 @@ export function TaskRow({
         </span>
       </div>
 
-      {expanded &&
+      {showSubtasks && expanded &&
         openChildren.map((child) => (
           <TaskRow
             key={child.id}

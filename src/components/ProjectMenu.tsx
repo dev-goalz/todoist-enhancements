@@ -41,6 +41,7 @@ export function ProjectMenu({
   const archiveProject = useStore((s) => s.archiveProject);
   const deleteProject = useStore((s) => s.deleteProject);
   const duplicateProject = useStore((s) => s.duplicateProject);
+  const nestProject = useStore((s) => s.nestProject);
   const ref = useRef<HTMLDivElement>(null);
 
   const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
@@ -172,6 +173,17 @@ export function ProjectMenu({
       >
         <Icon name="stack" size="sm" /><span>{t('project.duplicate')}</span>
       </button>
+      {/* The gesture that nests a project is a drag to the right; getting one
+          back out is the thing a gesture is bad at, so it is also a command. */}
+      {project.parent_id && (
+        <button
+          className="opt"
+          role="menuitem"
+          onClick={() => { onClose(); void nestProject(project.id, null); }}
+        >
+          <Icon name="arrow-left" size="sm" /><span>{t('project.moveToTop')}</span>
+        </button>
+      )}
       <hr />
       <button className="opt" role="menuitem" onClick={() => void archive()}>
         <Icon name="export" size="sm" /><span>{t('project.archive')}</span>

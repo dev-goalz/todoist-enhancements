@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import {
   DndContext, DragOverlay, PointerSensor, pointerWithin, useSensor, useSensors,
-  type DragEndEvent, type DragStartEvent,
+  type DragEndEvent, type DragMoveEvent, type DragStartEvent,
 } from '@dnd-kit/core';
 import type { Modifier } from '@dnd-kit/core';
 import { useStore } from '@/store/store';
@@ -40,6 +40,16 @@ export const dragClock = {
 };
 
 /**
+ * How far right a sidebar project has to be dragged before the drop nests it
+ * rather than reordering it.
+ *
+ * The same gesture means two things, told apart by direction: straight down
+ * the list moves it, out to the right puts it inside. It is the indent every
+ * outliner uses, and it costs no second handle and no modifier key.
+ */
+export const NEST_THRESHOLD_PX = 28;
+
+/**
  * Todoist's `item_move` takes exactly one destination. A section implies its
  * project, so the section is sent when there is one and the project otherwise.
  */
@@ -61,6 +71,8 @@ export function DragProvider({ children }: { children: ReactNode }) {
   const moveSection = useStore((s) => s.moveSection);
   const reorderProjects = useStore((s) => s.reorderProjects);
   const setDraggingSection = useStore((s) => s.setDraggingSection);
+  const nestProject = useStore((s) => s.nestProject);
+  const setNesting = useStore((s) => s.setNesting);
 
   // A short distance threshold keeps a plain click on a task from starting a drag.
   const sensors = useSensors(
@@ -78,12 +90,21 @@ export function DragProvider({ children }: { children: ReactNode }) {
     setDraggingSection(isSection ? id.slice('section:'.length) : null);
   }
 
+  /* The indent has to be visible while it is being made, not discovered on
+     release, so the row under the pointer is told what the drop would mean. */
+  function onDragMove(event: DragMoveEvent) {
+    if (!String(event.active.id).startsWith('project-row:')) return;
+    setNesting(event.delta.x >= NEST_THRESHOLD_PX);
+  }
+
   async function onDragEnd(event: DragEndEvent) {
     const activeId = String(event.active.id);
     dragClock.endedAt = Date.now();
     setDraggingId(null);
     setDragging(null);
     setDraggingSection(null);
+    const nesting = useStore.getState().nesting;
+    setNesting(false);
     if (!event.over) return;
 
     /* A section is dragged whole, into a slot between two others. It is not a
@@ -111,6 +132,13 @@ export function DragProvider({ children }: { children: ReactNode }) {
       if (!over) return;
       const from = activeId.slice('project-row:'.length);
       if (from === over) return;
+
+      // Dragged out to the right: the row it landed on becomes its parent.
+      if (nesting) {
+        await nestProject(from, over);
+        return;
+      }
+
       const siblings = siblingOrder(snapshot, from);
       const at = siblings.indexOf(from);
       const to = siblings.indexOf(over);
@@ -175,6 +203,7 @@ export function DragProvider({ children }: { children: ReactNode }) {
       sensors={sensors}
       collisionDetection={pointerWithin}
       onDragStart={onDragStart}
+      onDragMove={onDragMove}
       onDragEnd={onDragEnd}
     >
       {children}

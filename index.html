@@ -3,6 +3,19 @@
   <head>
     <meta charset="utf-8" />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <!--
+      iOS does not read the web manifest when you add a page to the home
+      screen. Without this line it makes its own icon — a coloured tile with
+      the first letter of the title on it — which is what shipped in 1.1.
+      A full-bleed square, because iOS applies its own rounding and anything
+      transparent outside our own corners came back black.
+    -->
+    <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Enhanced" />
+    <meta name="application-name" content="Enhanced" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#d1453b" />
     <meta name="description" content="Enhanced for Todoist is an independent project. It is not created by, affiliated with, or supported by Todoist. An alternative, local-first client built around planning a week." />

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { PageHeader } from '@/components/PageHeader';
+import { SubtasksProvider } from '@/components/TaskRow';
 import { DisplayMenu } from '@/components/DisplayMenu';
 import { TaskGroup } from '@/components/TaskGroup';
 import { ModeSurface } from '@/components/ModeSurface';
@@ -29,7 +30,7 @@ interface UpcomingViewProps {
  * The day columns double as drop targets: moving a task between them is how a
  * date gets changed without opening anything.
  */
-export function UpcomingView({ onOpen, onInsights, onUnestimated, onAddTaskTo }: UpcomingViewProps) {
+function UpcomingBody({ onOpen, onInsights, onUnestimated, onAddTaskTo }: UpcomingViewProps) {
   const { t, locale } = useT();
   const { snapshot, items, childrenOf } = useData();
   const prefs = useStore((s) => s.prefs);
@@ -148,5 +149,14 @@ export function UpcomingView({ onOpen, onInsights, onUnestimated, onAddTaskTo }:
         </button>
       </div>
     </div>
+  );
+}
+
+export function UpcomingView(props: UpcomingViewProps) {
+  const prefs = useStore((s) => s.prefs);
+  return (
+    <SubtasksProvider value={viewPrefs(prefs, 'upcoming').filters.showSubtasks}>
+      <UpcomingBody {...props} />
+    </SubtasksProvider>
   );
 }

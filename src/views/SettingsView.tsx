@@ -6,7 +6,11 @@ import { useStore } from '@/store/store';
 import { avatarUrl } from '@/domain/colors';
 import { formatDuration, parseDurationInput } from '@/domain/estimates';
 import { defaultCapacity, weeklyCapacity, type DailyCapacity } from '@/domain/load';
-import { DENSITIES, HOME_VIEWS, type Density, type HomeView } from '@/store/prefs';
+import {
+  DENSITIES, HOME_VIEWS, WEEK_LAYOUTS,
+  type Density, type HomeView, type WeekLayout,
+} from '@/store/prefs';
+import { DEFAULT_WEEK_LABEL } from '@/domain/types';
 import type { Locale, TranslationKey } from '@/i18n';
 import { APP_NAME, AUTHOR, COFFEE_URL, GITHUB_URL, SITE_URL, VERSION } from '@/app-info';
 
@@ -210,6 +214,34 @@ export function SettingsView() {
                 />
               </Row>
             )}
+
+            <Row title={t('settings.weekLayout')} hint={t('settings.weekLayoutHint')}>
+              <Select
+                value={prefs.weekLayout}
+                onChange={(value) => setPrefs({ weekLayout: value as WeekLayout })}
+                ariaLabel={t('settings.weekLayout')}
+                options={WEEK_LAYOUTS.map((layout) => ({
+                  value: layout,
+                  label: t(`settings.weekLayout.${layout}` as TranslationKey),
+                }))}
+              />
+            </Row>
+
+            {/* The tag is a name on the user's own board, not a setting this
+                app invented, so it is typed rather than chosen from a list:
+                the tag it should read may not exist here yet. */}
+            <Row title={t('settings.weekLabel')} hint={t('settings.weekLabelHint')}>
+              <input
+                className="estinput"
+                defaultValue={prefs.weekLabel}
+                aria-label={t('settings.weekLabel')}
+                onBlur={(event) => {
+                  const next = event.target.value.trim().replace(/^@/, '');
+                  setPrefs({ weekLabel: next || DEFAULT_WEEK_LABEL });
+                  event.target.value = next || DEFAULT_WEEK_LABEL;
+                }}
+              />
+            </Row>
 
             <Row title={t('settings.showQuick')} hint={t('settings.showQuickHint')}>
               <Switch

@@ -1,4 +1,4 @@
-import { SYSTEM_LABELS, type Item } from './types';
+import { SYSTEM_LABELS, weekLabel, type Item } from './types';
 import { toApiDate } from './dates';
 
 /**
@@ -28,10 +28,10 @@ export interface DropMutation {
 }
 
 const withoutWeek = (labels: string[]): string[] =>
-  labels.filter((l) => l.toLowerCase() !== SYSTEM_LABELS.week);
+  labels.filter((l) => l.toLowerCase() !== weekLabel().toLowerCase());
 
 const withWeek = (labels: string[]): string[] =>
-  withoutWeek(labels).concat(SYSTEM_LABELS.week);
+  withoutWeek(labels).concat(weekLabel());
 
 /** Builds a due value for a calendar date, preserving a time of day if one was set. */
 function dueForDate(item: Item, date: Date) {
@@ -64,7 +64,10 @@ export function dropMutation(item: Item, target: DropTarget): DropMutation | nul
     }
 
     case 'day':
-      return { update: { due: dueForDate(item, target.date) } };
+      /* A real date and the week tag on the same task is the contradiction the
+         app reports rather than resolves, so giving a task a day takes the tag
+         off — exactly as dropping it on Today does. */
+      return { update: { due: dueForDate(item, target.date), labels: withoutWeek(item.labels) } };
 
     case 'anytime':
       // Committed to this week, but to no particular day.

@@ -1,5 +1,6 @@
 import { useMemo, useState, Fragment } from 'react';
 import { PageHeader } from '@/components/PageHeader';
+import { SubtasksProvider } from '@/components/TaskRow';
 import { DisplayMenu } from '@/components/DisplayMenu';
 import { TaskGroup } from '@/components/TaskGroup';
 import { ModeSurface } from '@/components/ModeSurface';
@@ -35,7 +36,7 @@ interface ProjectViewProps {
  * the work is already organised in Todoist. Splitting it into scheduled and
  * available work stays available as an explicit grouping.
  */
-export function ProjectView({
+function ProjectBody({
   projectId, onOpen, onInsights, onUnestimated, onAddTaskTo, onProjectSheet,
 }: ProjectViewProps) {
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
@@ -305,5 +306,14 @@ export function ProjectView({
         />
       )}
     </div>
+  );
+}
+
+export function ProjectView(props: ProjectViewProps) {
+  const prefs = useStore((s) => s.prefs);
+  return (
+    <SubtasksProvider value={viewPrefs(prefs, `project:${props.projectId}`).filters.showSubtasks}>
+      <ProjectBody {...props} />
+    </SubtasksProvider>
   );
 }

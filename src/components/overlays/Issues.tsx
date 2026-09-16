@@ -1,13 +1,13 @@
 import { useMemo, useState } from 'react';
 import { Overlay } from './Overlay';
 import { Icon } from '../Icon';
-import { TaskRow } from '../TaskRow';
+import { EstimateBulk } from './Unestimated';
 import { useT } from '@/hooks/useT';
 import { useData } from '@/hooks/useData';
 import { useStore } from '@/store/store';
 import { detectConflicts, detectIncomplete, type Conflict } from '@/domain/conflicts';
 import { rootItems } from '@/store/selectors';
-import { toDisplayPriority, SYSTEM_LABELS } from '@/domain/types';
+import { toDisplayPriority, SYSTEM_LABELS, weekLabel } from '@/domain/types';
 import { readEstimate, withEstimate } from '@/domain/estimates';
 import type { TranslationKey } from '@/i18n';
 
@@ -68,7 +68,7 @@ export function Issues({ open, onClose, onOpen }: IssuesProps) {
         break;
       case 'remove-week-label':
         await updateTask(item.id, {
-          labels: item.labels.filter((l) => l.toLowerCase() !== SYSTEM_LABELS.week),
+          labels: item.labels.filter((l) => l.toLowerCase() !== weekLabel().toLowerCase()),
         });
         break;
       case 'remove-date':
@@ -121,9 +121,19 @@ export function Issues({ open, onClose, onOpen }: IssuesProps) {
         </button>
       </div>
 
+      {/* The estimates tab brings its own body and its own foot: it is the
+          same batch editor the page header opens, not a second, weaker copy of
+          it that could only be read. */}
+      {tab === 'complete' ? (
+        <EstimateBulk
+          items={incomplete.slice(0, 100)}
+          resetKey={open}
+          onOpen={(id) => { onOpen(id); onClose(); }}
+          onDone={onClose}
+        />
+      ) : (
       <div className="sheet-body">
-        {tab === 'conflicts' ? (
-          conflicts.length === 0 ? (
+        {conflicts.length === 0 ? (
             <p className="empty">{t('issues.none')}</p>
           ) : (
             <div className="conflicts">
@@ -162,22 +172,9 @@ export function Issues({ open, onClose, onOpen }: IssuesProps) {
                 );
               })}
             </div>
-          )
-        ) : incomplete.length === 0 ? (
-          <p className="empty">{t('issues.none')}</p>
-        ) : (
-          <div>
-            {incomplete.slice(0, 100).map((item) => (
-              <TaskRow
-                key={item.id}
-                item={item}
-                childrenOf={childrenOf}
-                onOpen={(id) => { onOpen(id); onClose(); }}
-              />
-            ))}
-          </div>
         )}
       </div>
+      )}
     </Overlay>
   );
 }

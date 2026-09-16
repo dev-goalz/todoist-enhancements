@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { IconSprite } from './components/IconSprite';
 import { Icon } from './components/Icon';
 import { Sidebar } from './components/Sidebar';
+import { BulkBar } from './components/BulkBar';
 import { DragProvider } from './components/dnd/DragProvider';
 import { Composer } from './components/overlays/Composer';
 import { TaskDetail } from './components/overlays/TaskDetail';
@@ -27,7 +28,7 @@ import { useData } from './hooks/useData';
 import { navigate, useRoute, type Route } from './hooks/useRoute';
 import { rootItems } from './store/selectors';
 import { detectConflicts } from './domain/conflicts';
-import { hasLabel, somedayItems, upcomingItems, weekItems } from './domain/views';
+import { anytimeItems, bucketOf, hasLabel, somedayItems, upcomingItems, weekItems } from './domain/views';
 import { effectiveEstimate } from './domain/estimates';
 import type { TranslationKey } from './i18n';
 
@@ -79,6 +80,16 @@ export function App() {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
         setSearchOpen(true);
+        return;
+      }
+      /* Undo. Not while typing: inside a field the browser's own undo is the
+         right one, and taking it away to reverse a task change instead would
+         be startling. Shift+Cmd+Z is left alone — there is no redo here, and
+         silently treating it as another undo would be worse than nothing. */
+      if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key.toLowerCase() === 'z') {
+        if (typing) return;
+        e.preventDefault();
+        void useStore.getState().undo();
         return;
       }
       if (!typing && e.key === 'q') {
@@ -195,8 +206,10 @@ function AppShell({
   const conflictSettings = useStore((s) => s.prefs.conflicts);
   const demo = useStore((s) => s.demo);
   const sidebarCollapsed = useStore((s) => s.prefs.sidebarCollapsed);
+  const weekLayout = useStore((s) => s.prefs.weekLayout);
   const density = useStore((s) => s.prefs.density);
   const leaveDemo = useStore((s) => s.disconnect);
+  const clearSelection = useStore((s) => s.clearSelection);
 
   const roots = useMemo(() => rootItems(items), [items]);
   const conflictCount = useMemo(
@@ -220,7 +233,22 @@ function AppShell({
           contextLabel: route.id ?? '',
         };
       case 'week':
-        return { contextItems: weekItems(roots), contextLabel: t('nav.week') };
+        return {
+          /* The page's own scope, or the header and every dialog opened from
+             it would describe a week this page is not showing. */
+          contextItems: weekLayout === 'split' ? anytimeItems(roots) : weekItems(roots),
+          contextLabel: t('nav.week'),
+        };
+      case 'today': {
+        const now = new Date();
+        return {
+          contextItems: roots.filter((i) => {
+            const bucket = bucketOf(i, now);
+            return bucket === 'overdue' || bucket === 'today';
+          }),
+          contextLabel: t('nav.today'),
+        };
+      }
       case 'upcoming':
         return { contextItems: upcomingItems(roots), contextLabel: t('nav.upcoming') };
       case 'review':
@@ -237,7 +265,7 @@ function AppShell({
       default:
         return { contextItems: roots, contextLabel: t(`nav.${route.view}` as TranslationKey) };
     }
-  }, [route, roots, snapshot.projects, snapshot.user?.inbox_project_id, t]);
+  }, [route, roots, snapshot.projects, snapshot.user?.inbox_project_id, t, weekLayout]);
 
   const unestimatedItems = useMemo(
     () => contextItems.filter((i) => effectiveEstimate(i, childrenOf).minutes === null),
@@ -247,6 +275,10 @@ function AppShell({
   /* Every way out of the browse page is a navigation, so one effect closes it
      rather than each of its thirty buttons remembering to. */
   useEffect(() => setBrowseOpen(false), [route.view, route.id, setBrowseOpen]);
+
+  /* A selection belongs to the page it was made on. Carrying it to the next
+     one would leave a bar offering to delete tasks that are no longer shown. */
+  useEffect(() => clearSelection(), [route.view, route.id, clearSelection]);
 
   const openTask = (id: string) => setOpenTaskId(id);
   const addTask = () => {
@@ -305,7 +337,10 @@ function AppShell({
         </header>
 
         <section className="screen active">
-          {route.view === 'week' && <WeekView {...viewProps} />}
+          {route.view === 'week' && (
+            <WeekView {...viewProps} scope={weekLayout === 'split' ? 'anytime' : 'all'} />
+          )}
+          {route.view === 'today' && <WeekView {...viewProps} scope="today" />}
           {route.view === 'upcoming' && <UpcomingView {...viewProps} />}
           {route.view === 'someday' && <SimpleListView kind="someday" {...viewProps} />}
           {route.view === 'inbox' && <SimpleListView kind="inbox" {...viewProps} />}
@@ -412,6 +447,7 @@ function AppShell({
         items={unestimatedItems}
         onOpen={openTask}
       />
+      <BulkBar />
       <InsightsPanel
         open={insightsOpen}
         onClose={() => setInsightsOpen(false)}

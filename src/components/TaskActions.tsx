@@ -6,7 +6,8 @@ import { useStore } from '@/store/store';
 import { useConfirm } from './overlays/Confirm';
 import { withEstimate, effectiveEstimate } from '@/domain/estimates';
 import { EstimateField } from './EstimateField';
-import { toApiDate } from '@/domain/dates';
+import { DateField } from './DateField';
+import { formatRelativeDay, toApiDate } from '@/domain/dates';
 import { markerStyle } from '@/domain/colors';
 import { dropMutation, type DropTarget } from '@/domain/dnd';
 import { updateItem, moveItem } from '@/api/commands';
@@ -25,7 +26,7 @@ interface TaskActionsProps {
  * reader guessing what a glyph does.
  */
 export function TaskActions({ item, childrenOf, onOpen }: TaskActionsProps) {
-  const { t } = useT();
+  const { t, locale } = useT();
   const updateTask = useStore((s) => s.updateTask);
   const removeTask = useStore((s) => s.removeTask);
   const skipOccurrence = useStore((s) => s.skipOccurrence);
@@ -163,15 +164,43 @@ export function TaskActions({ item, childrenOf, onOpen }: TaskActionsProps) {
       {menu === 'schedule' && (
         <div className="popover rowmenu" role="menu">
           <h5>{t('task.schedule')}</h5>
-          <button className="opt" onClick={() => schedule(new Date())}>
+          <button
+            className="opt"
+            onClick={() => void moveTo({ kind: 'today' }, t('common.today'))}
+          >
             <span><Icon name="week" size="sm" /> {t('common.today')}</span>
           </button>
-          <button className="opt" onClick={() => schedule(addDays(new Date(), 1))}>
+          <button
+            className="opt"
+            onClick={() =>
+              void moveTo({ kind: 'day', date: addDays(new Date(), 1) }, t('common.tomorrow'))}
+          >
             <span><Icon name="arrow-right" size="sm" /> {t('common.tomorrow')}</span>
           </button>
-          <button className="opt" onClick={() => schedule(nextMonday(new Date()))}>
+          <button
+            className="opt"
+            onClick={() =>
+              void moveTo({ kind: 'day', date: nextMonday(new Date()) }, t('task.nextWeek'))}
+          >
             <span><Icon name="upcoming" size="sm" /> {t('task.nextWeek')}</span>
           </button>
+
+          {/* Three shortcuts answer most days and none of them answers "the
+              14th". The calendar is the same one the composer uses, so picking
+              a date from a row and picking one while writing the task are the
+              same control rather than two that drifted apart. */}
+          <div className="rowmenu-date">
+            <DateField
+              value={item.due?.date.slice(0, 10) ?? ''}
+              label={t('task.schedule')}
+              placeholder={t('task.pickDate')}
+              onChange={(next) => {
+                if (!next) { schedule(null); return; }
+                const day = new Date(`${next}T00:00:00`);
+                void moveTo({ kind: 'day', date: day }, formatRelativeDay(day, locale));
+              }}
+            />
+          </div>
 
           {item.due?.is_recurring && (
             <>

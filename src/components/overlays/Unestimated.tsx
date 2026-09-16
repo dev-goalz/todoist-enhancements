@@ -8,23 +8,29 @@ import { formatDuration } from '@/domain/estimates';
 import { toDisplayPriority, type Item } from '@/domain/types';
 import { markerStyle } from '@/domain/colors';
 
-interface UnestimatedProps {
-  open: boolean;
-  onClose: () => void;
-  /** The tasks on the current page that carry no estimate. */
+interface EstimateBulkProps {
+  /** The tasks to put a number on. */
   items: Item[];
   onOpen: (id: string) => void;
+  /** Called once the batch has been written. */
+  onDone: () => void;
+  /** Resets the drafts — pass something that changes when the list is re-opened. */
+  resetKey?: unknown;
 }
 
 /**
- * Filling in the estimates a page is missing.
+ * Filling in a set of missing estimates.
  *
- * Opened from the count in the page header, it lists exactly those tasks with
- * one minute field each. Nothing is written while you type: Tab walks down the
- * column, the total at the foot adds up as it fills, and one button saves the
- * lot. A pass over a page is one decision and one request, not fifteen.
+ * Nothing is written while you type: Tab walks down the column, the total at
+ * the foot adds up as it fills, and one button saves the lot. A pass over a
+ * page is one decision and one request, not fifteen.
+ *
+ * It is a component rather than part of the dialog around it because two
+ * surfaces ask this same question — the count in a page header, and the "no
+ * estimate" tab of Things to settle — and the second one had drifted into a
+ * plain read-only list with no way to answer from it.
  */
-export function Unestimated({ open, onClose, items, onOpen }: UnestimatedProps) {
+export function EstimateBulk({ items, onOpen, onDone, resetKey }: EstimateBulkProps) {
   const { t, locale } = useT();
   const snapshot = useStore((s) => s.snapshot);
   const setEstimates = useStore((s) => s.setEstimates);
@@ -36,11 +42,9 @@ export function Unestimated({ open, onClose, items, onOpen }: UnestimatedProps) 
 
   // Each opening starts from nothing, including one that follows a save.
   useEffect(() => {
-    if (open) {
-      setDrafts({});
-      setSaving(false);
-    }
-  }, [open]);
+    setDrafts({});
+    setSaving(false);
+  }, [resetKey]);
 
   const filled = useMemo(() => Object.entries(drafts), [drafts]);
   const total = useMemo(
@@ -71,21 +75,11 @@ export function Unestimated({ open, onClose, items, onOpen }: UnestimatedProps) 
     if (filled.length === 0 || saving) return;
     setSaving(true);
     await setEstimates(filled.map(([id, minutes]) => ({ id, minutes })));
-    onClose();
+    onDone();
   }
 
   return (
-    <Overlay open={open} onClose={onClose} label={t('issues.toComplete')} size="sm">
-      <div className="sheet-head">
-        <div>
-          <h2>{t('issues.toComplete')}</h2>
-          <p className="psub">{t('issues.toCompleteIntro')}</p>
-        </div>
-        <button className="iconbtn" aria-label={t('common.close')} onClick={onClose}>
-          <Icon name="close" />
-        </button>
-      </div>
-
+    <>
       <div className="sheet-body">
         {items.length === 0 ? (
           <p className="empty">{t('issues.none')}</p>
@@ -110,7 +104,7 @@ export function Unestimated({ open, onClose, items, onOpen }: UnestimatedProps) 
                          and the row is still reachable by pointer and by the
                          task list behind this sheet. */
                       tabIndex={-1}
-                      onClick={() => { onOpen(item.id); onClose(); }}
+                      onClick={() => onOpen(item.id)}
                     >
                       <span className="ttitle">{item.content}</span>
                       {project && !project.inbox_project && (
@@ -143,7 +137,7 @@ export function Unestimated({ open, onClose, items, onOpen }: UnestimatedProps) 
             {t('issues.estimateFilled', { count: filled.length, total: items.length })}
             {total > 0 && <b>{formatDuration(total, locale)}</b>}
           </span>
-          <button className="btn quiet" onClick={onClose}>{t('common.cancel')}</button>
+          <button className="btn quiet" onClick={onDone}>{t('common.cancel')}</button>
           <button
             className="btn primary"
             disabled={filled.length === 0 || saving}
@@ -153,6 +147,40 @@ export function Unestimated({ open, onClose, items, onOpen }: UnestimatedProps) 
           </button>
         </div>
       )}
+    </>
+  );
+}
+
+interface UnestimatedProps {
+  open: boolean;
+  onClose: () => void;
+  /** The tasks on the current page that carry no estimate. */
+  items: Item[];
+  onOpen: (id: string) => void;
+}
+
+/** The same pass, opened from the count in a page header. */
+export function Unestimated({ open, onClose, items, onOpen }: UnestimatedProps) {
+  const { t } = useT();
+
+  return (
+    <Overlay open={open} onClose={onClose} label={t('issues.toComplete')} size="sm">
+      <div className="sheet-head">
+        <div>
+          <h2>{t('issues.toComplete')}</h2>
+          <p className="psub">{t('issues.toCompleteIntro')}</p>
+        </div>
+        <button className="iconbtn" aria-label={t('common.close')} onClick={onClose}>
+          <Icon name="close" />
+        </button>
+      </div>
+
+      <EstimateBulk
+        items={items}
+        resetKey={open}
+        onOpen={(id) => { onOpen(id); onClose(); }}
+        onDone={onClose}
+      />
     </Overlay>
   );
 }

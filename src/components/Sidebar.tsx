@@ -5,7 +5,7 @@ import { useData } from '@/hooks/useData';
 import { useStore } from '@/store/store';
 import { navigate, type Route } from '@/hooks/useRoute';
 import { projectCounts, projectTree, rootItems, type ProjectNode } from '@/store/selectors';
-import { hasLabel, somedayItems, upcomingItems, weekItems } from '@/domain/views';
+import { anytimeItems, bucketOf, hasLabel, somedayItems, upcomingItems, weekItems } from '@/domain/views';
 import { markerStyle, avatarUrl } from '@/domain/colors';
 import { firstName, karmaStanding } from '@/domain/karma';
 import type { ViewId } from '@/domain/types';
@@ -43,6 +43,7 @@ export function Sidebar({
   const sheet = variant === 'sheet';
   const collapsed = useStore((s) => s.prefs.sidebarCollapsed) && !sheet;
   const setPrefs = useStore((s) => s.setPrefs);
+  const weekLayout = useStore((s) => s.prefs.weekLayout);
   const disconnect = useStore((s) => s.disconnect);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -55,14 +56,21 @@ export function Sidebar({
   const inboxId = snapshot.user?.inbox_project_id;
 
   const counts = useMemo(() => {
+    const now = new Date();
     return {
       inbox: inboxId ? roots.filter((i) => i.project_id === inboxId).length : 0,
-      week: weekItems(roots).length,
+      today: roots.filter((i) => {
+        const bucket = bucketOf(i, now);
+        return bucket === 'overdue' || bucket === 'today';
+      }).length,
+      /* The count has to match the page. A "My week" that no longer contains
+         today must not keep counting today's work. */
+      week: (weekLayout === 'split' ? anytimeItems(roots, now) : weekItems(roots, now)).length,
       upcoming: upcomingItems(roots).length,
       someday: somedayItems(roots).length,
       byProject: projectCounts(roots),
     };
-  }, [roots, inboxId]);
+  }, [roots, inboxId, weekLayout]);
 
   /** Favourites are Todoist's own star, not a separate list this app keeps. */
   const favourites = useMemo(() => {
@@ -356,6 +364,8 @@ export function Sidebar({
             // Dropping on Inbox means filing there, which is a plain project move.
             inboxId ? { kind: 'project', projectId: inboxId } : undefined,
           )}
+          {weekLayout !== 'unified' &&
+            navItem('today', 'calendar', 'nav.today', counts.today, { kind: 'today' })}
           {navItem('week', 'week', 'nav.week', counts.week, { kind: 'anytime' })}
           {navItem('upcoming', 'upcoming', 'nav.upcoming', counts.upcoming)}
           {navItem('someday', 'someday', 'nav.someday', counts.someday, { kind: 'someday' })}
@@ -401,21 +411,30 @@ export function Sidebar({
           {t('nav.addTask')}
           <Icon name="plus" />
         </button>
-        {/* Status and the issues badge share the last line, baseline aligned. */}
+        {/* An icon with a dot on it is exactly as loud whether it is telling
+            you about nothing or about fourteen contradictions. When there is
+            something in it, it says so in words and takes a line of its own;
+            when there is not, it goes back to being a quiet icon. */}
+        {issuesCount > 0 && (
+          <button className="issuesline" onClick={onIssues}>
+            <Icon name="warning" size="sm" />
+            <span>{t('issues.title')}</span>
+            <span className="count">{issuesCount > 99 ? '99+' : issuesCount}</span>
+          </button>
+        )}
         <div className="footrow">
           <SyncStatus />
           <div className="footicons">
-            <button
-              className="iconbtn issuesbtn"
-              aria-label={t('issues.title')}
-              title={t('issues.title')}
-              onClick={onIssues}
-            >
-              <Icon name="warning" />
-              {issuesCount > 0 && (
-                <span className="badge">{issuesCount > 99 ? '99+' : issuesCount}</span>
-              )}
-            </button>
+            {issuesCount === 0 && (
+              <button
+                className="iconbtn issuesbtn"
+                aria-label={t('issues.title')}
+                title={t('issues.title')}
+                onClick={onIssues}
+              >
+                <Icon name="warning" />
+              </button>
+            )}
             {!sheet && (
               <button
                 className="iconbtn"

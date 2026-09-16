@@ -9,8 +9,8 @@ import { useT } from '@/hooks/useT';
 import { useStore } from '@/store/store';
 import { estimateLabel } from '@/domain/estimates';
 import { markerStyle } from '@/domain/colors';
-import { toTodoistPriority, type DisplayPriority, type Snapshot } from '@/domain/types';
-import { readNaturalDate, stripReading } from '@/domain/nlp';
+import { toTodoistPriority, type DisplayPriority } from '@/domain/types';
+import { parseShorthand } from '@/domain/shorthand';
 
 interface ComposerProps {
   open: boolean;
@@ -47,6 +47,7 @@ export function Composer({
   const [deadline, setDeadline] = useState('');
   const [labels, setLabels] = useState<string[]>([]);
   const [minutes, setMinutes] = useState<number | null>(null);
+  const [assignee, setAssignee] = useState('');
   const [tagsOpen, setTagsOpen] = useState(false);
   const [subtasks, setSubtasks] = useState<string[]>([]);
   const [subtaskDraft, setSubtaskDraft] = useState('');
@@ -58,6 +59,7 @@ export function Composer({
     setPriority(4);
     setLabels([]);
     setMinutes(null);
+    setAssignee('');
     setTagsOpen(false);
     setSubtasks([]);
     setSubtaskDraft('');
@@ -75,26 +77,53 @@ export function Composer({
     .filter((s) => s.project_id === projectId && !s.is_archived && !s.is_deleted)
     .sort((a, b) => a.section_order - b.section_order);
 
+  const collaborators = Object.values(snapshot.collaborators)
+    .sort((a, b) => a.full_name.localeCompare(b.full_name));
+
   const tags = Object.values(snapshot.labels)
     .filter((l) => !l.is_deleted && !l.name.startsWith('est-'))
     .sort((a, b) => a.item_order - b.item_order);
 
   const parsed = parseShorthand(name, snapshot, naturalDates);
 
+  /*
+   * The fields below follow the name.
+   *
+   * They used to be two independent readings of the same task: typing
+   * "Friday #Work p1" marked those words in the name and left the date, the
+   * project and the priority pickers showing something else entirely, so the
+   * dialog could be displaying two different tasks at once and only one of
+   * them was going to be created. Now anything the name yields is pushed down
+   * into the field that owns it, and the field is the single thing that is
+   * saved. Each effect watches its own value, so a picker changed by hand
+   * afterwards stays changed until the name says something new.
+   */
+  const { date: readDate, projectId: readProject, priority: readPriority,
+    minutes: readMinutes, assigneeId: readAssignee } = parsed;
+  const readLabels = parsed.labels.join('\u0000');
+
+  useEffect(() => { if (readDate) setDate(readDate); }, [readDate]);
+  useEffect(() => { if (readProject) setProjectId(readProject); }, [readProject]);
+  useEffect(() => { if (readPriority) setPriority(readPriority); }, [readPriority]);
+  useEffect(() => { if (readMinutes !== null) setMinutes(readMinutes); }, [readMinutes]);
+  useEffect(() => { if (readAssignee) setAssignee(readAssignee); }, [readAssignee]);
+  useEffect(() => {
+    if (!readLabels) return;
+    setLabels((prev) => [...new Set([...prev, ...readLabels.split('\u0000')])]);
+  }, [readLabels]);
+
   async function submit() {
     const content = parsed.content;
     if (!content) return;
 
-    const allLabels = [...new Set([...labels, ...parsed.labels])];
+    const allLabels = [...labels];
     if (minutes !== null) allLabels.push(estimateLabel(minutes));
 
     /* `||`, not `??`: an unset picker is an empty string, not null, and an
        empty string sent as project_id is what Todoist answers "invalid
        argument value" to — which is a task that never gets created. */
-    const targetProject = parsed.projectId || projectId || snapshot.user?.inbox_project_id;
-    // What was typed into the name wins over the picker only when the picker
-    // was left alone, so an explicit choice is never quietly overwritten.
-    const dueDate = date || parsed.date;
+    const targetProject = projectId || snapshot.user?.inbox_project_id;
+    const dueDate = date;
     const pending = subtaskDraft.trim();
     const allSubtasks = pending ? [...subtasks, pending] : subtasks;
 
@@ -103,12 +132,13 @@ export function Composer({
       description: description.trim() || undefined,
       project_id: targetProject,
       section_id: sectionId || undefined,
-      priority: toTodoistPriority(parsed.priority ?? priority),
+      priority: toTodoistPriority(priority),
       labels: allLabels,
       due: dueDate
         ? { date: dueDate, timezone: null, string: dueDate, lang: 'en', is_recurring: false }
         : undefined,
       deadline: deadline ? { date: deadline, lang: 'en' } : undefined,
+      responsible_uid: assignee || undefined,
       subtasks: allSubtasks,
     });
 
@@ -196,6 +226,27 @@ export function Composer({
             <span>{t('composer.duration')}</span>
             <EstimateField minutes={minutes} onCommit={setMinutes} />
           </span>
+
+          {/* Only where there is somebody to assign to. On a personal account
+              Todoist returns no collaborators, and an empty picker is a
+              question nobody can answer. */}
+          {collaborators.length > 0 && (
+            <span className="cfield">
+              <Select
+                label={t('composer.assignee')}
+                value={assignee}
+                ariaLabel={t('composer.assignee')}
+                onChange={setAssignee}
+                options={[
+                  { value: '', label: t('composer.unassigned') },
+                  ...collaborators.map((person) => ({
+                    value: person.id,
+                    label: person.full_name || person.email,
+                  })),
+                ]}
+              />
+            </span>
+          )}
         </div>
 
         <div className="composer-tags">
@@ -297,65 +348,4 @@ export function Composer({
       </div>
     </Overlay>
   );
-}
-
-interface ParsedInput {
-  content: string;
-  projectId: string | null;
-  priority: DisplayPriority | null;
-  labels: string[];
-  /** A date read out of the prose, when that pass is switched on. */
-  date: string | null;
-  dateText: string | null;
-}
-
-/**
- * Reads what the name is carrying.
- *
- * `#project`, `p1`..`p4` and `@tag` are syntax: the user typed them on
- * purpose, so they are always honoured. The date is a guess made from prose,
- * so it is the only part `naturalDates` can switch off.
- */
-function parseShorthand(raw: string, snapshot: Snapshot, naturalDates: boolean): ParsedInput {
-  let content = raw.trim();
-  let projectId: string | null = null;
-  let priority: DisplayPriority | null = null;
-  const labels: string[] = [];
-  let date: string | null = null;
-  let dateText: string | null = null;
-
-  const projectMatch = content.match(/#([\p{L}\p{N}_-]+)/u);
-  if (projectMatch) {
-    const name = projectMatch[1].toLowerCase();
-    const project = Object.values(snapshot.projects).find(
-      (p) => p.name.toLowerCase().replace(/\s+/g, '') === name.replace(/\s+/g, ''),
-    );
-    if (project) {
-      projectId = project.id;
-      content = content.replace(projectMatch[0], '').trim();
-    }
-  }
-
-  const priorityMatch = content.match(/\bp([1-4])\b/i);
-  if (priorityMatch) {
-    priority = Number(priorityMatch[1]) as DisplayPriority;
-    content = content.replace(priorityMatch[0], '').trim();
-  }
-
-  for (const match of content.matchAll(/@([\p{L}\p{N}_-]+)/gu)) labels.push(match[1]);
-  content = content.replace(/@([\p{L}\p{N}_-]+)/gu, '').trim();
-
-  if (naturalDates) {
-    const reading = readNaturalDate(content);
-    if (reading) {
-      date = reading.date;
-      dateText = reading.matched.trim();
-      content = stripReading(content, reading);
-    }
-  }
-
-  return {
-    content: content.replace(/\s{2,}/g, ' ').trim(),
-    projectId, priority, labels, date, dateText,
-  };
 }
