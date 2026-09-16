@@ -8,10 +8,11 @@ interface with one built around planning a week.
 **Enhanced for Todoist is an independent project. It is not created by,
 affiliated with, or supported by Todoist.**
 
-[Open it](https://todoistenhanced.julesbertolino.fr) · [Features](#features) ·
-[Contributing](#contributing) · [Report a bug or an idea](https://tally.so/r/WOLkVN) ·
-[Disclaimer and trademarks](#disclaimer-and-trademarks) ·
-[License](#license) · [Buy me a coffee](https://buymeacoffee.com/julesbertolino)
+[Open it](https://todoistenhanced.julesbertolino.fr) ·
+[Features](#features) ·
+[Changelog](CHANGELOG.md) ·
+[Report a bug or an idea](https://tally.so/r/WOLkVN) ·
+[Support me](https://buymeacoffee.com/julesbertolino)
 
 ![Enhanced for Todoist, My week view](docs/screenshot-my-week.png)
 
@@ -65,6 +66,43 @@ them in together.
 
 ![Estimates and the workload figure](docs/feature-estimates.gif)
 
+### Daily and weekly review
+
+A planning tool is only worth having if you look at it, and looking at
+everything at once is what stops people. The review asks one question at a
+time, in an order, with an end.
+
+**The daily pass** takes a few minutes: what is late, your mail, what is
+sitting in the Inbox, what you committed to this week without naming a day,
+what has no estimate yet, and what today holds against the hours you have.
+Mail comes before the Inbox because a good part of what is in the Inbox
+arrived as an email — the app cannot see your mail, so it says what to do with
+it and takes your word for it.
+
+**The weekly pass** closes the week and then opens the next one. Closing: what
+you finished — in a list you can order by date or by priority, with nothing
+crossed out, because a review is no place to read your own week struck through
+— then the same week in numbers, what is late, and which projects have gone
+quiet. Opening: mail, the Inbox, a look back through Someday, what you are
+committing to this week, the estimates that are missing, and finally what the
+coming week weighs against the capacity you set. It used to end on Someday,
+which is the longest list in the app and exactly where people stop.
+
+You choose which week you are closing. Arrows step back, and it opens on the
+week that has just ended while the new one is still young — a weekly review is
+almost never done inside the week it is about.
+
+Each step asks the question that step is actually about — a task is in the
+Inbox because it has no project, so that step files it rather than dating it —
+and pressing an answer makes exactly the change dragging the task there would
+make. Estimates are typed into a list that holds still and saves in one go.
+Any task in a review can be ticked off; sometimes the answer is that you
+already did it.
+
+It stores nothing of its own. There is no per-project review interval here,
+because there is nowhere in Todoist to keep one, and a review that needs its
+own hidden state is a review that breaks the promise the rest of this makes.
+
 ### Looking back
 
 The dashboard changes with the period you pick. A single day shows the hours
@@ -104,43 +142,6 @@ Some contradictions can't be resolved automatically: a task that is both dated
 and labelled for the week, a task carrying two estimates, a "quick" task
 estimated at forty minutes. These are listed with the options that match each
 possible intent, and nothing changes until you choose one.
-
-### Daily and weekly review
-
-A planning tool is only worth having if you look at it, and looking at
-everything at once is what stops people. The review asks one question at a
-time, in an order, with an end.
-
-**The daily pass** takes a few minutes: what is late, your mail, what is
-sitting in the Inbox, what you committed to this week without naming a day,
-what has no estimate yet, and what today holds against the hours you have.
-Mail comes before the Inbox because a good part of what is in the Inbox
-arrived as an email — the app cannot see your mail, so it says what to do with
-it and takes your word for it.
-
-**The weekly pass** closes the week and then opens the next one. Closing: what
-you finished — in a list you can order by date or by priority, with nothing
-crossed out, because a review is no place to read your own week struck through
-— then the same week in numbers, what is late, and which projects have gone
-quiet. Opening: mail, the Inbox, a look back through Someday, what you are
-committing to this week, the estimates that are missing, and finally what the
-coming week weighs against the capacity you set. It used to end on Someday,
-which is the longest list in the app and exactly where people stop.
-
-You choose which week you are closing. Arrows step back, and it opens on the
-week that has just ended while the new one is still young — a weekly review is
-almost never done inside the week it is about.
-
-Each step asks the question that step is actually about — a task is in the
-Inbox because it has no project, so that step files it rather than dating it —
-and pressing an answer makes exactly the change dragging the task there would
-make. Estimates are typed into a list that holds still and saves in one go.
-Any task in a review can be ticked off; sometimes the answer is that you
-already did it.
-
-It stores nothing of its own. There is no per-project review interval here,
-because there is nowhere in Todoist to keep one, and a review that needs its
-own hidden state is a review that breaks the promise the rest of this makes.
 
 ### Also included
 
