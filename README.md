@@ -48,6 +48,15 @@ workspace so you can look around without a token. Nothing is sent anywhere.
 
 ## Features
 
+[Planning a week rather than a day](#planning-a-week-rather-than-a-day) ·
+[Estimates and workload](#estimates-and-workload) ·
+[Daily and weekly review](#daily-and-weekly-review) ·
+[Looking back](#looking-back) ·
+[Logbook](#logbook) ·
+[Adding tasks](#adding-tasks) ·
+[Things to settle](#things-to-settle) ·
+[Also included](#also-included)
+
 ### Planning a week rather than a day
 
 My week splits the week into five buckets: behind schedule, quick, today,
