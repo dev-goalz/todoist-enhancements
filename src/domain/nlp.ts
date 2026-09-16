@@ -84,6 +84,27 @@ function readTime(text: string): TimeReading | null {
     if (hours > 23) return null;
     return { hours, minutes: Number(hm[2] ?? 0), ...span(hm) };
   }
+
+  /*
+   * A part of the day is a time too.
+   *
+   * "demain matin" is a sentence anybody writes and nobody means vaguely: it
+   * is tomorrow at nine. The hours below are the ones Todoist itself uses, so
+   * a task written here and the same task written there land at the same time.
+   * Afternoon is tried before noon, because "après-midi" contains it.
+   */
+  const parts: Array<[RegExp, number]> = [
+    [/\b(?:apres[- ]midi|afternoon)\b/i, 14],
+    [/\b(?:matin|matinee|morning)\b/i, 9],
+    [/\b(?:soir|soiree|evening|tonight)\b/i, 19],
+    [/\b(?:midi|noon)\b/i, 12],
+    [/\b(?:nuit|night)\b/i, 21],
+  ];
+  for (const [pattern, hours] of parts) {
+    const match = text.match(pattern);
+    if (match) return { hours, minutes: 0, ...span(match) };
+  }
+
   return null;
 }
 

@@ -148,6 +148,7 @@ export function TaskDetail({ taskId, onClose, onOpen }: TaskDetailProps) {
   const moveTask = useStore((s) => s.moveTask);
   const setRecurrence = useStore((s) => s.setRecurrence);
   const naturalDates = useStore((s) => s.prefs.naturalDates);
+  const toast = useStore((s) => s.toast);
   const confirm = useConfirm();
 
   const item = taskId ? snapshot.items[taskId] : null;
@@ -290,6 +291,27 @@ export function TaskDetail({ taskId, onClose, onOpen }: TaskDetailProps) {
         read.sectionId ? { section_id: read.sectionId } : { project_id: read.projectId! },
       );
     }
+
+    /*
+     * What the title turned out to be saying, said back.
+     *
+     * The words are taken out of the name as they are saved, so a title typed
+     * "… demain" and saved comes back one word shorter — which on its own is
+     * indistinguishable from the edit having been thrown away. The line names
+     * what was set instead, and the panel on the right shows it.
+     */
+    const applied = [
+      read.date
+        ? formatRelativeDay(new Date(`${read.date.slice(0, 10)}T00:00:00`), locale)
+          + (read.date.includes('T') ? ` ${read.date.slice(11, 16)}` : '')
+        : null,
+      read.recurrence?.string ?? null,
+      read.projectId ? snapshot.projects[read.projectId]?.name ?? null : null,
+      read.priority ? `P${read.priority}` : null,
+      ...read.labels.map((label) => `@${label}`),
+      read.minutes !== null ? formatDuration(read.minutes, locale) : null,
+    ].filter(Boolean);
+    if (applied.length > 0) toast(applied.join(' · '));
 
     setRefusals([]);
     setTitle(next);
