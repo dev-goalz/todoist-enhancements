@@ -177,7 +177,10 @@ possible intent, and nothing changes until you choose one.
 - Undo on the keyboard (`⌘Z`): a move, a completion, a deletion, a drop. A
   deleted task comes back with its subtasks.
 - `⌘`-click picks out several tasks at once; a bar at the foot of the window
-  moves or deletes the lot in one request.
+  gives the lot a date, a project, a tag or a priority — one request and one
+  undo each — and Escape gives the selection back. A tag carried by only some
+  of the selection shows as a half-tick, and clearing it takes the tag off all
+  of them.
 - A task's date can be typed from its row — "tomorrow", "next sunday", or a
   bare "15" for the next three fifteenths — or picked from a calendar.
 - Projects nest by dragging them to the right in the sidebar, or onto a folder.

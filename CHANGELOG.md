@@ -6,6 +6,46 @@ Every line is marked with what it is: 🆕 something the app did not do before,
 🎨 something it already did, drawn, worded or done differently, 🐛 something
 that was wrong. New first, then changed, then fixed.
 
+## 1.3.0
+
+Editing a selection by more than its date, a caret that stays where it was
+put, and one quiet line about the coffee.
+
+🆕 **A selection can be given more than a date.** The bar at the foot of the
+window offered today, this week, someday and a date, which meant that taking
+one tag off fifteen tasks was fifteen tasks opened one at a time. It carries
+one button per property now — Date, Move, Tags, Priority — each with its icon
+and its name, each opening its panel above the bar rather than below it, where
+the foot of the window is. Every change is still one request and one undo.
+
+🆕 **Tags in bulk, taken off as readily as put on.** A tag carried by some of
+the selection shows as a half-tick rather than as "no": ticking it puts the
+tag on the ones that are missing it, and clearing it takes the tag off all of
+them. The selection survives a tag change, because dropping two tags is one
+job; a move or a priority ends it.
+
+🆕 **Escape gives the selection back.** A dialog and an open menu both stop
+the key where they are, so it reaches the selection only when the selection is
+the outermost thing left to dismiss.
+
+🆕 **A line about the coffee, at the end of two things.** Faint, small, one
+sentence and an offer, at the foot of a finished review and at the foot of
+Insights. It counts nothing, no milestone triggers it, and it does not appear
+more often the longer the app is used.
+
+🐛 **A dialog stops taking the caret back.** Every caller passes a fresh
+callback to the dialog shell on every render, and that callback sat in the
+effect's dependency list — so any render of the page behind a dialog tore the
+effect down and set it up again, handing focus back and then moving it to the
+top of the sheet. One sync poll was enough. Typing a description, the caret
+left mid-word; filling in Things to settle, it landed back in the first
+estimate and the rest of the number went there.
+
+🐛 **A sync no longer overwrites what is being typed.** The title, the
+description and the estimate all re-seed themselves from the task. They now
+refuse to do it while they hold the caret, so an update arriving mid-sentence
+cannot replace a draft with the stored text.
+
 ## 1.2.1
 
 🐛 **The app icon, actually.** 1.2.0 drew the icons correctly and put them in
