@@ -158,6 +158,38 @@ export function ReviewView({ onOpen }: ReviewViewProps) {
 
   const step = steps[index];
   const last = index === steps.length - 1;
+
+  /**
+   * The rows this step is showing, which is not the same as the rows that
+   * still belong in it.
+   *
+   * Answering a question moves the task out of the bucket the step is built
+   * from, so the row used to vanish from under the pointer the moment it was
+   * answered — the list shrinking as you worked down it, and no way to see
+   * what you had just said or change your mind about it. A step keeps every
+   * task it has shown until you leave it: the answer is marked on the row
+   * instead of removing it.
+   *
+   * Tasks that arrive in the bucket later are added, and one deleted outright
+   * drops out, because it no longer exists to show.
+   */
+  const shown = useRef<{ stepId: string | null; ids: string[] }>({ stepId: null, ids: [] });
+  const rowsFor = (s: ReviewStep): Item[] => {
+    if (shown.current.stepId !== `${cadence}:${s.id}`) {
+      shown.current = { stepId: `${cadence}:${s.id}`, ids: [] };
+    }
+    const seen = new Set(shown.current.ids);
+    for (const item of s.items) seen.add(item.id);
+    shown.current.ids = [...seen];
+
+    /* Insertion order, deliberately unsorted. A row that has been answered is
+       no longer in the bucket and so has no place in its ordering — sorting by
+       that sent it to the bottom of the list, which is the same disappearing
+       act in slower motion. Where it was is where it stays. */
+    return shown.current.ids
+      .map((id) => snapshot.items[id])
+      .filter((item): item is Item => !!item && !item.is_deleted);
+  };
   const atPresent = weekOffset >= 0;
 
   return (
@@ -326,11 +358,12 @@ export function ReviewView({ onOpen }: ReviewViewProps) {
       return <Load step={step} capacity={prefs.dailyCapacity[new Date().getDay()]} />;
     }
 
-    if (step.items.length === 0) return <Settled />;
+    const rows = rowsFor(step);
+    if (rows.length === 0) return <Settled />;
 
     return (
       <div className="reviewlist">
-        {step.items.map((item) => (
+        {rows.map((item) => (
           <Row key={item.id} item={item} step={step} />
         ))}
       </div>

@@ -251,7 +251,7 @@ function applyAccent(accent: Accent, custom: string): void {
   const hsl = accent === 'custom' ? hexToHsl(custom) : null;
   if (hsl) {
     const scheme = root.dataset.theme === 'dark' ? 'dark' : 'light';
-    for (const [token, value] of Object.entries(accentFamily(hsl.h, hsl.s, scheme))) {
+    for (const [token, value] of Object.entries(accentFamily(custom, scheme))) {
       root.style.setProperty(`--${token}`, value);
     }
   }
@@ -264,8 +264,8 @@ function applyAccent(accent: Accent, custom: string): void {
        resolved the theme, the same way this function just did. */
     localStorage.setItem('accentVars', hsl
       ? JSON.stringify({
-        light: accentFamily(hsl.h, hsl.s, 'light'),
-        dark: accentFamily(hsl.h, hsl.s, 'dark'),
+        light: accentFamily(custom, 'light'),
+        dark: accentFamily(custom, 'dark'),
       })
       : '');
   } catch { /* storage may be blocked */ }

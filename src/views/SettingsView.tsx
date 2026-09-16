@@ -609,7 +609,7 @@ function customPreviewStyle(custom: string): React.CSSProperties | undefined {
   if (!hsl) return undefined;
   const scheme = document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
   return Object.fromEntries(
-    Object.entries(accentFamily(hsl.h, hsl.s, scheme)).map(([k, v]) => [`--${k}`, v]),
+    Object.entries(accentFamily(custom, scheme)).map(([k, v]) => [`--${k}`, v]),
   ) as React.CSSProperties;
 }
 
