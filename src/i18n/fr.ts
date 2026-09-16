@@ -625,4 +625,8 @@ export const fr: Record<TranslationKey, string> = {
   'settings.dateFormat': 'Format de date',
   'settings.dateFormatHint': 'L\'ordre des éléments d\'une date écrite. Aujourd\'hui et demain sont toujours nommés, jamais datés.',
   'settings.days': 'jours',
+
+  /* 1.1.1 — troisième passe */
+  'search.goTo': 'Aller à',
+  'review.mail.default': 'App par défaut',
 };

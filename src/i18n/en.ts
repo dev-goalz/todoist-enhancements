@@ -623,6 +623,10 @@ export const en = {
   'settings.dateFormat': 'Date format',
   'settings.dateFormatHint': 'The order a written-out date puts its parts in. Today and tomorrow are always named, never dated.',
   'settings.days': 'days',
+
+  /* 1.1.1 — third pass */
+  'search.goTo': 'Go to',
+  'review.mail.default': 'Default app',
 };
 
 export type TranslationKey = keyof typeof en;

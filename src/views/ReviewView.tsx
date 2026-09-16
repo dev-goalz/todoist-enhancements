@@ -40,16 +40,18 @@ const targetFor = (action: ReviewAction): DropTarget => {
 /**
  * Where the mail actually is.
  *
- * Four links rather than a setting: naming the web clients most people use,
- * plus `mailto:` for whatever this machine has registered — which is how you
- * reach Apple Mail, Outlook for Mac and Thunderbird without asking anybody
- * which one they run.
+ * Four links rather than a setting. Two are web clients and open in a tab;
+ * the other two are handed to the operating system — `message:` is Apple
+ * Mail's own scheme, and `mailto:` reaches whatever else this machine has
+ * registered. Neither can be checked from here: a machine with no handler
+ * for a scheme says so itself, which is a better answer than this app
+ * guessing what is installed.
  */
 const MAIL_CLIENTS = [
   { label: 'Gmail', url: 'https://mail.google.com/mail/u/0/#inbox' },
   { label: 'Outlook', url: 'https://outlook.live.com/mail/0/' },
-  { label: 'iCloud', url: 'https://www.icloud.com/mail' },
-  { label: 'Mail', url: 'mailto:' },
+  { label: 'Apple Mail', url: 'message://' },
+  { label: null, url: 'mailto:' },
 ] as const;
 
 /** How the finished list can be ordered. */
@@ -468,14 +470,16 @@ export function ReviewView({ onOpen }: ReviewViewProps) {
         <div className="reviewmail-links">
           {MAIL_CLIENTS.map((client) => (
             <a
-              key={client.label}
+              key={client.url}
               className="btn sm"
               href={client.url}
-              target={client.url.startsWith('mailto:') ? undefined : '_blank'}
+              /* Only the web ones want a tab. A scheme handed to the operating
+                 system in a new tab leaves an empty one behind. */
+              target={client.url.startsWith('http') ? '_blank' : undefined}
               rel="noreferrer noopener"
             >
               <Icon name="external" size="sm" />
-              {client.label}
+              {client.label ?? t('review.mail.default')}
             </a>
           ))}
         </div>

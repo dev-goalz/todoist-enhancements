@@ -8,6 +8,7 @@ dist-ssr
 
 # A build, zipped for upload. Rebuilt on demand; never committed.
 todoist-enhancements-dist.zip
+todoist-enhancements-*.zip
 
 # Communication drafts stay on the machine, not in the repository.
 REDDIT-POST.md

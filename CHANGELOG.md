@@ -2,110 +2,125 @@
 
 What changed in each version, newest first.
 
+Every line is marked with what it is: 🆕 something the app did not do before,
+🎨 something it did, drawn or worded differently, 🐛 something that was wrong.
+Versions before 1.1.1 predate the convention and keep the shape they were
+published in.
+
 ## 1.1.1
 
-A round of fixes and small additions, all of them things that were reported
-after 1.1 went out.
+Everything reported after 1.1 went out, in three rounds of it.
 
-### Added
-
-- **Today can have a page of its own.** My week still holds the whole week by
-  default, because deciding what today is means seeing what the week still
-  owes; a setting now separates the two for anyone who would rather keep a page
-  for the day, either with today left out of the week or still inside it.
-- **The tag that means "anytime this week" can be renamed.** Boards that
+- 🆕 **Today can have a page of its own.** My week still holds the whole week
+  by default, because deciding what today is means seeing what the week still
+  owes; a setting separates the two for anyone who would rather keep a page for
+  the day, with today left out of the week or still inside it.
+- 🆕 **The tag that means "anytime this week" can be renamed.** Boards that
   already say `this_week` no longer have to be relabelled to be read here.
-- **Undo, on the keyboard.** Cmd+Z (Ctrl+Z) reverses the last change — a move,
-  a completion, a deletion, a drop — not only while its toast is on screen.
-  A deleted task and its subtasks are written back; they return under new ids,
-  which is the one thing Todoist gives no way to preserve.
-- **Several tasks at once.** Cmd+click (Ctrl+click) picks rows out, and a bar
-  at the foot of the window sends the lot to today, to this week, to Someday or
-  to a date, or deletes them — one request, one undo.
-- **Projects nest by dragging them to the right** in the sidebar, which is
-  where the nesting the sidebar already drew was supposed to come from — and
-  onto a folder, where no sideways gesture is needed because holding projects
-  is the whole of what a folder is. The project menu moves one back out.
-- **A task's date can be typed.** Its schedule menu opens on a field with the
-  caret already in it, and what you type narrows a short list underneath: "to"
-  offers today and tomorrow, "tom" only one of them, and a bare "15" offers the
-  next three fifteenths with the weekday each falls on. A calendar sits under
-  the three shortcuts for the dates easier to point at than to name.
-- **The composer reads an estimate out of a name**, written in brackets:
+- 🆕 **Undo, on the keyboard.** Cmd+Z (Ctrl+Z) reverses the last change — a
+  move, a completion, a deletion, a drop — not only while its toast is on
+  screen. A deleted task and its subtasks are written back; they return under
+  new ids, which is the one thing Todoist gives no way to preserve.
+- 🆕 **Several tasks at once.** Cmd+click (Ctrl+click) picks rows out, and a
+  bar at the foot of the window sends the lot to today, to this week, to
+  Someday or to a date, or deletes them — one request, one undo.
+- 🆕 **Projects nest in the sidebar.** Drag one to the right to put it inside
+  the row under the pointer, or onto a folder, where no sideways gesture is
+  needed because holding projects is the whole of what a folder is. The project
+  menu moves one back out.
+- 🆕 **A task's date can be typed.** Its schedule menu opens on a field with
+  the caret already in it, and what you type narrows a short list underneath:
+  "to" offers today and tomorrow, "tom" only one of them, and a bare "15"
+  offers the next three fifteenths with the weekday each falls on. A calendar
+  sits under the three shortcuts for the dates easier to point at than to name.
+- 🆕 **The composer reads an estimate out of a name**, written in brackets:
   "Call Anne (25)".
-- **A date format setting** — 12 sept. 2026, sept. 12, 2026, 2026 sept. 12, or
-  all numbers. Today and tomorrow are always named rather than dated, wherever
-  a date is shown.
-
-### Fixed
-
-- **What the composer read out of a name never reached the fields below it.**
-  Typing "Friday #Work p1" marked those words and left the date, project and
-  priority pickers showing something else, so the dialog could hold two
-  different tasks at once and only one of them was going to be created. The
-  name and the fields are now one reading, made once.
-- **"Show subtasks" did nothing.** The switch was drawn, stored and read by
-  nobody.
-- **Adding to the home screen on an iPhone gave a red tile with an E on it.**
-  iOS does not read the web manifest; it needs its own icon, and now has one.
-  The manifest also declares an identity and a full set of maskable icons, which
-  is what a desktop browser wants before it offers to install anything.
-- **A task ticked off vanished under the pointer**, which made a mis-click
-  indistinguishable from a correct one. The tick lands, and the row leaves a
-  beat later.
-- **The "no estimate" tab of Things to settle could only be read.** It now
-  holds the same batch editor the page header opens, instead of a weaker copy
-  of it.
-- **Things to settle was an icon with a dot on it**, equally quiet whether it
-  held nothing or fourteen contradictions. It says so in words when there is
-  something in it.
-- Giving a task a date from a row or a column now takes the week tag off it, as
-  dropping it on Today always did — the two together are the contradiction the
-  app reports rather than resolves.
-
-### The review
-
-- **The week under review can be chosen.** The weekly pass read the week in
+- 🆕 **A date format setting** — 12 sept. 2026, sept. 12, 2026, 2026 sept. 12,
+  or all numbers. Today and tomorrow are always named rather than dated,
+  wherever a date is shown.
+- 🆕 **The weekly review reads a week you choose.** It read the week in
   progress and nothing else, which only works for somebody doing it on a Sunday
   night; done on a Monday it read a week two hours old. It opens on the week
   that has just ended while the new one is young, and arrows reach the ones
   before.
-- **The weekly pass closes the week and then opens the next one**: what you
-  finished, what it came to, what is late, which projects went quiet — then
+- 🆕 **The weekly review closes the week and then opens the next one**: what
+  you finished, what it came to, what is late, which projects went quiet — then
   mail, inbox, Someday, this week's commitments, estimates, and what the week
   weighs. It used to end on Someday, the longest and least engaging list in the
   app, placed exactly where people stop, and then claim the next week was ready
   when nothing had set it up.
-- **Both passes end on the load**, the idea the whole product is built on and
-  the one thing the ritual meant to steer it never mentioned: the day's hours
-  or the week's, against the hours you said you have, with each task offering a
-  way out on the spot.
-- **A mail step in both passes**, immediately before the inbox, because a good
-  part of what is sitting in the inbox arrived as an email and filing the inbox
-  first files half of it. It claims nothing it cannot know — this app cannot
-  see your mail — and carries links to where the mail actually is.
-- **The last step of the daily pass has somewhere to send things.** It offered
-  no action at all, so a day that was already full ended the review on a
-  problem with nowhere to put it.
-- **"Slipped" and "Behind schedule" were the same question** asked twice under
-  two names. There is one now.
-- **The estimates step holds its answers.** It wrote one request per task, so
-  the row you were typing in left the list the moment you pressed Enter and the
-  next jumped under the cursor. It now works the way the Unestimated sheet
-  does: the list stays still, the total gathers at the foot, one request at the
-  end.
-- **The progress rail says where you are, and nothing else.** It used to
+- 🆕 **Both passes end on the load**, the idea the whole product is built on
+  and the one thing the ritual meant to steer it never mentioned: the day's
+  hours or the week's, against the hours you said you have, with each task
+  offering a way out on the spot.
+- 🆕 **A mail step in both passes**, immediately before the inbox, because a
+  good part of what is sitting in the inbox arrived as an email and filing the
+  inbox first files half of it. It claims nothing it cannot know — this app
+  cannot see your mail — and carries links to where the mail actually is.
+- 🆕 **The last step of the daily pass has somewhere to send things.** It
+  offered no action at all, so a day that was already full ended the review on
+  a problem with nowhere to put it.
+- 🆕 **How long a project may go quiet is a setting.** Fourteen days is a fair
+  default and a poor constant: on a fast board it is permanent noise, on a slow
+  one the warning never comes.
+
+- 🎨 **Things to settle says what it holds.** It was an icon with a dot on it,
+  equally quiet whether it held nothing or fourteen contradictions. When there
+  is something in it, it takes a line and the wash the Behind schedule section
+  uses — read at rest, without competing with Add task.
+- 🎨 **A task ticked off leans out rather than vanishing** under the pointer,
+  which had made a mis-click indistinguishable from a correct one. The tick
+  lands, the text greys, and the row leaves a beat later.
+- 🎨 **The words the composer marks in a name have air around them**, taken as
+  padding and given back as a negative margin so the marks line up with the
+  text in front of them and the ordinary spaces of the sentence keep their
+  ordinary width.
+- 🎨 **The buttons that appear over a board card have an edge.** They were a
+  white panel on a white card, which is nothing at all.
+- 🎨 **A picked-out row is a grey panel** wider than the row, so the checkbox
+  sits inside it rather than on its edge, and nothing on the row moves when it
+  is picked.
+- 🎨 **The line that says a project will be nested** is the width and the
+  indentation the nested row itself will have.
+- 🎨 **The review's rail says where you are, and nothing else.** It used to
   colour each step by how much was in it, so the rail changed meaning as you
   answered it and a count of finished tasks sat in the same circle as a count
   of things still to settle — Someday showed a ticked pill reading "142".
   Behind you, where you are, still to come: three states, one colour. Steps
   that hand you something to read carry a mark rather than a tally.
-- **The cadence control stopped moving.** Switching between daily and weekly
-  changed the head's layout and took the button you had just pressed somewhere
-  else.
-- **How long a project may go quiet is a setting.** Fourteen days is a fair
-  default and a poor constant: on a fast board it is permanent noise, on a slow
-  one the warning never comes.
+- 🎨 **The review's cadence control stopped moving.** Switching between daily
+  and weekly changed the head's layout and took the button you had just pressed
+  somewhere else; the week pager now sits beside it on the same line.
+
+- 🐛 **What the composer read out of a name never reached the fields below
+  it.** Typing "Friday #Work p1" marked those words and left the date, project
+  and priority pickers showing something else, so the dialog could hold two
+  different tasks at once and only one of them was going to be created. The
+  name and the fields are now one reading, made once.
+- 🐛 **Search only found tasks once you typed.** The list of places it offered
+  on opening was thrown away at the first keystroke, so typing "settings" — the
+  fastest way anybody would try to reach settings — found tasks with the word
+  in them and nothing else. Destinations are searched too, accents set aside,
+  and come first.
+- 🐛 **"Show subtasks" did nothing.** The switch was drawn, stored and read by
+  nobody.
+- 🐛 **Adding to the home screen on an iPhone gave a red tile with an E on
+  it.** iOS does not read the web manifest; it needs its own icon, and now has
+  one. The manifest also declares an identity and a full set of maskable icons,
+  which is what a desktop browser wants before it offers to install anything.
+- 🐛 **The "no estimate" tab of Things to settle could only be read.** It now
+  holds the same batch editor the page header opens, instead of a weaker copy
+  of it.
+- 🐛 **The review's estimates step emptied itself under your hands.** It wrote
+  one request per task, so the row you were typing in left the list the moment
+  you pressed Enter and the next jumped under the cursor. It holds its answers
+  now: the list stays still, the total gathers at the foot, one request at the
+  end.
+- 🐛 **"Slipped" and "Behind schedule" were the same question** asked twice
+  under two names. There is one now.
+- 🐛 **Giving a task a date from a row or a column left the week tag on it**,
+  where dropping it on Today had always taken it off — the two together are the
+  contradiction the app reports rather than resolves.
 
 ## 1.1.0
 

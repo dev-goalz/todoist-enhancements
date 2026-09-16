@@ -12,6 +12,10 @@ interface SearchProps {
   onOpen: (id: string) => void;
 }
 
+/** Accents set aside, so "reglages" finds "Réglages". */
+const fold = (text: string): string =>
+  text.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
 /** One row of the result list, whatever kind of thing it points at. */
 interface Hit {
   key: string;
@@ -41,27 +45,56 @@ export function Search({ open, onClose, onOpen }: SearchProps) {
     if (open) { setQuery(''); setCursor(0); }
   }, [open]);
 
+  /**
+   * Everywhere the app can go.
+   *
+   * The same list whether or not anything has been typed: it used to be shown
+   * on opening and then thrown away the moment you touched a key, so typing
+   * "settings" — the fastest way anybody would try to reach settings — found
+   * nothing but tasks with the word in them.
+   */
+  const destinations: Hit[] = useMemo(() => {
+    const go = (run: () => void) => () => { run(); onClose(); };
+    return [
+      { key: 'go-inbox', icon: 'inbox', title: t('nav.inbox'), run: go(() => navigate('inbox')) },
+      { key: 'go-today', icon: 'calendar', title: t('nav.today'), run: go(() => navigate('today')) },
+      { key: 'go-week', icon: 'week', title: t('nav.week'), run: go(() => navigate('week')) },
+      { key: 'go-upcoming', icon: 'upcoming', title: t('nav.upcoming'),
+        run: go(() => navigate('upcoming')) },
+      { key: 'go-someday', icon: 'someday', title: t('nav.someday'),
+        run: go(() => navigate('someday')) },
+      { key: 'go-review', icon: 'check', title: t('nav.review'),
+        run: go(() => navigate('review')) },
+      { key: 'go-labels', icon: 'tag', title: t('nav.labels'),
+        run: go(() => navigate('labels')) },
+      { key: 'go-dashboard', icon: 'trend', title: t('nav.dashboard'),
+        run: go(() => navigate('insights')) },
+      { key: 'go-logbook', icon: 'tasks', title: t('insights.logbook'),
+        run: go(() => navigate('insights', 'logbook')) },
+      { key: 'go-settings', icon: 'settings', title: t('nav.settings'),
+        run: go(() => navigate('settings')) },
+    ];
+  }, [t, onClose]);
+
   const hits: Hit[] = useMemo(() => {
     const go = (run: () => void) => () => { run(); onClose(); };
-    const q = query.trim().toLowerCase();
+    const q = fold(query);
 
     if (!q) {
-      return [
-        { key: 'go-week', heading: t('search.quickAccess'), icon: 'week' as IconName,
-          title: t('nav.week'), run: go(() => navigate('week')) },
-        { key: 'go-upcoming', icon: 'upcoming' as IconName,
-          title: t('nav.upcoming'), run: go(() => navigate('upcoming')) },
-        { key: 'go-dashboard', icon: 'trend' as IconName,
-          title: t('nav.dashboard'), run: go(() => navigate('insights')) },
-        { key: 'go-logbook', icon: 'tasks' as IconName,
-          title: t('insights.logbook'), run: go(() => navigate('insights', 'logbook')) },
-        { key: 'go-settings', icon: 'settings' as IconName,
-          title: t('nav.settings'), run: go(() => navigate('settings')) },
-      ];
+      return destinations.map((hit, index) => ({
+        ...hit,
+        heading: index === 0 ? t('search.quickAccess') : undefined,
+      }));
     }
 
+    /* Destinations first, because a palette is reached for to go somewhere
+       more often than to find one task among four hundred. */
+    const places = destinations
+      .filter((hit) => fold(hit.title).includes(q))
+      .map((hit, index) => ({ ...hit, heading: index === 0 ? t('search.goTo') : undefined }));
+
     const tasks = items
-      .filter((i) => i.content.toLowerCase().includes(q) || i.description.toLowerCase().includes(q))
+      .filter((i) => fold(i.content).includes(q) || fold(i.description).includes(q))
       .slice(0, 12)
       .map((item, index): Hit => ({
         key: `task-${item.id}`,
@@ -73,7 +106,7 @@ export function Search({ open, onClose, onOpen }: SearchProps) {
       }));
 
     const projects = Object.values(snapshot.projects)
-      .filter((p) => !p.is_archived && !p.is_deleted && p.name.toLowerCase().includes(q))
+      .filter((p) => !p.is_archived && !p.is_deleted && fold(p.name).includes(q))
       .slice(0, 6)
       .map((project, index): Hit => ({
         key: `project-${project.id}`,
@@ -84,7 +117,7 @@ export function Search({ open, onClose, onOpen }: SearchProps) {
       }));
 
     const labels = Object.values(snapshot.labels)
-      .filter((l) => l.name.toLowerCase().includes(q) && !l.name.startsWith('est-'))
+      .filter((l) => fold(l.name).includes(q) && !l.name.startsWith('est-'))
       .slice(0, 6)
       .map((label, index): Hit => ({
         key: `label-${label.id}`,
@@ -94,8 +127,8 @@ export function Search({ open, onClose, onOpen }: SearchProps) {
         run: go(() => navigate('label', label.name)),
       }));
 
-    return [...tasks, ...projects, ...labels];
-  }, [query, items, snapshot, onOpen, onClose, t]);
+    return [...places, ...tasks, ...projects, ...labels];
+  }, [query, items, snapshot, onOpen, onClose, t, destinations]);
 
   // A new query invalidates wherever the cursor was.
   useEffect(() => { setCursor(0); }, [query]);
