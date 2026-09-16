@@ -1179,6 +1179,11 @@
 .namemirror{
   font:inherit;font-size:var(--fs-16);font-weight:600;
   line-height:1.4;letter-spacing:normal;
+  /* Every space in this field is worth about three. A marked word takes a
+     space's width of air inside its background and still leaves a space's
+     width of gap before the next one. Set on both layers, or the marks slide
+     off the words they belong to. */
+  word-spacing:8px;
   padding:6px 0;border:0;
   white-space:pre;overflow-x:auto;
   scrollbar-width:none;
@@ -1193,14 +1198,18 @@
 
 .nmark{
   color:transparent;background:var(--subtle);
-  border-radius:5px;box-shadow:0 0 0 2px var(--subtle);
+  /* Padding widens the background without moving the text: the negative
+     margin gives back exactly what the padding took, so the mirror still
+     lines up character for character with the input in front of it. */
+  padding:2px 4px;margin:0 -4px;border-radius:6px;
 }
 /* A date is the one the parser guessed rather than one you spelled out, so it
    is the one that has to be impossible to miss. */
-.nmark.date{background:var(--accent-tint);box-shadow:0 0 0 2px var(--accent-tint)}
-.nmark.project{background:#eaf2fd;box-shadow:0 0 0 2px #eaf2fd}
-.nmark.label{background:#f2edfb;box-shadow:0 0 0 2px #f2edfb}
-.nmark.priority{background:var(--accent-tint);box-shadow:0 0 0 2px var(--accent-tint)}
+.nmark.date{background:var(--accent-tint)}
+.nmark.project{background:#eaf2fd}
+.nmark.label{background:#f2edfb}
+.nmark.priority{background:var(--accent-tint)}
+.nmark.duration{background:#e6f2ea}
 
 /* The list that opens on @ or #. */
 .namepicker{
@@ -1526,9 +1535,13 @@
    the same place on every step of both cadences. Only the content between
    them changes.
    ========================================================================== */
+/* A grid, not a wrapping flex row: the title and the cadence control hold
+   the first row whatever else is on the page, so switching between daily and
+   weekly no longer moves the button you just pressed. The week pager takes a
+   row of its own underneath. */
 .reviewhead{
-  display:flex;align-items:center;justify-content:space-between;gap:var(--s4);
-  flex-wrap:wrap;margin-bottom:var(--s4);
+  display:grid;grid-template-columns:minmax(0,1fr) auto;
+  align-items:center;gap:var(--s2) var(--s4);margin-bottom:var(--s4);
 }
 .reviewcadence{width:auto;grid-auto-columns:max-content}
 .reviewcadence button{padding:0 12px}
@@ -1550,10 +1563,13 @@
   background:var(--surface);font-size:10px;font-weight:700;
 }
 .reviewpip-dot .ic{width:11px;height:11px}
-/* Still to answer. */
+/* Still to come: an outlined circle carrying what it will ask about. */
 .reviewpip .reviewpip-dot{border-color:var(--accent);color:var(--accent)}
-/* Answered, or nothing in it to answer. */
-.reviewpip.done .reviewpip-dot{border-color:var(--ok);color:var(--ok)}
+/* Behind you: the same red, softened, with a tick instead of a number. */
+.reviewpip.seen{color:var(--accent-dark)}
+.reviewpip.seen .reviewpip-dot{
+  border-color:var(--accent);background:var(--accent-tint);color:var(--accent-dark);
+}
 /* Where you are. Filled, so the one you are on is never mistaken for one of
    the others whatever state it is in. */
 .reviewpip.current{background:var(--accent-soft);color:var(--accent-dark)}

@@ -23,7 +23,7 @@ import { toDisplayPriority, type CompletedItem, type Item, type Project } from '
 import type { DropTarget } from '@/domain/dnd';
 import {
   buildReview,
-  type ReviewAction, type ReviewCadence, type ReviewHalf, type ReviewStep,
+  type ReviewAction, type ReviewCadence, type ReviewStep,
 } from '@/domain/review';
 import type { TranslationKey } from '@/i18n';
 
@@ -36,6 +36,21 @@ const targetFor = (action: ReviewAction): DropTarget => {
     case 'someday': return { kind: 'someday' };
   }
 };
+
+/**
+ * Where the mail actually is.
+ *
+ * Four links rather than a setting: naming the web clients most people use,
+ * plus `mailto:` for whatever this machine has registered — which is how you
+ * reach Apple Mail, Outlook for Mac and Thunderbird without asking anybody
+ * which one they run.
+ */
+const MAIL_CLIENTS = [
+  { label: 'Gmail', url: 'https://mail.google.com/mail/u/0/#inbox' },
+  { label: 'Outlook', url: 'https://outlook.live.com/mail/0/' },
+  { label: 'iCloud', url: 'https://www.icloud.com/mail' },
+  { label: 'Mail', url: 'mailto:' },
+] as const;
 
 /** How the finished list can be ordered. */
 type DoneOrder = 'date' | 'priority';
@@ -162,8 +177,10 @@ export function ReviewView({ onOpen }: ReviewViewProps) {
           ))}
         </div>
 
-        {/* Which week is being closed. The same pager Insights uses, because
-            it is the same question asked of the same kind of window. */}
+        {/* Which week is being closed, on a line of its own beneath the
+            title. Beside the cadence control it pushed the control somewhere
+            new every time the cadence changed, which made the one button you
+            press twice a minute move under your hand. */}
         {cadence === 'weekly' && (
           <div className="reviewweek">
             <span className="pager">
@@ -198,37 +215,32 @@ export function ReviewView({ onOpen }: ReviewViewProps) {
           the thing people stop doing. */}
       <ol className="reviewrail">
         {steps.map((s, i) => {
+          /* Where you are in the pass, and nothing else. Colouring a pip by
+             how much was in the step meant the rail changed meaning as you
+             answered it — green for "nothing here", red for "twelve things" —
+             and the two were the same circle carrying two different units. A
+             step behind you is behind you whatever you left in it. */
           const current = i === index && !finished;
-          /* Three states, and only three: the one you are on, the ones you
-             have been through or that had nothing in them, and the ones still
-             waiting. A step you walked past is done even if you left things
-             in it — you answered it by deciding not to. */
-          const done = s.clear || finished || i < index;
-          /* A number only where a number means "still to deal with". The
-             reporting steps carry a mark, not a tally: "142" beside a tick
-             read as a hundred and forty-two things done. */
+          const seen = finished || i < index;
+          /* A number where a number means "to deal with"; a mark where the
+             step hands you something to read instead. */
           const outstanding = s.reports ? null : countOf(s);
-          const opensHalf = cadence === 'weekly'
-            && s.half !== null
-            && (i === 0 || steps[i - 1].half !== s.half);
 
           return (
-            <li key={s.id} className={opensHalf ? 'opens' : undefined}>
-              {opensHalf && (
-                <span className="reviewhalf">
-                  {t(`review.half.${s.half as ReviewHalf}` as TranslationKey)}
-                </span>
-              )}
+            <li key={s.id}>
               <button
-                className={`reviewpip${current ? ' current' : ''}${done ? ' done' : ''}${s.reports ? ' reports' : ''}`}
+                className={`reviewpip${current ? ' current' : ''}${seen ? ' seen' : ''}${s.reports ? ' reports' : ''}`}
                 aria-current={current ? 'step' : undefined}
                 onClick={() => { setIndex(i); setFinished(false); }}
               >
                 <span className="reviewpip-dot" aria-hidden="true">
-                  {outstanding === null
-                    ? <Icon name={done && !current ? 'check' : 'bars'} size="sm" />
-                    : done && !current
-                      ? <Icon name="check" size="sm" />
+                  {/* A tick where there is nothing to answer — a red "0" in a
+                      circle is a number pretending to be a problem — and the
+                      same tick once the step is behind you. */}
+                  {(seen && !current) || outstanding === 0
+                    ? <Icon name="check" size="sm" />
+                    : outstanding === null
+                      ? <Icon name="bars" size="sm" />
                       : <b>{outstanding}</b>}
                 </span>
                 <span className="reviewpip-label">
@@ -446,6 +458,24 @@ export function ReviewView({ onOpen }: ReviewViewProps) {
         </span>
         <strong>{t(mailCleared ? 'review.mail.done' : 'review.mail.todo')}</strong>
         <span>{t('review.mail.how')}</span>
+
+        {/* The step cannot open your mail, but it can save you looking for it.
+            The last one is whatever this machine calls its mail application. */}
+        <div className="reviewmail-links">
+          {MAIL_CLIENTS.map((client) => (
+            <a
+              key={client.label}
+              className="btn sm"
+              href={client.url}
+              target={client.url.startsWith('mailto:') ? undefined : '_blank'}
+              rel="noreferrer noopener"
+            >
+              <Icon name="external" size="sm" />
+              {client.label}
+            </a>
+          ))}
+        </div>
+
         <button
           className={`btn${mailCleared ? ' quiet' : ' primary'}`}
           aria-pressed={mailCleared}

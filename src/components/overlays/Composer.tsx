@@ -47,7 +47,6 @@ export function Composer({
   const [deadline, setDeadline] = useState('');
   const [labels, setLabels] = useState<string[]>([]);
   const [minutes, setMinutes] = useState<number | null>(null);
-  const [assignee, setAssignee] = useState('');
   const [tagsOpen, setTagsOpen] = useState(false);
   const [subtasks, setSubtasks] = useState<string[]>([]);
   const [subtaskDraft, setSubtaskDraft] = useState('');
@@ -59,7 +58,6 @@ export function Composer({
     setPriority(4);
     setLabels([]);
     setMinutes(null);
-    setAssignee('');
     setTagsOpen(false);
     setSubtasks([]);
     setSubtaskDraft('');
@@ -76,9 +74,6 @@ export function Composer({
   const sections = Object.values(snapshot.sections)
     .filter((s) => s.project_id === projectId && !s.is_archived && !s.is_deleted)
     .sort((a, b) => a.section_order - b.section_order);
-
-  const collaborators = Object.values(snapshot.collaborators)
-    .sort((a, b) => a.full_name.localeCompare(b.full_name));
 
   const tags = Object.values(snapshot.labels)
     .filter((l) => !l.is_deleted && !l.name.startsWith('est-'))
@@ -99,14 +94,13 @@ export function Composer({
    * afterwards stays changed until the name says something new.
    */
   const { date: readDate, projectId: readProject, priority: readPriority,
-    minutes: readMinutes, assigneeId: readAssignee } = parsed;
+    minutes: readMinutes } = parsed;
   const readLabels = parsed.labels.join('\u0000');
 
   useEffect(() => { if (readDate) setDate(readDate); }, [readDate]);
   useEffect(() => { if (readProject) setProjectId(readProject); }, [readProject]);
   useEffect(() => { if (readPriority) setPriority(readPriority); }, [readPriority]);
   useEffect(() => { if (readMinutes !== null) setMinutes(readMinutes); }, [readMinutes]);
-  useEffect(() => { if (readAssignee) setAssignee(readAssignee); }, [readAssignee]);
   useEffect(() => {
     if (!readLabels) return;
     setLabels((prev) => [...new Set([...prev, ...readLabels.split('\u0000')])]);
@@ -138,7 +132,6 @@ export function Composer({
         ? { date: dueDate, timezone: null, string: dueDate, lang: 'en', is_recurring: false }
         : undefined,
       deadline: deadline ? { date: deadline, lang: 'en' } : undefined,
-      responsible_uid: assignee || undefined,
       subtasks: allSubtasks,
     });
 
@@ -227,27 +220,7 @@ export function Composer({
             <EstimateField minutes={minutes} onCommit={setMinutes} />
           </span>
 
-          {/* Only where there is somebody to assign to. On a personal account
-              Todoist returns no collaborators, and an empty picker is a
-              question nobody can answer. */}
-          {collaborators.length > 0 && (
-            <span className="cfield">
-              <Select
-                label={t('composer.assignee')}
-                value={assignee}
-                ariaLabel={t('composer.assignee')}
-                onChange={setAssignee}
-                options={[
-                  { value: '', label: t('composer.unassigned') },
-                  ...collaborators.map((person) => ({
-                    value: person.id,
-                    label: person.full_name || person.email,
-                  })),
-                ]}
-              />
-            </span>
-          )}
-        </div>
+       </div>
 
         <div className="composer-tags">
           <button

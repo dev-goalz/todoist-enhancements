@@ -25,11 +25,15 @@ after 1.1 went out.
 - **Projects nest by dragging them to the right** in the sidebar, which is
   where the nesting the sidebar already drew was supposed to come from. The
   project menu moves one back out.
-- **A date picker on the row.** The three shortcuts in a task's schedule menu
-  answer most days and none of them answers "the 14th".
-- **The composer reads two more things out of a name**: an estimate in
-  brackets — "Call Anne (25)" — and a person with a plus, "+anne", on a shared
-  project.
+- **A task's date can be typed.** Its schedule menu opens on a field with the
+  caret already in it: "tomorrow", "next sunday", "12 April". A calendar sits
+  under the three shortcuts for the dates that are easier to point at than to
+  name.
+- **The composer reads an estimate out of a name**, written in brackets:
+  "Call Anne (25)".
+- **A date format setting** — 12 sept. 2026, sept. 12, 2026, 2026 sept. 12, or
+  all numbers. Today and tomorrow are always named rather than dated, wherever
+  a date is shown.
 
 ### Fixed
 
@@ -64,19 +68,20 @@ after 1.1 went out.
   night; done on a Monday it read a week two hours old. It opens on the week
   that has just ended while the new one is young, and arrows reach the ones
   before.
-- **The weekly pass is in two halves**, named in the rail: *close the week*
-  — what you finished, what it came to, what is late, which projects went
-  quiet — then *open the next one*: mail, inbox, Someday, this week's
-  commitments, estimates, and what the week weighs. It used to end on Someday,
-  the longest and least engaging list in the app, placed exactly where people
-  stop, and then claim the next week was ready when nothing had set it up.
+- **The weekly pass closes the week and then opens the next one**: what you
+  finished, what it came to, what is late, which projects went quiet — then
+  mail, inbox, Someday, this week's commitments, estimates, and what the week
+  weighs. It used to end on Someday, the longest and least engaging list in the
+  app, placed exactly where people stop, and then claim the next week was ready
+  when nothing had set it up.
 - **It ends on the load**, the idea the whole product is built on and the one
   thing the ritual meant to steer it never mentioned: the coming week's hours
   against the hours you said you have, with each task offering a way out of the
   week on the spot.
-- **A mail step**, before the inbox, because that is where the tasks it
-  produces land. It claims nothing it cannot know — this app cannot see your
-  mail — and takes your word for it.
+- **A mail step in both passes**, immediately before the inbox, because a good
+  part of what is sitting in the inbox arrived as an email and filing the inbox
+  first files half of it. It claims nothing it cannot know — this app cannot
+  see your mail — and carries links to where the mail actually is.
 - **The last step of the daily pass has somewhere to send things.** It offered
   no action at all, so a day that was already full ended the review on a
   problem with nowhere to put it.
@@ -87,11 +92,15 @@ after 1.1 went out.
   next jumped under the cursor. It now works the way the Unestimated sheet
   does: the list stays still, the total gathers at the foot, one request at the
   end.
-- **The progress rail stopped mixing units.** A count of things finished and a
-  count of things still wrong were the same number in the same circle — Someday
-  showed a ticked pill reading "142", which read as a hundred and forty-two
-  things done. Steps that report carry a mark; only steps that ask carry a
-  number.
+- **The progress rail says where you are, and nothing else.** It used to
+  colour each step by how much was in it, so the rail changed meaning as you
+  answered it and a count of finished tasks sat in the same circle as a count
+  of things still to settle — Someday showed a ticked pill reading "142".
+  Behind you, where you are, still to come: three states, one colour. Steps
+  that hand you something to read carry a mark rather than a tally.
+- **The cadence control stopped moving.** Switching between daily and weekly
+  changed the head's layout and took the button you had just pressed somewhere
+  else.
 - **How long a project may go quiet is a setting.** Fourteen days is a fair
   default and a poor constant: on a fast board it is permanent noise, on a slow
   one the warning never comes.

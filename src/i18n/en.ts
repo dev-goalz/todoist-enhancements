@@ -573,8 +573,8 @@ export const en = {
   'settings.weekLayout': 'Today and My week',
   'settings.weekLayoutHint': 'My week normally holds today and the rest of the week together, because deciding what today is means seeing what the week still owes. Separate them if you would rather keep a page for the day.',
   'settings.weekLayout.unified': 'One page',
-  'settings.weekLayout.split': 'Today, and the week without it',
-  'settings.weekLayout.splitWithToday': 'Today, and the whole week',
+  'settings.weekLayout.split': 'Today, and My week excluding today',
+  'settings.weekLayout.splitWithToday': 'Today, and My week including today',
   'settings.weekLabel': 'Tag for “anytime this week”',
   'settings.weekLabelHint': 'The tag that commits a task to this week without giving it a day. Change it if your board already uses another name, such as this_week.',
   'project.moveToTop': 'Move out to the top level',
@@ -598,8 +598,6 @@ export const en = {
   'bulk.deleteConfirm': 'Delete {count} tasks? You can undo this straight away, but they come back with new ids.',
   'bulk.deleteConfirm_one': 'Delete this task? You can undo this straight away, but it comes back with a new id.',
   'bulk.deleteConfirm_other': 'Delete {count} tasks? You can undo this straight away, but they come back with new ids.',
-  'composer.assignee': 'Assignee',
-  'composer.unassigned': 'Nobody',
 
   /* 1.1.1 — the review */
   'review.step.email': 'Mail',
@@ -608,8 +606,6 @@ export const en = {
   'review.ask.load': 'What the coming week is carrying, against the hours you said you have. If it does not fit, take something out of it now rather than finding out on Thursday.',
   'review.clear.email': 'Nothing waiting.',
   'review.clear.load': 'The week ahead is empty.',
-  'review.half.close': 'Close the week',
-  'review.half.open': 'Open the next one',
   'review.to.tomorrow': 'Tomorrow',
   'review.previousWeek': 'The week before',
   'review.nextWeek': 'The week after',
@@ -623,6 +619,13 @@ export const en = {
   'review.mail.undo': 'Not yet',
   'settings.quietAfter': 'A project is quiet after',
   'settings.quietAfterHint': 'Days without anything finished in it before the weekly review mentions it. Fourteen suits most people; a fast board wants fewer and a slow one more.',
+
+  /* 1.1.1 — second pass */
+  'task.typeDate': 'Tomorrow, next Sunday, 12 April…',
+  'task.dateNotRead': 'Not a date this understands.',
+  'settings.dateFormat': 'Date format',
+  'settings.dateFormatHint': 'The order a written-out date puts its parts in. Today and tomorrow are always named, never dated.',
+  'settings.days': 'days',
 };
 
 export type TranslationKey = keyof typeof en;

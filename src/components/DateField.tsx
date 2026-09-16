@@ -6,7 +6,8 @@ import {
 } from 'date-fns';
 import { Icon } from './Icon';
 import { useT } from '@/hooks/useT';
-import { toApiDate } from '@/domain/dates';
+import { useStore } from '@/store/store';
+import { formatDayOrName, toApiDate } from '@/domain/dates';
 import type { TranslationKey } from '@/i18n';
 
 interface DateFieldProps {
@@ -36,6 +37,7 @@ const SHORTCUTS = [
  */
 export function DateField({ value, onChange, label, placeholder }: DateFieldProps) {
   const { t, locale } = useT();
+  const dateFormat = useStore((s) => s.prefs.dateFormat);
   const [open, setOpen] = useState(false);
   const [month, setMonth] = useState(() => startOfMonth(parse(value) ?? new Date()));
   const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
@@ -199,10 +201,11 @@ export function DateField({ value, onChange, label, placeholder }: DateFieldProp
       >
         <Icon name="calendar" size="sm" />
         <span className="fselect-value">
-          {selected
-            ? new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', year: 'numeric' })
-              .format(selected)
-            : (placeholder ?? label)}
+          {/* A date one day away has a name, and the name is what the reader
+              wants: "17 sept. 2026" is a date you have to work out is
+              tomorrow. Everything further off is written out in the order the
+              settings ask for. */}
+          {selected ? formatDayOrName(selected, locale, dateFormat) : (placeholder ?? label)}
         </span>
         <Icon name="caret" size="sm" />
       </button>

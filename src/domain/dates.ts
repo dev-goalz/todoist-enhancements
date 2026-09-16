@@ -85,6 +85,73 @@ export function formatRelativeDay(
   return new Intl.DateTimeFormat(intl, { day: 'numeric', month: 'short' }).format(date);
 }
 
+/**
+ * How a whole date is written.
+ *
+ * Every country orders these three numbers differently and is certain its own
+ * order is the obvious one, so the order is a setting rather than a guess made
+ * from the interface language.
+ */
+export const DATE_FORMATS = ['dmy', 'mdy', 'ymd', 'numeric'] as const;
+export type DateFormat = (typeof DATE_FORMATS)[number];
+
+/**
+ * A date written out, in the order the user chose.
+ *
+ * `Intl` will not reorder the parts on request — it gives each locale its own
+ * order and nothing else — so the three words are asked for once in the
+ * interface language and then arranged here. Written out rather than derived
+ * from some other locale's ordering: the templates are four lines, and reading
+ * them tells you exactly what each setting produces.
+ */
+const TEMPLATES: Record<DateFormat, (p: Record<string, string>) => string> = {
+  dmy: (p) => `${p.day} ${p.month} ${p.year}`,
+  mdy: (p) => `${p.month} ${p.day}, ${p.year}`,
+  ymd: (p) => `${p.year} ${p.month} ${p.day}`,
+  numeric: (p) => `${p.day}/${p.month}/${p.year}`,
+};
+
+export function formatDay(
+  date: Date,
+  locale: 'en' | 'fr',
+  format: DateFormat = 'dmy',
+): string {
+  const intl = locale === 'fr' ? 'fr-FR' : 'en-GB';
+  const options: Intl.DateTimeFormatOptions = format === 'numeric'
+    ? { day: '2-digit', month: '2-digit', year: 'numeric' }
+    : { day: 'numeric', month: 'short', year: 'numeric' };
+
+  const parts = new Intl.DateTimeFormat(intl, options)
+    .formatToParts(date)
+    .reduce<Record<string, string>>((acc, part) => {
+      if (part.type !== 'literal') acc[part.type] = part.value;
+      return acc;
+    }, {});
+
+  return TEMPLATES[format](parts);
+}
+
+/**
+ * "Today", "Tomorrow", or the date written out.
+ *
+ * The three days either side of now have names, and a name is what a person
+ * reading a field wants to see: "17 sept. 2026" is a date you have to work out
+ * is tomorrow.
+ */
+export function formatDayOrName(
+  date: Date,
+  locale: 'en' | 'fr',
+  format: DateFormat = 'dmy',
+  now = new Date(),
+): string {
+  const diff = differenceInCalendarDays(startOfDay(date), startOfDay(now));
+  const names = {
+    en: { '0': 'Today', '1': 'Tomorrow', '-1': 'Yesterday' },
+    fr: { '0': "Aujourd'hui", '1': 'Demain', '-1': 'Hier' },
+  }[locale] as Record<string, string | undefined>;
+  return names[String(diff)] ?? formatDay(date, locale, format);
+}
+
 export function formatTime(date: Date, locale: 'en' | 'fr', hour12: boolean): string {
   return new Intl.DateTimeFormat(locale === 'fr' ? 'fr-FR' : 'en-GB', {
     hour: '2-digit',

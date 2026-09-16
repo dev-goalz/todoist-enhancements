@@ -575,8 +575,8 @@ export const fr: Record<TranslationKey, string> = {
   'settings.weekLayout': 'Aujourd\'hui et Cette semaine',
   'settings.weekLayoutHint': 'Cette semaine réunit normalement aujourd\'hui et le reste de la semaine : décider de sa journée suppose de voir ce que la semaine doit encore. Séparez-les si vous préférez garder une page pour la journée.',
   'settings.weekLayout.unified': 'Une seule page',
-  'settings.weekLayout.split': 'Aujourd\'hui, et la semaine sans aujourd\'hui',
-  'settings.weekLayout.splitWithToday': 'Aujourd\'hui, et toute la semaine',
+  'settings.weekLayout.split': 'Aujourd\'hui, et Cette semaine sans aujourd\'hui',
+  'settings.weekLayout.splitWithToday': 'Aujourd\'hui, et Cette semaine avec aujourd\'hui',
   'settings.weekLabel': 'Étiquette « n’importe quand cette semaine »',
   'settings.weekLabelHint': 'L\'étiquette qui engage une tâche sur la semaine sans lui donner de jour. Changez-la si votre compte utilise déjà un autre nom, par exemple this_week.',
   'project.moveToTop': 'Sortir au premier niveau',
@@ -600,8 +600,6 @@ export const fr: Record<TranslationKey, string> = {
   'bulk.deleteConfirm': 'Supprimer {count} tâches ? Vous pourrez annuler tout de suite, mais elles reviendront avec de nouveaux identifiants.',
   'bulk.deleteConfirm_one': 'Supprimer cette tâche ? Vous pourrez annuler tout de suite, mais elle reviendra avec un nouvel identifiant.',
   'bulk.deleteConfirm_other': 'Supprimer {count} tâches ? Vous pourrez annuler tout de suite, mais elles reviendront avec de nouveaux identifiants.',
-  'composer.assignee': 'Assignée à',
-  'composer.unassigned': 'Personne',
 
   /* 1.1.1 — la revue */
   'review.step.email': 'Emails',
@@ -610,8 +608,6 @@ export const fr: Record<TranslationKey, string> = {
   'review.ask.load': 'Ce que porte la semaine qui vient, face aux heures que vous vous êtes données. Si ça ne rentre pas, sortez-en quelque chose maintenant plutôt que de le découvrir jeudi.',
   'review.clear.email': 'Rien en attente.',
   'review.clear.load': 'La semaine qui vient est vide.',
-  'review.half.close': 'Clore la semaine',
-  'review.half.open': 'Ouvrir la suivante',
   'review.to.tomorrow': 'Demain',
   'review.previousWeek': 'La semaine précédente',
   'review.nextWeek': 'La semaine suivante',
@@ -625,4 +621,11 @@ export const fr: Record<TranslationKey, string> = {
   'review.mail.undo': 'Pas encore',
   'settings.quietAfter': 'Un projet est silencieux après',
   'settings.quietAfterHint': 'Nombre de jours sans rien de terminé dedans avant que la revue hebdomadaire le signale. Quatorze convient à la plupart ; un rythme rapide en demande moins, un rythme lent davantage.',
+
+  /* 1.1.1 — seconde passe */
+  'task.typeDate': 'Demain, dimanche prochain, 12 avril…',
+  'task.dateNotRead': 'Pas une date reconnue.',
+  'settings.dateFormat': 'Format de date',
+  'settings.dateFormatHint': 'L\'ordre des éléments d\'une date écrite. Aujourd\'hui et demain sont toujours nommés, jamais datés.',
+  'settings.days': 'jours',
 };

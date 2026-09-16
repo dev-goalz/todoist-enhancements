@@ -6,6 +6,7 @@ import { useStore } from '@/store/store';
 import { avatarUrl } from '@/domain/colors';
 import { formatDuration, parseDurationInput } from '@/domain/estimates';
 import { defaultCapacity, weeklyCapacity, type DailyCapacity } from '@/domain/load';
+import { DATE_FORMATS, formatDay, type DateFormat } from '@/domain/dates';
 import {
   DENSITIES, HOME_VIEWS, WEEK_LAYOUTS,
   type Density, type HomeView, type WeekLayout,
@@ -15,6 +16,10 @@ import type { Locale, TranslationKey } from '@/i18n';
 import { APP_NAME, AUTHOR, COFFEE_URL, GITHUB_URL, SITE_URL, VERSION } from '@/app-info';
 
 const SECTIONS = ['account', 'general', 'week', 'conflicts', 'about'] as const;
+
+/** A date with two digits in the day and a month that is short in both
+ *  languages, so every option in the list is the same length. */
+const SAMPLE_DATE = new Date(2026, 8, 12);
 type Section = (typeof SECTIONS)[number];
 
 /**
@@ -145,6 +150,20 @@ export function SettingsView() {
               />
             </Row>
 
+            <Row title={t('settings.dateFormat')} hint={t('settings.dateFormatHint')}>
+              <Select
+                value={prefs.dateFormat}
+                onChange={(value) => setPrefs({ dateFormat: value as DateFormat })}
+                ariaLabel={t('settings.dateFormat')}
+                options={DATE_FORMATS.map((format) => ({
+                  value: format,
+                  /* The sample is the label: naming the orders "day, month,
+                     year" explains less than showing one. */
+                  label: formatDay(SAMPLE_DATE, locale, format),
+                }))}
+              />
+            </Row>
+
             <Row title={t('settings.density')} hint={t('settings.densityHint')} wide>
               <DensityChoice
                 value={prefs.density}
@@ -252,18 +271,21 @@ export function SettingsView() {
             </Row>
 
             <Row title={t('settings.quietAfter')} hint={t('settings.quietAfterHint')}>
-              <input
-                className="estinput"
-                inputMode="numeric"
-                defaultValue={String(prefs.quietAfterDays)}
-                aria-label={t('settings.quietAfter')}
-                onBlur={(event) => {
-                  const days = Number.parseInt(event.target.value, 10);
-                  const next = Number.isFinite(days) && days > 0 ? days : prefs.quietAfterDays;
-                  setPrefs({ quietAfterDays: next });
-                  event.target.value = String(next);
-                }}
-              />
+              <span className="setunit">
+                <input
+                  className="estinput"
+                  inputMode="numeric"
+                  defaultValue={String(prefs.quietAfterDays)}
+                  aria-label={t('settings.quietAfter')}
+                  onBlur={(event) => {
+                    const days = Number.parseInt(event.target.value, 10);
+                    const next = Number.isFinite(days) && days > 0 ? days : prefs.quietAfterDays;
+                    setPrefs({ quietAfterDays: next });
+                    event.target.value = String(next);
+                  }}
+                />
+                <span>{t('settings.days')}</span>
+              </span>
             </Row>
 
             <Row title={t('settings.capacityDefaults')} hint={t('settings.capacityDefaultsHint')}>

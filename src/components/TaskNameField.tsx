@@ -6,15 +6,15 @@ import { useStore } from '@/store/store';
 import { useT } from '@/hooks/useT';
 import type { Snapshot } from '@/domain/types';
 
-/** The `@tag`, `#project` or `+person` the caret is currently inside, if any. */
+/** The `@tag` or `#project` the caret is currently inside, if any. */
 function tokenAtCaret(
   value: string, caret: number,
-): { sigil: '@' | '#' | '+'; query: string; start: number } | null {
+): { sigil: '@' | '#'; query: string; start: number } | null {
   const before = value.slice(0, caret);
-  const match = before.match(/(^|\s)([@#+])([\p{L}\p{N}_.-]*)$/u);
+  const match = before.match(/(^|\s)([@#])([\p{L}\p{N}_-]*)$/u);
   if (!match) return null;
   return {
-    sigil: match[2] as '@' | '#' | '+',
+    sigil: match[2] as '@' | '#',
     query: match[3].toLowerCase(),
     start: caret - match[3].length - 1,
   };
@@ -57,20 +57,6 @@ export function TaskNameField({
 
   const options = (() => {
     if (!token) return [];
-    if (token.sigil === '+') {
-      /* Assigning by name only works on a task somebody else can see, so the
-         list is exactly the people who share a project with you — which is
-         what Todoist gives us and nothing more. */
-      return Object.values(snapshot.collaborators)
-        .filter((person) =>
-          person.full_name.toLowerCase().includes(token.query) ||
-          person.email.toLowerCase().includes(token.query))
-        .slice(0, 6)
-        .map((person) => ({
-          id: person.id, name: person.full_name || person.email,
-          color: 'charcoal', sigil: '+' as const, isNew: false,
-        }));
-    }
     if (token.sigil === '#') {
       return Object.values(snapshot.projects)
         .filter((p) => !p.is_archived && !p.is_deleted && !p.is_folder)
@@ -117,7 +103,7 @@ export function TaskNameField({
     if (!token) return;
     // Made before it is inserted, so the tag it names exists by the time the
     // task carrying it is saved.
-    if (isNew && token.sigil === '@') void createLabel(name);
+    if (isNew) void createLabel(name);
     const needsQuotes = /\s/.test(name);
     const inserted = `${token.sigil}${needsQuotes ? name.replace(/\s+/g, '') : name} `;
     const next = value.slice(0, token.start) + inserted + value.slice(caret);
@@ -208,9 +194,7 @@ export function TaskNameField({
             >
               {option.sigil === '#'
                 ? <span className="hash" style={markerStyle(option.color)}>#</span>
-                : option.sigil === '+'
-                  ? <span className="hash">+</span>
-                  : <Icon name={option.isNew ? 'plus' : 'tag'} size="sm" className="taglabel" style={markerStyle(option.color, false)} />}
+                : <Icon name={option.isNew ? 'plus' : 'tag'} size="sm" className="taglabel" style={markerStyle(option.color, false)} />}
               <span>{option.name}</span>
               {option.isNew && <small className="namepicker-new">{t('labels.createNew')}</small>}
             </button>

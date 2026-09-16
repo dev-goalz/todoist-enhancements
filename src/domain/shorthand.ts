@@ -13,13 +13,12 @@ import type { DisplayPriority, Snapshot } from './types';
  * answer read once — a range is what was matched, and the value is what that
  * range meant.
  *
- * `#project`, `p1`..`p4`, `@tag`, `(25)` and `+someone` are syntax: they were
- * typed on purpose and are always honoured. The date is a guess made from
- * prose, so it is the only part the caller can switch off.
+ * `#project`, `p1`..`p4`, `@tag` and `(25)` are syntax: they were typed on
+ * purpose and are always honoured. The date is a guess made from prose, so it
+ * is the only part the caller can switch off.
  */
 
-export type HighlightKind =
-  | 'date' | 'project' | 'priority' | 'label' | 'duration' | 'assignee';
+export type HighlightKind = 'date' | 'project' | 'priority' | 'label' | 'duration';
 
 export interface Highlight {
   start: number;
@@ -37,23 +36,12 @@ export interface Shorthand {
   date: string | null;
   /** An estimate in minutes, written in brackets: "Call Anne (25)". */
   minutes: number | null;
-  /** A collaborator's user id, written with a plus: "Review the deck +anne". */
-  assigneeId: string | null;
   /** Where each of the above sits in the original string. */
   ranges: Highlight[];
 }
 
 const fold = (text: string): string =>
   text.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, '');
-
-/** A collaborator matched by name or by the local part of their address. */
-export function findCollaborator(snapshot: Snapshot, query: string) {
-  const wanted = fold(query);
-  if (!wanted) return undefined;
-  return Object.values(snapshot.collaborators).find((person) =>
-    fold(person.full_name).startsWith(wanted) ||
-    fold(person.email.split('@')[0]).startsWith(wanted));
-}
 
 export function parseShorthand(
   raw: string, snapshot: Snapshot, naturalDates: boolean,
@@ -66,7 +54,6 @@ export function parseShorthand(
   let priority: DisplayPriority | null = null;
   const labels: string[] = [];
   let minutes: number | null = null;
-  let assigneeId: string | null = null;
 
   const project = raw.match(/#([\p{L}\p{N}_-]+)/u);
   if (project) {
@@ -102,16 +89,6 @@ export function parseShorthand(
     break;
   }
 
-  for (const plus of raw.matchAll(/(?:^|\s)\+([\p{L}\p{N}_.-]+)/gu)) {
-    const person = findCollaborator(snapshot, plus[1]);
-    if (!person) continue;
-    assigneeId = person.id;
-    // The leading space belongs to the sentence, not to the mention.
-    const at = plus.index! + plus[0].length - plus[1].length - 1;
-    claim(at, plus[1].length + 1, 'assignee');
-    break;
-  }
-
   let date: string | null = null;
   if (naturalDates) {
     /* The date is read from what the explicit syntax has not already claimed,
@@ -131,7 +108,7 @@ export function parseShorthand(
   const clean = dedupe(ranges);
   return {
     content: strip(raw, clean),
-    projectId, priority, labels, date, minutes, assigneeId,
+    projectId, priority, labels, date, minutes,
     ranges: clean,
   };
 }

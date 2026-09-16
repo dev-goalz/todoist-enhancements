@@ -15,9 +15,9 @@ import { dueDate } from './dates';
  * and there is nowhere to store it that Todoist would recognise.
  *
  * The daily pass asks what today is, and takes a few minutes. The weekly pass
- * closes the week that has ended and opens the one starting, in that order and
- * in two named halves, because those are two different frames of mind and a
- * pass that mixes them is one people abandon in the middle.
+ * closes the week that has ended and then opens the one starting, in that
+ * order, because those are two different frames of mind and a pass that mixes
+ * them is one people abandon in the middle.
  */
 
 export type ReviewCadence = 'daily' | 'weekly';
@@ -36,15 +36,6 @@ export type ReviewStepId =
   | 'someday'
   | 'unestimated'
   | 'load';
-
-/**
- * The two halves of the weekly pass.
- *
- * Closing is reading and tidying what happened; opening is deciding what the
- * next week is. The weekly used to do only the first and then tell you the
- * next week was ready, which it was not.
- */
-export type ReviewHalf = 'close' | 'open';
 
 /** What a row in a step can be sent to. The drop table does the work. */
 export type ReviewAction = 'today' | 'tomorrow' | 'anytime' | 'someday';
@@ -75,8 +66,6 @@ export interface ReviewStep {
    * the inbox is empty is the point of asking — but it is shown as settled.
    */
   clear: boolean;
-  /** Which half of the weekly pass this belongs to. Null for the daily one. */
-  half: ReviewHalf | null;
 }
 
 export interface ReviewInput {
@@ -105,34 +94,19 @@ export interface ReviewInput {
  * exactly where people stop.
  */
 const STEPS: Record<ReviewCadence, ReviewStepId[]> = {
-  daily: ['overdue', 'inbox', 'anytime', 'unestimated', 'today'],
+  /* Mail comes immediately before the Inbox in both passes, because a good
+     part of what is sitting in the Inbox arrived as an email, and filing the
+     Inbox before reading the mail files half of it. */
+  daily: ['overdue', 'email', 'inbox', 'anytime', 'unestimated', 'today'],
   weekly: [
-    /* Close */
+    /* What the week was */
     'done', 'stats', 'overdue', 'quiet',
-    /* Open */
+    /* What the next one is */
     'email', 'inbox', 'someday', 'anytime', 'unestimated', 'load',
   ],
 };
 
-const HALVES: Record<ReviewStepId, ReviewHalf> = {
-  done: 'close',
-  stats: 'close',
-  overdue: 'close',
-  quiet: 'close',
-  email: 'open',
-  inbox: 'open',
-  someday: 'open',
-  anytime: 'open',
-  unestimated: 'open',
-  load: 'open',
-  today: 'open',
-};
-
 export const stepsFor = (cadence: ReviewCadence): ReviewStepId[] => STEPS[cadence];
-
-/** The half a step belongs to, or null in a pass that has no halves. */
-export const halfOf = (cadence: ReviewCadence, id: ReviewStepId): ReviewHalf | null =>
-  cadence === 'weekly' ? HALVES[id] : null;
 
 const byDue = (a: Item, b: Item) =>
   (dueDate(a)?.getTime() ?? 0) - (dueDate(b)?.getTime() ?? 0);
@@ -308,7 +282,6 @@ export function buildReview(cadence: ReviewCadence, input: ReviewInput): ReviewS
       clear: id === 'load'
         ? !overloaded(content.items, input)
         : nothing || reports,
-      half: halfOf(cadence, id),
     };
   });
 }

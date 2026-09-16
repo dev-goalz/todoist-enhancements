@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { addDays, nextMonday } from 'date-fns';
 import { Icon } from './Icon';
 import { useT } from '@/hooks/useT';
@@ -7,7 +7,9 @@ import { useConfirm } from './overlays/Confirm';
 import { withEstimate, effectiveEstimate } from '@/domain/estimates';
 import { EstimateField } from './EstimateField';
 import { DateField } from './DateField';
-import { formatRelativeDay, toApiDate } from '@/domain/dates';
+import { formatDayOrName, toApiDate } from '@/domain/dates';
+import { readNaturalDate } from '@/domain/nlp';
+import { weekLabel } from '@/domain/types';
 import { markerStyle } from '@/domain/colors';
 import { dropMutation, type DropTarget } from '@/domain/dnd';
 import { updateItem, moveItem } from '@/api/commands';
@@ -34,8 +36,15 @@ export function TaskActions({ item, childrenOf, onOpen }: TaskActionsProps) {
   const snapshot = useStore((s) => s.snapshot);
   const apply = useStore((s) => s.apply);
   const toast = useStore((s) => s.toast);
+  const dateFormat = useStore((s) => s.prefs.dateFormat);
   const [menu, setMenu] = useState<'none' | 'schedule' | 'more' | 'estimate' | 'move'>('none');
+  /** What has been typed into the schedule field, before it is a date. */
+  const [typed, setTyped] = useState('');
   const ref = useRef<HTMLSpanElement>(null);
+
+  // A menu that opens holding the last thing typed into it is a menu lying
+  // about what it will do if you press Enter.
+  useEffect(() => { if (menu !== 'schedule') setTyped(''); }, [menu]);
 
   useEffect(() => {
     if (menu === 'none') return;
@@ -85,6 +94,51 @@ export function TaskActions({ item, childrenOf, onOpen }: TaskActionsProps) {
 
     toast(t('task.movedTo', { destination }), () => {
       void apply([updateItem(item.id, before)], patch(before));
+    });
+  }
+
+  /**
+   * The date somebody typed, read the way the composer reads one.
+   *
+   * Three shortcuts answer most days and a calendar answers the rest, but
+   * neither answers "next sunday" as fast as typing it. The field is the first
+   * thing in the menu and has the focus, so the whole gesture is: click, type,
+   * Enter.
+   */
+  const reading = useMemo(() => (typed.trim() ? readNaturalDate(typed) : null), [typed]);
+
+  function commitTyped() {
+    if (!reading) return;
+    setMenu('none');
+    setTyped('');
+
+    const iso = reading.date;
+    const before = { due: item.due, labels: item.labels };
+    const update = {
+      due: {
+        date: iso,
+        timezone: item.due?.timezone ?? null,
+        string: iso,
+        lang: item.due?.lang ?? 'en',
+        is_recurring: item.due?.is_recurring ?? false,
+      },
+      /* A real date and the week tag on the same task is the contradiction the
+         app reports rather than resolves, so giving it a day takes the tag off
+         — exactly as every other way of dating a task here does. */
+      labels: item.labels.filter((l) => l.toLowerCase() !== weekLabel().toLowerCase()),
+    };
+    const patch = (fields: Record<string, unknown>) => (snap: Snapshot): Snapshot => ({
+      ...snap,
+      items: { ...snap.items, [item.id]: { ...snap.items[item.id], ...fields } as Item },
+    });
+
+    void apply([updateItem(item.id, update)], patch(update)).then(() => {
+      toast(
+        t('task.movedTo', {
+          destination: formatDayOrName(new Date(iso.slice(0, 10)), locale, dateFormat),
+        }),
+        () => { void apply([updateItem(item.id, before)], patch(before)); },
+      );
     });
   }
 
@@ -162,8 +216,30 @@ export function TaskActions({ item, childrenOf, onOpen }: TaskActionsProps) {
       </button>
 
       {menu === 'schedule' && (
-        <div className="popover rowmenu" role="menu">
-          <h5>{t('task.schedule')}</h5>
+        <div className="popover rowmenu schedulemenu" role="menu">
+          {/* Typing is the fastest way to say "next sunday", so it is the
+              first thing here and it already has the caret. */}
+          <input
+            className="schedulefield"
+            autoFocus
+            value={typed}
+            placeholder={t('task.typeDate')}
+            aria-label={t('task.schedule')}
+            onChange={(e) => setTyped(e.target.value)}
+            onKeyDown={(e) => {
+              e.stopPropagation();
+              if (e.key === 'Enter') { e.preventDefault(); commitTyped(); }
+              if (e.key === 'Escape') setMenu('none');
+            }}
+          />
+          {typed.trim() !== '' && (
+            <p className={`schedulepreview${reading ? '' : ' none'}`}>
+              {reading
+                ? formatDayOrName(new Date(reading.date.slice(0, 10)), locale, dateFormat)
+                : t('task.dateNotRead')}
+            </p>
+          )}
+
           <button
             className="opt"
             onClick={() => void moveTo({ kind: 'today' }, t('common.today'))}
@@ -185,10 +261,10 @@ export function TaskActions({ item, childrenOf, onOpen }: TaskActionsProps) {
             <span><Icon name="upcoming" size="sm" /> {t('task.nextWeek')}</span>
           </button>
 
-          {/* Three shortcuts answer most days and none of them answers "the
-              14th". The calendar is the same one the composer uses, so picking
-              a date from a row and picking one while writing the task are the
-              same control rather than two that drifted apart. */}
+          {/* And a calendar, for a date it is easier to point at than to
+              name. The same one the composer uses, so picking a date from a
+              row and picking one while writing the task are the same control
+              rather than two that drifted apart. */}
           <div className="rowmenu-date">
             <DateField
               value={item.due?.date.slice(0, 10) ?? ''}
@@ -197,7 +273,7 @@ export function TaskActions({ item, childrenOf, onOpen }: TaskActionsProps) {
               onChange={(next) => {
                 if (!next) { schedule(null); return; }
                 const day = new Date(`${next}T00:00:00`);
-                void moveTo({ kind: 'day', date: day }, formatRelativeDay(day, locale));
+                void moveTo({ kind: 'day', date: day }, formatDayOrName(day, locale, dateFormat));
               }}
             />
           </div>

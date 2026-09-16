@@ -3,6 +3,7 @@ import type { ViewId } from '@/domain/types';
 import { DEFAULT_WEEK_LABEL, defaultViewPrefs, type ViewPrefs } from '@/domain/types';
 import { defaultConflictSettings, type ConflictSettings } from '@/domain/conflicts';
 import { defaultCapacity, type DailyCapacity } from '@/domain/load';
+import { DATE_FORMATS, type DateFormat } from '@/domain/dates';
 
 /** The views that make sense as a landing page: no view that needs an id. */
 export const HOME_VIEWS = [
@@ -37,7 +38,7 @@ export const isHomeView = (value: unknown): value is HomeView =>
  * ways to draw it — a week that excludes today, or a week that still contains
  * it — so both are offered rather than one being guessed at.
  */
-export const WEEK_LAYOUTS = ['unified', 'split', 'splitWithToday'] as const;
+export const WEEK_LAYOUTS = ['unified', 'splitWithToday', 'split'] as const;
 export type WeekLayout = (typeof WEEK_LAYOUTS)[number];
 
 export const isWeekLayout = (value: unknown): value is WeekLayout =>
@@ -56,6 +57,8 @@ export interface Preferences {
    */
   naturalDates: boolean;
   hour12: boolean;
+  /** The order the parts of a written-out date appear in. */
+  dateFormat: DateFormat;
   dailyCapacity: DailyCapacity;
   weeklyCapacityOverride: number | null;
   showQuickGroup: boolean;
@@ -92,6 +95,7 @@ export const defaultPreferences = (locale: Locale): Preferences => ({
   homepage: 'week',
   naturalDates: true,
   hour12: false,
+  dateFormat: 'dmy',
   dailyCapacity: defaultCapacity(),
   weeklyCapacityOverride: null,
   showQuickGroup: true,
@@ -127,6 +131,9 @@ export function hydratePreferences(stored: unknown, locale: Locale): Preferences
     // A homepage stored by an older build may name a view that no longer exists.
     homepage: isHomeView(s.homepage) ? s.homepage : base.homepage,
     density: isDensity(s.density) ? s.density : base.density,
+    dateFormat: (DATE_FORMATS as readonly string[]).includes(s.dateFormat as string)
+      ? (s.dateFormat as DateFormat)
+      : base.dateFormat,
     weekLayout: isWeekLayout(s.weekLayout) ? s.weekLayout : base.weekLayout,
     weekLabel: typeof s.weekLabel === 'string' && s.weekLabel.trim()
       ? s.weekLabel.trim()
