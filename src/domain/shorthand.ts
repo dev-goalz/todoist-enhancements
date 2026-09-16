@@ -92,12 +92,18 @@ export function parseShorthand(
   const labels: string[] = [];
   let minutes: number | null = null;
 
-  /* Each reader takes the first candidate it has not been turned down on, so
-     refusing one occurrence hands the reading to the next rather than giving
-     the name no project at all. */
+  /*
+   * Each reader takes the LAST candidate it has not been turned down on.
+   *
+   * A name carries one project and one priority, so two of either is somebody
+   * changing their mind: the one just typed is the one meant, and the earlier
+   * one stops being marked. Refusing the newer hands the reading back to the
+   * older, which is the same rule read from the other end.
+   */
   /* `#Project/Section` names both at once, the way the move menu offers both:
      a task that belongs in a section of a project should not need the project
      said here and the section chosen in a field underneath. */
+  let projectClaim: { start: number; length: number; tone: string } | null = null;
   for (const project of raw.matchAll(/#([\p{L}\p{N}_-]+)(\/([\p{L}\p{N}_-]+))?/gu)) {
     if (isRefused(project.index!, project[0].length)) continue;
     const wanted = fold(project[1]);
@@ -106,33 +112,37 @@ export function parseShorthand(
     );
     if (!found) continue;
     projectId = found.id;
+    sectionId = null;
 
-    if (project[3]) {
-      const named = fold(project[3]);
-      const section = Object.values(snapshot.sections).find(
+    const named = project[3] ? fold(project[3]) : null;
+    const section = named
+      ? Object.values(snapshot.sections).find(
         (s) => s.project_id === found.id && !s.is_deleted && !s.is_archived
           && fold(s.name) === named,
-      );
-      /* A section that does not exist leaves the project claimed and the rest
-         of the text alone: half a match is still a project you named. */
-      if (section) {
-        sectionId = section.id;
-        claim(project.index!, project[0].length, 'project', colorValue(found.color));
-        break;
-      }
-      claim(project.index!, project[1].length + 1, 'project', colorValue(found.color));
-      break;
-    }
+      )
+      : undefined;
+    if (section) sectionId = section.id;
 
-    claim(project.index!, project[0].length, 'project', colorValue(found.color));
-    break;
+    /* A section that does not exist leaves the project claimed and the rest of
+       the text alone: half a match is still a project you named. */
+    projectClaim = {
+      start: project.index!,
+      length: named && !section ? project[1].length + 1 : project[0].length,
+      tone: colorValue(found.color),
+    };
+  }
+  if (projectClaim) {
+    claim(projectClaim.start, projectClaim.length, 'project', projectClaim.tone);
   }
 
+  let flagClaim: { start: number; length: number } | null = null;
   for (const flag of raw.matchAll(/\bp([1-4])\b/gi)) {
     if (isRefused(flag.index!, flag[0].length)) continue;
     priority = Number(flag[1]) as DisplayPriority;
-    claim(flag.index!, flag[0].length, 'priority', `var(--p${priority})`);
-    break;
+    flagClaim = { start: flag.index!, length: flag[0].length };
+  }
+  if (flagClaim) {
+    claim(flagClaim.start, flagClaim.length, 'priority', `var(--p${priority})`);
   }
 
   for (const label of raw.matchAll(/@([\p{L}\p{N}_-]+)/gu)) {
@@ -147,14 +157,15 @@ export function parseShorthand(
   /* An estimate in brackets. Anything `parseDurationInput` understands goes
      inside them — (25), (1h30), (90 min) — and anything it does not is left
      alone, because brackets in a task name are usually just brackets. */
+  let durationClaim: { start: number; length: number } | null = null;
   for (const bracket of raw.matchAll(/\(([^)]{1,12})\)/g)) {
     if (isRefused(bracket.index!, bracket[0].length)) continue;
     const value = parseDurationInput(bracket[1]);
     if (value === null) continue;
     minutes = value;
-    claim(bracket.index!, bracket[0].length, 'duration');
-    break;
+    durationClaim = { start: bracket.index!, length: bracket[0].length };
   }
+  if (durationClaim) claim(durationClaim.start, durationClaim.length, 'duration');
 
   /* The recurrence is read before the date and out of the same text, because
      the two compete for the same words: "every monday" contains a weekday the

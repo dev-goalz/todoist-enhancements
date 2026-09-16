@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { Overlay } from './Overlay';
 import { Icon } from '../Icon';
 import { useT } from '@/hooks/useT';
 import { useData } from '@/hooks/useData';
+import { navigate } from '@/hooks/useRoute';
 import { useStore } from '@/store/store';
 import { useConfirm } from './Confirm';
 import {
@@ -96,6 +98,36 @@ interface TaskDetailProps {
   onOpen: (id: string) => void;
 }
 
+/** The id a subtask row registers under, in both of its roles. */
+export const subtaskRowId = (id: string): string => `subtask:${id}`;
+
+/**
+ * A subtask row that can be picked up and dropped onto another.
+ *
+ * It registers in the app's one drag context rather than opening a second, the
+ * way the sidebar's project rows do, and it is both the handle and the landing
+ * place — dropping one on another puts it in that one's position.
+ */
+function SubtaskRow({ id, children }: { id: string; children: React.ReactNode }) {
+  const rowId = subtaskRowId(id);
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: rowId });
+  const { setNodeRef: setDropRef, isOver } = useDroppable({ id: rowId });
+  const { t } = useT();
+
+  return (
+    <div
+      ref={setDropRef}
+      className={`subtaskrow${isDragging ? ' lifting' : ''}${isOver && !isDragging ? ' landing' : ''}`}
+    >
+      {/* Dragged by its handle, so the row's own controls keep working. */}
+      <span className="drag subdrag" title={t('detail.reorderSubtask')} ref={setNodeRef} {...attributes} {...listeners}>
+        <Icon name="drag" size="sm" />
+      </span>
+      {children}
+    </div>
+  );
+}
+
 /**
  * The full task.
  *
@@ -141,6 +173,26 @@ export function TaskDetail({ taskId, onClose, onOpen }: TaskDetailProps) {
     el.style.height = `${el.scrollHeight + border}px`;
   }, []);
 
+  /**
+   * The same for the description, so leaving the field does not change the
+   * height of the panel.
+   *
+   * The editor was a fixed 96px box that scrolled, and the rendered view below
+   * it is as tall as the text — so clicking away from a long description made
+   * the panel jump open under the pointer, which is what it looked like when
+   * clicking "add subtask" right after pasting one in. Edited and rendered are
+   * the same height now, and nothing moves on the way between them.
+   */
+  const fitDescription = useCallback(() => {
+    const el = descriptionRef.current;
+    if (!el) return;
+    const style = getComputedStyle(el);
+    const border =
+      Number.parseFloat(style.borderTopWidth) + Number.parseFloat(style.borderBottomWidth);
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight + border}px`;
+  }, []);
+
   // Re-seed the editable fields whenever a different task is opened.
   useEffect(() => {
     if (!item) return;
@@ -160,6 +212,7 @@ export function TaskDetail({ taskId, onClose, onOpen }: TaskDetailProps) {
   // Measured after layout, and again once webfonts settle, because the text
   // height is not final on the first paint.
   useLayoutEffect(fitTitle, [fitTitle, title, taskId]);
+  useLayoutEffect(fitDescription, [fitDescription, description, editingDescription, taskId]);
   useEffect(() => {
     void document.fonts?.ready.then(fitTitle);
   }, [fitTitle]);
@@ -176,6 +229,17 @@ export function TaskDetail({ taskId, onClose, onOpen }: TaskDetailProps) {
   const deadline = deadlineDate(item);
   const subtasks = childrenOf(item.id);
   const { minutes, computed } = effectiveEstimate(item, childrenOf);
+  /* The parents above this task, outermost first. Guarded against a cycle the
+     server should never send but which would otherwise hang the panel. */
+  const ancestors: Item[] = [];
+  for (
+    let parent = item.parent_id ? snapshot.items[item.parent_id] : null;
+    parent && ancestors.length < 10;
+    parent = parent.parent_id ? snapshot.items[parent.parent_id] : null
+  ) {
+    ancestors.unshift(parent);
+  }
+
   const project = snapshot.projects[item.project_id];
   const section = item.section_id ? snapshot.sections[item.section_id] : null;
   const comments = Object.values(snapshot.notes)
@@ -208,15 +272,42 @@ export function TaskDetail({ taskId, onClose, onOpen }: TaskDetailProps) {
   return (
     <Overlay open onClose={onClose} label={t('detail.title')}>
       <header className="detail-top">
-        <div className="crumb">
+        {/*
+          * Where the task is, as the way back rather than as a caption.
+          *
+          * A subtask opened from its parent used to be a dead end: the panel
+          * said which project it was in and nothing about the task it belongs
+          * to, and closing was the only way back up. Each ancestor is a link
+          * now, the project included. The section is not one, because there is
+          * no page that is a section.
+          */}
+        <nav className="crumb" aria-label={t('detail.whereItIs')}>
           {project && (
-            <>
+            <button
+              className="crumblink"
+              onClick={() => { onClose(); navigate('project', project.id); }}
+            >
               <span className="hash" style={markerStyle(project.color)}>#</span>
               {project.name}
+            </button>
+          )}
+          {section && (
+            <>
+              <span className="crumb-sep">/</span>
+              <span className="crumbhere">{section.name}</span>
             </>
           )}
-          {section && <span className="crumb-sep">/ {section.name}</span>}
-        </div>
+          {ancestors.map((parent) => (
+            <span className="crumbstep" key={parent.id}>
+              <span className="crumb-sep">/</span>
+              <button className="crumblink" onClick={() => onOpen(parent.id)}>
+                {parent.content}
+              </button>
+            </span>
+          ))}
+          <span className="crumb-sep">/</span>
+          <span className="crumbhere" aria-current="page">{item.content}</span>
+        </nav>
 
         <div className="detail-tools">
           <div className="menuwrap">
@@ -352,7 +443,7 @@ export function TaskDetail({ taskId, onClose, onOpen }: TaskDetailProps) {
             </h3>
 
             {subtasks.map((child) => (
-              <div className="subtaskrow" key={child.id}>
+              <SubtaskRow id={child.id} key={child.id}>
                 <span
                   className={`check p${toDisplayPriority(child.priority)}`}
                   role="checkbox"
@@ -368,7 +459,7 @@ export function TaskDetail({ taskId, onClose, onOpen }: TaskDetailProps) {
                     {child.content}
                   </span>
                 </button>
-              </div>
+              </SubtaskRow>
             ))}
 
             {addingSubtask ? (

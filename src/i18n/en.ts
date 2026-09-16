@@ -213,6 +213,8 @@ export const en = {
   'detail.labels': 'Tags',
   'detail.estimate': 'Estimate',
   'detail.subtasks': 'Subtasks',
+  'detail.whereItIs': 'Where this task is',
+  'detail.reorderSubtask': 'Drag to reorder',
   'detail.addSubtask': 'Add subtask',
   'detail.comments': 'Comments',
   'detail.noComments': 'No comments yet.',

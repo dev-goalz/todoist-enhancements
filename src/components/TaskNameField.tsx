@@ -140,10 +140,8 @@ export function TaskNameField({
           }));
       }
 
-      const matching = projects.filter((p) => squash(p.name).includes(squash(head)));
-      const inside = head === '' ? [] : projects.flatMap((p) => sectionsOf(p.id)
-        .filter((s) => squash(s.name).includes(squash(head)))
-        .map((s) => ({
+      const sectionOption = (p: { id: string; name: string; color: string }) =>
+        (s: { id: string; name: string }) => ({
           id: s.id,
           name: `${p.name}/${s.name}`,
           label: s.name,
@@ -151,10 +149,17 @@ export function TaskNameField({
           color: p.color,
           sigil: '#' as const,
           isNew: false,
-        })));
+        });
 
-      return [
-        ...matching.slice(0, 6).map((p) => ({
+      const matching = projects.filter((p) => squash(p.name).includes(squash(head)));
+      const matched = new Set(matching.map((p) => p.id));
+
+      /* A project brings its sections with it, whether or not their names have
+         anything to do with what was typed: the point of naming the project is
+         to be shown where inside it the task could go. Each project is followed
+         by its own, so the list reads as the tree it is. */
+      const withSections = matching.flatMap((p) => [
+        {
           id: p.id,
           name: p.name,
           label: p.name,
@@ -162,9 +167,21 @@ export function TaskNameField({
           color: p.color,
           sigil: '#' as const,
           isNew: false,
-        })),
-        ...inside,
-      ].slice(0, 8);
+        },
+        /* Nothing typed yet is a list of projects, not of every section in
+           the account: the sections arrive once a project is being named. */
+        ...(head === '' ? [] : sectionsOf(p.id).map(sectionOption(p))),
+      ]);
+
+      /* And a section whose own name matches, in a project whose name does
+         not: "relire" should find it without naming the project first. */
+      const elsewhere = head === '' ? [] : projects
+        .filter((p) => !matched.has(p.id))
+        .flatMap((p) => sectionsOf(p.id)
+          .filter((s) => squash(s.name).includes(squash(head)))
+          .map(sectionOption(p)));
+
+      return [...withSections, ...elsewhere].slice(0, 8);
     }
     const known = Object.values(snapshot.labels)
       .filter((l) => !l.is_deleted && !l.name.startsWith('est-'))

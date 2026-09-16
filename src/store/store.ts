@@ -4,7 +4,7 @@ import { ApiError, NotConnectedError } from '@/api/client';
 import { applySync, sync } from '@/api/sync';
 import {
   sendCommands, command, type Command,
-  addItem, completeItem, deleteItem, moveItem, newUuid,
+  addItem, completeItem, deleteItem, moveItem, newUuid, reorderItems,
   uncompleteItem, updateItem,
 } from '@/api/commands';
 import * as idb from '@/db/idb';
@@ -36,6 +36,28 @@ const provisionalDue = (due: Item['due'] | undefined): Item['due'] => {
   if (due.date) return due;
   return { ...due, date: toApiDate(new Date()), timezone: due.timezone ?? null };
 };
+
+/**
+ * The position a new task takes among the ones it is joining.
+ *
+ * Todoist appends, so the optimistic row has to append too — a row that draws
+ * itself at the top and is corrected a moment later reads as a bug even when
+ * the result is right.
+ */
+function nextChildOrder(
+  snapshot: Snapshot,
+  parentId: string | null,
+  projectId: string,
+  sectionId: string | null,
+): number {
+  const siblings = Object.values(snapshot.items).filter((item) => {
+    if (item.is_deleted) return false;
+    if (parentId) return item.parent_id === parentId;
+    return !item.parent_id && item.project_id === projectId
+      && (item.section_id ?? null) === sectionId;
+  });
+  return siblings.reduce((top, item) => Math.max(top, item.child_order), 0) + 1;
+}
 
 const PREFS_KEY = 'preferences';
 /** How often the app asks Todoist what changed while the tab is in the foreground. */
@@ -170,6 +192,8 @@ interface AppState {
    * different parent or workspace is a different act and is not this.
    */
   reorderProjects: (ids: string[]) => Promise<void>;
+  /** Puts a parent's subtasks in the given order. */
+  reorderSubtasks: (ids: string[]) => Promise<void>;
   /**
    * Puts a project inside another one, or back at the top level.
    *
@@ -856,7 +880,16 @@ export const useStore = create<AppState>((set, get) => ({
       deadline: (args.deadline as Item['deadline']) ?? null,
       duration: null,
       labels: (args.labels as string[]) ?? [],
-      child_order: 0,
+      /* Last among its siblings, which is where a task just added belongs and
+         where the server is about to put it. Left at 0 the row appeared at the
+         top of its parent for the half second before the sync answered, and
+         then jumped. */
+      child_order: nextChildOrder(
+        get().snapshot,
+        (args.parent_id as string) ?? null,
+        String(args.project_id ?? get().snapshot.user?.inbox_project_id ?? ''),
+        (args.section_id as string) ?? null,
+      ),
       day_order: -1,
       collapsed: false,
       checked: false,
@@ -1001,6 +1034,23 @@ export const useStore = create<AppState>((set, get) => ({
         if (next[id]) next[id] = { ...next[id], child_order };
       }
       return { ...snapshot, projects: next };
+    });
+  },
+
+  async reorderSubtasks(ids) {
+    const items = get().snapshot.items;
+    const moved = ids
+      .map((id, index) => ({ id, child_order: index + 1 }))
+      .filter(({ id, child_order }) => items[id] && items[id].child_order !== child_order);
+
+    if (moved.length === 0) return;
+
+    await get().apply([reorderItems(moved)], (snapshot) => {
+      const next = { ...snapshot.items };
+      for (const { id, child_order } of moved) {
+        if (next[id]) next[id] = { ...next[id], child_order };
+      }
+      return { ...snapshot, items: next };
     });
   },
 
