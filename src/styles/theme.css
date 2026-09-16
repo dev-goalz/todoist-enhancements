@@ -1248,7 +1248,7 @@
 .namefield .composer-name{position:relative;z-index:1;width:100%;background:transparent}
 
 .nmark{
-  color:transparent;background:var(--subtle);
+  color:transparent;background:var(--hover);
   /* Air around the marked word, and nothing else.
      The padding is given back by the negative margin, so the mirror still
      lines up character for character with the input in front of it and the
@@ -1257,21 +1257,54 @@
      the line allows; horizontally the ceiling is the width of a real space —
      two marked words separated by one space have 4px between them to share,
      and a background that took more than half of it each would meet its
-     neighbour. The ring is the field's own colour, drawn outside the box, and
-     it is what keeps them apart: a shadow takes no width. */
-  padding:4px 2px;margin:0 -2px;border-radius:7px;
-  box-shadow:0 0 0 1px var(--surface);
+     neighbour. The rest of the air is a shadow, which takes no width at all:
+     2px of the mark's own colour spread past the box, then a hairline of the
+     field's colour outside that, which is what keeps two neighbouring marks
+     from reading as one long block. */
+  padding:5px 2px;margin:0 -2px;border-radius:8px;
+  box-shadow:0 0 0 2px var(--hover), 0 0 0 3px var(--surface);
 }
-/* A date is the one the parser guessed rather than one you spelled out, so it
-   is the one that has to be impossible to miss. */
-.nmark.date{background:var(--accent-tint)}
-.nmark.project{background:var(--tag-blue-soft)}
-.nmark.label{background:var(--tag-purple-soft)}
-.nmark.priority{background:var(--accent-tint)}
-.nmark.duration{background:var(--tag-teal-soft)}
-/* A repeat is the one reading that changes the task forever rather than once,
-   so it is marked more firmly than a date is. */
-.nmark.recurrence{background:var(--tag-lavender-soft);box-shadow:0 0 0 2px var(--tag-lavender-soft)}
+
+/*
+ * Two colours, not six.
+ *
+ * The marks used to carry one tint each — blue for a project, purple for a
+ * tag, teal for a duration — which made a single short name look like a box of
+ * highlighters and said nothing useful: the fields underneath already show
+ * what was understood, in the product's own colours. What matters while typing
+ * is a different question, which is whether the app read a thing you wrote on
+ * purpose or made a guess about your prose. So: syntax is quiet, guesses wear
+ * the accent, and only the second kind is usually worth refusing.
+ */
+.nmark.project,
+.nmark.label,
+.nmark.priority,
+.nmark.duration{
+  background:var(--hover);
+  box-shadow:0 0 0 2px var(--hover), 0 0 0 3px var(--surface);
+}
+.nmark.date,
+.nmark.recurrence{
+  background:var(--accent-soft);
+  box-shadow:0 0 0 2px var(--accent-soft), 0 0 0 3px var(--surface);
+}
+
+/*
+ * A reading that was turned down.
+ *
+ * The words stay exactly as they were typed — it is only the app's reading of
+ * them that is gone — so the mark loses its background and keeps a dotted line
+ * to say that something was refused here and can be had back with a click.
+ * Underline rather than a border: a border would add to the mirror's height
+ * and slide every mark off its word.
+ */
+.nmark.refused{
+  background:none;box-shadow:none;
+  text-decoration:underline dotted;
+  text-decoration-color:var(--muted);
+  text-decoration-thickness:1px;
+  text-underline-offset:3px;
+}
 
 /* The list that opens on @ or #. */
 .namepicker{
