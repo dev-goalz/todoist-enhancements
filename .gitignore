@@ -12,3 +12,6 @@ todoist-enhancements-*.zip
 
 # Communication drafts stay on the machine, not in the repository.
 REDDIT-POST.md
+
+# Built by `npm run package`, for uploading.
+*.zip

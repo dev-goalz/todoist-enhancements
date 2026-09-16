@@ -1,7 +1,7 @@
 {
   "name": "todoist-enhancements",
   "private": true,
-  "version": "1.1.1",
+  "version": "1.2.0",
   "engines": {
     "node": ">=20"
   },
@@ -10,6 +10,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "icons": "node scripts/make-icons.mjs",
+    "package": "npm run build && node scripts/package.mjs",
     "preview": "vite preview",
     "typecheck": "tsc -b --noEmit"
   },
