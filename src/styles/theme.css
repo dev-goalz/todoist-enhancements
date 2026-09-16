@@ -313,8 +313,8 @@
 .group.collapsed{margin-top:22px;margin-bottom:22px}
 
 /* Meaning lives in the heading, not in a coloured panel. */
-.group.accent-late .gname{color:var(--p1)}
-.group.accent-late .gheadblock{border-bottom-color:var(--p1)}
+.group.accent-late .gname{color:var(--late-dark)}
+.group.accent-late .gheadblock{border-bottom-color:var(--late)}
 .group.accent-quick .gname{color:var(--p3)}
 .group.accent-quick .gheadblock{border-bottom-color:var(--p3)}
 
@@ -328,7 +328,7 @@
 }
 .repeatdot .ic{width:11px;height:11px;stroke-width:2}
 .repeatdot.today{color:var(--p3);background:rgba(36,111,224,.14)}
-.repeatdot.late{color:var(--p1);background:rgba(209,69,59,.14)}
+.repeatdot.late{color:var(--late);background:rgba(209,69,59,.14)}
 .repeatdot.future{color:var(--muted);background:var(--subtle)}
 
 /* Row controls, with the subtask chevron at the end where it cannot break
@@ -674,10 +674,10 @@
   border:0;
   border-radius:var(--r-lg);
 }
-.group.accent-late{background:var(--accent-wash)}
+.group.accent-late{background:var(--late-wash)}
 .group.accent-quick{background:var(--wash-quick-deep)}
 /* A count sitting on a wash needs its own chip, or it disappears. */
-.group.accent-late .gcount{color:var(--accent-dark);background:var(--accent-badge)}
+.group.accent-late .gcount{color:var(--late-dark);background:var(--late-badge)}
 /* Inside a callout the heading no longer needs its own rule to stand out. */
 .group.accent-late .gheadblock,
 .group.accent-quick .gheadblock{border-bottom-color:transparent}
@@ -1551,6 +1551,55 @@
 .denscard.selected .denslabel{color:var(--accent-dark)}
 .denscard.selected .denslabel .ic{color:var(--accent)}
 .denscard:not(.selected) .denslabel .ic{display:none}
+
+/* ---------- Accent ----------
+   The same shape as the density cards, because it answers the same kind of
+   question: which of these, shown rather than described. Each card carries
+   its own data-accent, so every var() inside it resolves to that accent's
+   family in whichever scheme the page is wearing — the card is a window, not
+   a swatch pretending to be one. */
+.accentchoice{display:flex;gap:var(--s3);margin-top:var(--s3);flex-wrap:wrap}
+.accentcard{
+  flex:0 1 132px;display:grid;gap:8px;padding:10px;
+  border:1px solid var(--border);border-radius:var(--r-md);
+  background:var(--surface);text-align:left;
+}
+.accentcard:hover{border-color:var(--border-strong)}
+.accentcard:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.accentcard.selected{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+
+.accentpreview{
+  display:flex;flex-direction:column;gap:9px;
+  height:86px;padding:10px;overflow:hidden;
+  border-radius:var(--r-sm);background:var(--accent-wash);
+}
+.accentrow{display:flex;align-items:center;gap:7px}
+/* The checkbox is where the accent is seen most often and read fastest. */
+.accentcheck{
+  width:10px;height:10px;flex:0 0 auto;border-radius:var(--r-sm);
+  border:1.5px solid var(--p1);background:var(--accent-tint);
+}
+.accentcheck.quiet{border-color:var(--check-quiet);background:transparent}
+.accentbar{height:5px;flex:1;border-radius:3px;background:var(--border-strong)}
+.accentbar.short{flex:0 1 58%}
+/* The count that sits on a washed section: the badge is the token most
+   easily got wrong, so it is the one shown. */
+.accentflag{
+  width:14px;height:8px;flex:0 0 auto;border-radius:var(--r-full);
+  background:var(--accent-badge);
+}
+/* The one solid fill in the product, with the white glyph it has to carry. */
+.accentbtn{
+  height:16px;margin-top:auto;border-radius:var(--r-sm);background:var(--accent);
+}
+
+.accentlabel{
+  display:flex;align-items:center;justify-content:space-between;gap:6px;
+  color:var(--text);font-size:var(--fs-13);font-weight:600;
+}
+.accentcard.selected .accentlabel{color:var(--accent-dark)}
+.accentcard.selected .accentlabel .ic{color:var(--accent)}
+.accentcard:not(.selected) .accentlabel .ic{display:none}
 
 /* ==========================================================================
    Review

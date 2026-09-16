@@ -23,7 +23,7 @@ import { ReviewView } from './views/ReviewView';
 import { SettingsView } from './views/SettingsView';
 import { ConnectView } from './views/ConnectView';
 import { useStore } from './store/store';
-import type { Theme } from './store/prefs';
+import type { Accent, Theme } from './store/prefs';
 import { useT } from './hooks/useT';
 import { useData } from './hooks/useData';
 import { navigate, useRoute, type Route } from './hooks/useRoute';
@@ -42,6 +42,7 @@ export function App() {
   const locale = useStore((s) => s.prefs.locale);
   const homepage = useStore((s) => s.prefs.homepage);
   const theme = useStore((s) => s.prefs.theme);
+  const accent = useStore((s) => s.prefs.accent);
   const toasts = useStore((s) => s.toasts);
   const dismissToast = useStore((s) => s.dismissToast);
 
@@ -69,6 +70,7 @@ export function App() {
   }, [ready, homepage]);
   useEffect(() => { document.documentElement.lang = locale; }, [locale]);
   useEffect(() => applyTheme(theme), [theme]);
+  useEffect(() => applyAccent(accent), [accent]);
   useEffect(() => (connected ? startPolling() : undefined), [connected, startPolling]);
 
   // Search and quick add are reached constantly, so both have a shortcut.
@@ -216,12 +218,43 @@ function applyTheme(theme: Theme): (() => void) | undefined {
     const resolved = theme === 'system' ? (media.matches ? 'dark' : 'light') : theme;
     root.dataset.theme = resolved;
     try { localStorage.setItem('theme', theme); } catch { /* storage may be blocked */ }
+    paintBrowserChrome();
   };
   apply();
   // Only "system" is a standing question. A fixed choice has nothing to listen for.
   if (theme !== 'system') return undefined;
   media.addEventListener('change', apply);
   return () => media.removeEventListener('change', apply);
+}
+
+/**
+ * Writes the chosen brand colour onto the document.
+ *
+ * Only the name travels. Which nine values that name stands for — and which
+ * of its two schemes applies — is the stylesheet's business, which is what
+ * keeps a green accent from being a green mark on surfaces still tinted red.
+ */
+function applyAccent(accent: Accent): void {
+  document.documentElement.dataset.accent = accent;
+  try { localStorage.setItem('accent', accent); } catch { /* storage may be blocked */ }
+  paintBrowserChrome();
+}
+
+/**
+ * Hands the accent to the browser's own chrome — the address bar on Android,
+ * the task switcher, the title bar of an installed window.
+ *
+ * Read back off the document rather than mapped here, so there is still only
+ * one place that knows what a colour name means. The manifest's `theme_color`
+ * cannot follow: it is a static file read at install time, so it keeps the
+ * default red and names the app rather than this device's preference.
+ */
+function paintBrowserChrome(): void {
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (!meta) return;
+  const accent = getComputedStyle(document.documentElement)
+    .getPropertyValue('--accent').trim();
+  if (accent) meta.setAttribute('content', accent);
 }
 
 function AppShell({

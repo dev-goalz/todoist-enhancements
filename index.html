@@ -34,6 +34,10 @@
         var dark = choice === 'dark' ||
           (choice !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
         document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+        /* The accent, for the same reason: a red flash before the green
+           arrives is the same wrong first paint in a different colour. */
+        var accent = localStorage.getItem('accent');
+        if (accent) document.documentElement.dataset.accent = accent;
       } catch (e) {}
     </script>
     <meta name="description" content="Enhanced for Todoist is an independent project. It is not created by, affiliated with, or supported by Todoist. An alternative, local-first client built around planning a week." />

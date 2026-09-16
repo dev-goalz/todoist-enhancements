@@ -8,8 +8,8 @@ import { formatDuration, parseDurationInput } from '@/domain/estimates';
 import { defaultCapacity, weeklyCapacity, type DailyCapacity } from '@/domain/load';
 import { DATE_FORMATS, formatDay, type DateFormat } from '@/domain/dates';
 import {
-  DENSITIES, HOME_VIEWS, THEMES, WEEK_LAYOUTS,
-  type Density, type HomeView, type Theme, type WeekLayout,
+  ACCENTS, DENSITIES, HOME_VIEWS, THEMES, WEEK_LAYOUTS,
+  type Accent, type Density, type HomeView, type Theme, type WeekLayout,
 } from '@/store/prefs';
 import { DEFAULT_WEEK_LABEL } from '@/domain/types';
 import type { Locale, TranslationKey } from '@/i18n';
@@ -173,6 +173,13 @@ export function SettingsView() {
                   value: theme,
                   label: t(`settings.theme.${theme}` as TranslationKey),
                 }))}
+              />
+            </Row>
+
+            <Row title={t('settings.accent')} hint={t('settings.accentHint')} wide>
+              <AccentChoice
+                value={prefs.accent}
+                onChange={(value) => setPrefs({ accent: value })}
               />
             </Row>
 
@@ -424,6 +431,54 @@ function DensityChoice({
           </span>
           <span className="denslabel">
             {t(`settings.density.${option}` as TranslationKey)}
+            {value === option && <Icon name="check" size="sm" />}
+          </span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * The accent, shown rather than named.
+ *
+ * A row of colour names asks you to imagine the app; each card here is the
+ * app, in miniature — a task line with its checkbox, its priority flag and
+ * the one solid button the colour actually lands on. The card carries its own
+ * `data-accent`, so what it draws is literally what choosing it would draw,
+ * in whichever scheme the page is currently wearing.
+ */
+function AccentChoice({
+  value, onChange,
+}: { value: Accent; onChange: (next: Accent) => void }) {
+  const { t } = useT();
+  return (
+    <div className="accentchoice" role="radiogroup" aria-label={t('settings.accent')}>
+      {ACCENTS.map((option) => (
+        <button
+          key={option}
+          type="button"
+          role="radio"
+          aria-checked={value === option}
+          aria-label={t(`settings.accent.${option}` as TranslationKey)}
+          className={`accentcard${value === option ? ' selected' : ''}`}
+          data-accent={option}
+          onClick={() => onChange(option)}
+        >
+          <span className="accentpreview" aria-hidden="true">
+            <span className="accentrow">
+              <i className="accentcheck" />
+              <i className="accentbar" />
+              <i className="accentflag" />
+            </span>
+            <span className="accentrow">
+              <i className="accentcheck quiet" />
+              <i className="accentbar short" />
+            </span>
+            <i className="accentbtn" />
+          </span>
+          <span className="accentlabel">
+            {t(`settings.accent.${option}` as TranslationKey)}
             {value === option && <Icon name="check" size="sm" />}
           </span>
         </button>

@@ -39,6 +39,18 @@ export type Theme = (typeof THEMES)[number];
 export const isTheme = (value: unknown): value is Theme =>
   typeof value === 'string' && (THEMES as readonly string[]).includes(value);
 
+/**
+ * The brand colour.
+ *
+ * A name, not a hex value: a theme is a family of nine tokens in two schemes,
+ * and the stylesheet is the only thing that should know what any of them are.
+ */
+export const ACCENTS = ['red', 'orange', 'green', 'blue', 'purple'] as const;
+export type Accent = (typeof ACCENTS)[number];
+
+export const isAccent = (value: unknown): value is Accent =>
+  typeof value === 'string' && (ACCENTS as readonly string[]).includes(value);
+
 export const isHomeView = (value: unknown): value is HomeView =>
   typeof value === 'string' && (HOME_VIEWS as readonly string[]).includes(value);
 
@@ -81,6 +93,8 @@ export interface Preferences {
   density: Density;
   /** The colour scheme; "system" follows the device. */
   theme: Theme;
+  /** The brand colour. Every accent exists in both schemes. */
+  accent: Accent;
   /** Filters, grouping, sorting and mode are remembered per view. */
   views: Record<string, ViewPrefs>;
   upcomingHorizonDays: number;
@@ -118,6 +132,7 @@ export const defaultPreferences = (locale: Locale): Preferences => ({
   sidebarCollapsed: false,
   density: 'comfortable',
   theme: 'system',
+  accent: 'red',
   views: {},
   upcomingHorizonDays: 15,
   weekLayout: 'unified',
@@ -148,6 +163,7 @@ export function hydratePreferences(stored: unknown, locale: Locale): Preferences
     homepage: isHomeView(s.homepage) ? s.homepage : base.homepage,
     density: isDensity(s.density) ? s.density : base.density,
     theme: isTheme(s.theme) ? s.theme : base.theme,
+    accent: isAccent(s.accent) ? s.accent : base.accent,
     dateFormat: (DATE_FORMATS as readonly string[]).includes(s.dateFormat as string)
       ? (s.dateFormat as DateFormat)
       : base.dateFormat,
