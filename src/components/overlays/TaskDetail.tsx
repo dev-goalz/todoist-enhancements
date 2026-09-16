@@ -249,6 +249,14 @@ export function TaskDetail({ taskId, onClose, onOpen }: TaskDetailProps) {
    * of the name and written to the field it belongs to; what they do not claim
    * stays in the name exactly as it was typed.
    */
+  /** Whether the title holds an edit that has not been saved yet. */
+  const titleDirty = title !== item.content;
+
+  const cancelTitle = () => {
+    setTitle(item.content);
+    setRefusals([]);
+  };
+
   const commitTitle = () => {
     const read = parseShorthand(title, snapshot, naturalDates, refusals);
     const next = read.content.trim();
@@ -421,7 +429,7 @@ export function TaskDetail({ taskId, onClose, onOpen }: TaskDetailProps) {
                 value={title}
                 onChange={setTitle}
                 onSubmit={commitTitle}
-                onBlur={commitTitle}
+                onCancel={cancelTitle}
                 placeholder={t('detail.title')}
                 ariaLabel={t('detail.title')}
                 snapshot={snapshot}
@@ -431,6 +439,35 @@ export function TaskDetail({ taskId, onClose, onOpen }: TaskDetailProps) {
                 multiline
                 fieldClassName="titlefield"
               />
+
+              {/*
+                * An edit to the title is finished on purpose.
+                *
+                * It used to save itself when the field lost the caret, which
+                * is fine for a name and wrong for a name that also carries a
+                * date, a project and a priority: clicking anywhere rewrote
+                * four things at once, and the panel on the right only caught
+                * up afterwards. Enter saves, Escape puts it back, and the two
+                * buttons say so for anyone who does neither.
+                */}
+              {titleDirty && (
+                <div className="titleactions">
+                  {/* Pressed before the field can lose the caret, or the blur
+                      would land on the field and the click on nothing. */}
+                  <button
+                    className="btn sm"
+                    onMouseDown={(e) => { e.preventDefault(); cancelTitle(); }}
+                  >
+                    {t('common.cancel')}
+                  </button>
+                  <button
+                    className="btn sm accent"
+                    onMouseDown={(e) => { e.preventDefault(); commitTitle(); }}
+                  >
+                    {t('common.save')}
+                  </button>
+                </div>
+              )}
 
               {editingDescription ? (
                 <textarea

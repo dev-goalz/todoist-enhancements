@@ -855,3 +855,9 @@
 .namefield.multiline .titlefield:focus{
   outline:none;border-color:var(--border-strong);background:transparent;
 }
+
+/* ---------- Finishing an edit to a title ---------- */
+/* Under the field, on the field's own left edge, and only while there is
+   something to save. */
+.titleactions{display:flex;gap:var(--s2);margin:var(--s2) 0 0}
+.titleactions .btn{min-height:28px;padding:0 12px;font-size:var(--fs-13)}

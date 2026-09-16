@@ -1267,8 +1267,14 @@
      outside the box — a shadow takes no width, so it is what keeps two marks
      that nearly touch reading as two. */
   background:color-mix(in srgb, var(--mark) 14%, var(--surface));
-  padding:4px 2px;margin:0 -2px;border-radius:5px;
-  box-shadow:0 0 0 1px var(--surface);
+  /* The fill stops at the word.
+     Inner air and the gap between two marks come out of the same four pixels —
+     the width of one space — so padding the sides is taken straight out of the
+     gap: at 2px each, two marked words 4px apart had half a pixel of daylight
+     between them. Spent on the gap instead, every mark is separated from the
+     next by a whole space, and the air the mark itself needs is taken where
+     there is room for it, above and below. */
+  padding:5px 0;margin:0;border-radius:5px;
 }
 
 /* A guess has no colour of its own. A duration has none either: an estimate is

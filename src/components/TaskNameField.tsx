@@ -48,6 +48,8 @@ interface TaskNameFieldProps {
   fieldClassName?: string;
   /** Called when the field loses the caret, for a title that saves on blur. */
   onBlur?: () => void;
+  /** Escape, when no list is open: for a field whose edit can be abandoned. */
+  onCancel?: () => void;
   /** The readings turned down so far, as positions in `value`. */
   refusals: TextRange[];
   /**
@@ -77,7 +79,7 @@ interface TaskNameFieldProps {
  */
 export function TaskNameField({
   value, onChange, onSubmit, placeholder, ariaLabel, snapshot, naturalDates,
-  refusals, onRefusals, multiline = false, fieldClassName, onBlur,
+  refusals, onRefusals, multiline = false, fieldClassName, onBlur, onCancel,
 }: TaskNameFieldProps) {
   const { t } = useT();
   const createLabel = useStore((s) => s.createLabel);
@@ -409,6 +411,13 @@ export function TaskNameField({
                 return;
               }
             }
+          }
+
+          if (e.key === 'Escape' && onCancel) {
+            e.preventDefault();
+            e.stopPropagation();
+            onCancel();
+            return;
           }
 
           if (e.key === 'Enter') {
