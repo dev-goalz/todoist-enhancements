@@ -88,11 +88,12 @@ priorities at once.
 
 ### Adding tasks
 
-Type something like `Call Marc tomorrow at 9h p1 #Work @quick`. The date, the
-project, the priority and the tag are highlighted inside the field as you type,
-so you can see what will be picked up before you save. Typing `@` or `#` opens
-the matching list. Subtasks can be typed in the same dialog and are created
-along with the parent.
+Type something like `Call Marc tomorrow at 9h p1 #Work @quick (25)`. The date,
+the project, the priority, the tag and the estimate in brackets are highlighted
+inside the field as you type, and each one fills in the field it belongs to
+underneath, so the dialog can never be holding two different tasks at once.
+Typing `@` or `#` opens the matching list. Subtasks can be typed in the same
+dialog and are created along with the parent.
 
 Reading dates from the text can be switched off in settings. `#project`, `p1`
 and `@tag` are explicit syntax and always apply.
@@ -110,23 +111,31 @@ A planning tool is only worth having if you look at it, and looking at
 everything at once is what stops people. The review asks one question at a
 time, in an order, with an end.
 
-The daily pass takes a few minutes: what is late, what is sitting in the
-Inbox, what you committed to this week without naming a day, what has no
-estimate yet, and what today holds. Each step asks the question that step is
-actually about — a task is in the Inbox because it has no project, so that
-step files it rather than dating it — and pressing an answer makes exactly the
-change dragging the task there would make. A row that has been answered leaves
-the list; the answers that leave it there are marked, because those are
-decisions rather than states.
+**The daily pass** takes a few minutes: what is late, your mail, what is
+sitting in the Inbox, what you committed to this week without naming a day,
+what has no estimate yet, and what today holds against the hours you have.
+Mail comes before the Inbox because a good part of what is in the Inbox
+arrived as an email — the app cannot see your mail, so it says what to do with
+it and takes your word for it.
 
-The weekly pass is longer: what you finished — in a list you can order by date
-or by priority, with nothing crossed out, because a review is no place to read
-your own week struck through — then the same week in numbers, then what
-slipped, what is still unfiled, what is in play with no estimate (with the
-field right there on the row), which projects have gone quiet, and what is
-parked in Someday. When the last question is answered it says so and stops.
+**The weekly pass** closes the week and then opens the next one. Closing: what
+you finished — in a list you can order by date or by priority, with nothing
+crossed out, because a review is no place to read your own week struck through
+— then the same week in numbers, what is late, and which projects have gone
+quiet. Opening: mail, the Inbox, a look back through Someday, what you are
+committing to this week, the estimates that are missing, and finally what the
+coming week weighs against the capacity you set. It used to end on Someday,
+which is the longest list in the app and exactly where people stop.
 
-Any task in a review can be ticked off. Sometimes the answer is that you
+You choose which week you are closing. Arrows step back, and it opens on the
+week that has just ended while the new one is still young — a weekly review is
+almost never done inside the week it is about.
+
+Each step asks the question that step is actually about — a task is in the
+Inbox because it has no project, so that step files it rather than dating it —
+and pressing an answer makes exactly the change dragging the task there would
+make. Estimates are typed into a list that holds still and saves in one go.
+Any task in a review can be ticked off; sometimes the answer is that you
 already did it.
 
 It stores nothing of its own. There is no per-project review interval here,
@@ -142,10 +151,20 @@ own hidden state is a review that breaks the promise the rest of this makes.
   Display control. A board with more columns than fit scrolls sideways.
 - Drag and drop, where each destination has one fixed meaning and every drop
   can be undone.
-- Search (`⌘K`) across tasks, projects and tags, usable from the keyboard.
+- Search (`⌘K`) across tasks, projects, tags and every view in the app, usable
+  from the keyboard. Typing "settings" takes you to settings.
+- Undo on the keyboard (`⌘Z`): a move, a completion, a deletion, a drop. A
+  deleted task comes back with its subtasks.
+- `⌘`-click picks out several tasks at once; a bar at the foot of the window
+  moves or deletes the lot in one request.
+- A task's date can be typed from its row — "tomorrow", "next sunday", or a
+  bare "15" for the next three fifteenths — or picked from a calendar.
+- Projects nest by dragging them to the right in the sidebar, or onto a folder.
 - Markdown in descriptions, rendered in the list and in the task panel.
 - Offline support: changes are queued and sent when you reconnect.
-- English and French.
+- English and French, and settings for the things people disagree about: which
+  order a date is written in, whether Today has a page of its own beside My
+  week, and what the "anytime this week" tag is called on your own board.
 
 ---
 
