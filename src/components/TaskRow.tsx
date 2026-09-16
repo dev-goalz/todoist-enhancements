@@ -217,6 +217,7 @@ export function TaskRow({
           {showSubtasks && openChildren.length > 0 && (
             <button
               className="iconbtn subcaret"
+              data-tour="subtasks"
               aria-expanded={expanded}
               aria-label={t('detail.subtasks')}
               title={t('detail.subtasks')}

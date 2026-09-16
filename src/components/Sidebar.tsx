@@ -136,6 +136,7 @@ export function Sidebar({
     const button = (isOver: boolean) => (
       <button
         className={`navitem${isOver ? ' dropping' : ''}`}
+        data-tour={view === 'review' ? 'review' : undefined}
         aria-current={route.view === view ? 'page' : undefined}
         onClick={() => navigate(view)}
       >

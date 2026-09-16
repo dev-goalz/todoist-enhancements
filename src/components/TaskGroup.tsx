@@ -55,7 +55,12 @@ export function TaskGroup({
   const className = `group${mark === 'late' ? ' accent-late' : mark === 'quick' ? ' accent-quick' : ''}`;
 
   const body = (isOver: boolean) => (
-    <section className={`${className}${isOver ? ' dropping' : ''}`}>
+    <section
+      className={`${className}${isOver ? ' dropping' : ''}`}
+      /* The tour points at these by name rather than by class, so renaming a
+         class cannot silently leave it highlighting the wrong thing. */
+      data-tour={mark === 'quick' ? 'quick' : undefined}
+    >
       {/* A section just created has no name yet, and it is the heading that
           carries the field you name it in. */}
       {(title || sectionId) && (

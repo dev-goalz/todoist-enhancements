@@ -29,7 +29,9 @@ import type { TranslationKey } from '@/i18n';
 
 const STEPS = ['welcome', 'appearance', 'density', 'week'] as const;
 
-export function Walkthrough({ open, onDone }: { open: boolean; onDone: () => void }) {
+export function Walkthrough({
+  open, onDone, onTour,
+}: { open: boolean; onDone: () => void; onTour: () => void }) {
   const { t } = useT();
   const prefs = useStore((s) => s.prefs);
   const setPrefs = useStore((s) => s.setPrefs);
@@ -39,9 +41,13 @@ export function Walkthrough({ open, onDone }: { open: boolean; onDone: () => voi
   const step = STEPS[index];
   const last = index === STEPS.length - 1;
 
-  const finish = () => {
+  /* Finishing records the account and hands over to the tour. Skipping records
+     it too and stops there: somebody who skipped the setup did not ask to be
+     shown round either. */
+  const finish = (tour: boolean) => {
     markOnboarded(user?.id);
-    onDone();
+    if (tour) onTour();
+    else onDone();
   };
 
   return (
@@ -60,7 +66,7 @@ export function Walkthrough({ open, onDone }: { open: boolean; onDone: () => voi
               <i key={id} className={at === index ? 'on' : at < index ? 'done' : undefined} />
             ))}
           </span>
-          <button className="wt-skip" onClick={finish}>
+          <button className="wt-skip" onClick={() => finish(false)}>
             {t('walkthrough.skip')}
           </button>
         </div>
@@ -126,7 +132,7 @@ export function Walkthrough({ open, onDone }: { open: boolean; onDone: () => voi
           </button>
           <button
             className="btn primary"
-            onClick={() => (last ? finish() : setIndex((at) => at + 1))}
+            onClick={() => (last ? finish(true) : setIndex((at) => at + 1))}
           >
             {last ? t('walkthrough.done') : t('walkthrough.next')}
           </button>

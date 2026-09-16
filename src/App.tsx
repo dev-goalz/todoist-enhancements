@@ -23,6 +23,7 @@ import { ReviewView } from './views/ReviewView';
 import { SettingsView } from './views/SettingsView';
 import { ConnectView } from './views/ConnectView';
 import { Walkthrough } from './components/overlays/Walkthrough';
+import { Tour } from './components/overlays/Tour';
 import { hasOnboarded } from './domain/onboarding';
 import { useStore } from './store/store';
 import type { Accent, Theme } from './store/prefs';
@@ -50,6 +51,7 @@ export function App() {
   const userId = useStore((s) => s.snapshot.user?.id);
   const demo = useStore((s) => s.demo);
   const walkthroughOpen = useStore((s) => s.walkthrough);
+  const [tourOpen, setTourOpen] = useState(false);
   const setWalkthrough = useStore((s) => s.setWalkthrough);
   const toasts = useStore((s) => s.toasts);
   const dismissToast = useStore((s) => s.dismissToast);
@@ -83,16 +85,23 @@ export function App() {
   useEffect(() => applyAccent(accent, accentCustom), [accent, accentCustom, theme]);
   useEffect(() => (connected ? startPolling() : undefined), [connected, startPolling]);
 
-  /* The first run, for a real account that has not had one. The demo is
-     excluded on purpose: it is the thing people open to decide whether they
-     want the app at all, and a setup dialog in front of it answers a question
-     they have not asked yet.
+  /* The first run — for a real account that has not had one, and for the demo,
+     which is where most people meet this app first and is exactly where a tour
+     has something to point at.
 
-     Opened here and closed by the dialog, so asking for it again from
-     Settings goes through the same door. */
+     Opened here and closed by the dialog, so asking for it again from Settings
+     goes through the same door. */
   useEffect(() => {
-    if (ready && connected && !demo && !hasOnboarded(userId)) setWalkthrough(true);
+    if (ready && (connected || demo) && !hasOnboarded(userId)) setWalkthrough(true);
   }, [ready, connected, demo, userId, setWalkthrough]);
+
+  /* The tour runs over My week, so the setup dialog hands over by going there
+     first. A frame later, or it measures a page that has not been laid out. */
+  const startTour = () => {
+    setWalkthrough(false);
+    navigate('week');
+    window.setTimeout(() => setTourOpen(true), 60);
+  };
 
   // Search and quick add are reached constantly, so both have a shortcut.
   useEffect(() => {
@@ -176,7 +185,12 @@ export function App() {
 
       {/* Outside the shell, and above it. The choices it offers change the
           page behind it, which is the point of showing them here. */}
-      <Walkthrough open={walkthroughOpen} onDone={() => setWalkthrough(false)} />
+      <Walkthrough
+        open={walkthroughOpen}
+        onDone={() => setWalkthrough(false)}
+        onTour={startTour}
+      />
+      <Tour open={tourOpen} onDone={() => setTourOpen(false)} />
 
       {toasts.length > 0 && (
         <div className="toasts">
