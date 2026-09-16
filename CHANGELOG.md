@@ -6,6 +6,68 @@ Every line is marked with what it is: 🆕 something the app did not do before,
 🎨 something it already did, drawn, worded or done differently, 🐛 something
 that was wrong. New first, then changed, then fixed.
 
+## 1.5.0
+
+Reading a task's name: a guess you can turn down, an hour you can name, and a
+title that does all of it too.
+
+🆕 **A reading can be refused, one occurrence at a time.** "Weekly review
+tous les lundi" had its first word read as a repeat rule — a fair guess and
+the wrong one, and until now the only way to say so was to rename the task
+until the parser stopped seeing it. Clicking a mark, or pressing Backspace
+against it, turns those words back into ordinary text and takes the value out
+of the field it had filled; clicking them again brings the reading back. It
+refuses that one occurrence and no other, so "Weekly review weekly" can keep
+its title and still repeat.
+
+🆕 **A name can say the section as well as the project.** `#Project/Section`
+fills both, and typing `/` after a project turns the list into that project's
+sections — all of them, whether or not their names have anything to do with
+what was typed, because naming the project is asking to be shown where inside
+it the task could go.
+
+🆕 **A time of day, in words or in figures.** "demain 12:14" is tomorrow at
+12:14; "demain matin" is nine, "demain soir" is seven, and "ce soir" is today
+at seven. The hours are Todoist's own, so the same words typed here and there
+land on the same minute.
+
+🆕 **A task's title reads what the composer reads.** Editing it recognises a
+date, a repeat, a project, a section, a tag, a priority and an estimate, marks
+them as you type, and writes them to their fields when the title is saved —
+with Enter, or with the Save beside it. Escape puts the title back.
+
+🆕 **Subtasks can be put in order**, by dragging them past each other in the
+task panel.
+
+🎨 **The marks are drawn in the colour of what they name.** A project's is
+the project's colour, a tag's is the tag's, a priority's runs from P1 red to P4
+grey. A date and a repeat wear the accent, because those two are guesses about
+prose rather than something written on purpose — and they are the ones usually
+worth refusing.
+
+🎨 **The line above a task is a trail rather than a caption.** A subtask used
+to be a dead end: the panel named its project and said nothing about the task
+it belongs to, so closing was the only way back. Every ancestor is a link now,
+the project included.
+
+🎨 **A second project replaces the first.** A name carries one project, one
+priority, one day: two of any of them is somebody changing their mind, so the
+last one typed is the one that counts, and refusing it hands the reading back
+to the one before. Tags are the exception — a task can carry several, so every
+one of them is marked.
+
+🐛 **A new subtask is drawn where it will end up.** It was created at the
+top of its parent's list and jumped to the bottom when the sync answered.
+
+🐛 **A drop lands where it was aimed.** Four different things are dragged in
+this app and they all shared one context, so a region of the page behind the
+task panel could win a drop meant for a row inside it. Each drag is now only
+offered what it could possibly mean.
+
+🐛 **The description keeps one height.** It was a fixed box that scrolled
+while the rendered text below it was as tall as it needed to be, so clicking
+away from a long description opened the panel under the pointer.
+
 ## 1.4.0
 
 Sending a task where it belongs: a section by name, a project by drag, and the
