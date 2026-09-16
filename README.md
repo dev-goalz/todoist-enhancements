@@ -183,6 +183,9 @@ possible intent, and nothing changes until you choose one.
   of them.
 - A task's date can be typed from its row — "tomorrow", "next sunday", or a
   bare "15" for the next three fifteenths — or picked from a calendar.
+- Where a task lives is typed from the same row: the move menu narrows on a
+  project's name or a section's as you type, and a section is a destination in
+  its own right. A project page leads with the tasks that are in no section.
 - Projects nest by dragging them to the right in the sidebar, or onto a folder.
 - Light, dark, or whichever the device is set to, following it when it
   changes. Ten accent colours, including one you pick yourself, each of them

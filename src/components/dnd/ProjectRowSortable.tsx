@@ -37,12 +37,20 @@ export function ProjectRowSortable({
 }: ProjectRowSortableProps) {
   const id = projectRowId(projectId);
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id, disabled: !sortable });
-  const { setNodeRef: setDropRef, isOver } = useDroppable({ id, disabled: !sortable });
+  /* A task in flight is not looking for a position in this list, it is looking
+     for a project to live in — and that destination is the droppable wrapped
+     around this row. Both used to stay open, the pointer landed on whichever
+     of the two the collision happened to return first, and a task dropped on a
+     project drew the reorder bar and went nowhere. */
+  const taskDragging = useStore((s) => s.draggingTaskId !== null);
+  const { setNodeRef: setDropRef, isOver } = useDroppable({
+    id, disabled: !sortable || taskDragging,
+  });
   const nesting = useStore((s) => s.nesting);
 
   if (!sortable) return <div className={`navrow${className}`}>{children}</div>;
 
-  const landing = isOver && !isDragging;
+  const landing = isOver && !isDragging && !taskDragging;
 
   return (
     <div

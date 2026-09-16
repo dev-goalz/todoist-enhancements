@@ -5,7 +5,7 @@ import {
 } from '@dnd-kit/core';
 import type { Modifier } from '@dnd-kit/core';
 import { useStore } from '@/store/store';
-import { decodeTarget, dropMutation } from '@/domain/dnd';
+import { decodeTarget, dropMutation, moveArgs } from '@/domain/dnd';
 import { siblingOrder } from '@/store/selectors';
 import { updateItem, moveItem } from '@/api/commands';
 import type { Item } from '@/domain/types';
@@ -48,13 +48,6 @@ export const dragClock = {
  * outliner uses, and it costs no second handle and no modifier key.
  */
 export const NEST_THRESHOLD_PX = 28;
-
-/**
- * Todoist's `item_move` takes exactly one destination. A section implies its
- * project, so the section is sent when there is one and the project otherwise.
- */
-const moveArgs = (move: { project_id?: string; section_id?: string | null }) =>
-  move.section_id ? { section_id: move.section_id } : { project_id: move.project_id };
 
 /**
  * Drag and drop across the whole app.

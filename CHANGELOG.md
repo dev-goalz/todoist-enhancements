@@ -6,6 +6,38 @@ Every line is marked with what it is: 🆕 something the app did not do before,
 🎨 something it already did, drawn, worded or done differently, 🐛 something
 that was wrong. New first, then changed, then fixed.
 
+## 1.4.0
+
+Sending a task where it belongs: a section by name, a project by drag, and the
+project's own tasks where you left them.
+
+🆕 **A task can be sent to a section, and found by typing.** The move menu
+opened on a list of projects and nothing else, so a task that belonged in
+"Site vitrine / In review" took a move and then a drag down the page. Sections
+are destinations now, and the menu opens with the caret in a field: type any
+part of the section's name or its project's, press Enter, and the first match
+takes it. Choosing the project itself means the project with no section, which
+is how a task comes back out of one.
+
+🎨 **A project's own tasks come first, with no heading.** Tasks in no
+section were collected at the foot of the page under "No section" — a
+container nobody made, holding the loose, recent work where nobody looks. They
+lead the page now, above the sections and unlabelled, which is how the board
+has always shown them.
+
+🐛 **A task dropped on a project in the sidebar lands there.** A sidebar
+row is two things at once, somewhere to file a task and a position in a list,
+and both readings stayed open during every drag: a task let go over a project
+hit whichever one the collision happened to return first, drew the bar that
+belongs to reordering, and went nowhere. Each reading now stands down for the
+drag it has no answer for, so a project still reorders and a task still lands.
+
+🐛 **Undoing a move from the row menu puts the task back.** The undo was
+sent as an update, which carries neither a project nor a section, so it put the
+task back on screen and left it where it had been sent on the server. It is
+sent as a move now. The same menu also sent a section and a project together
+to an API that takes exactly one destination.
+
 ## 1.3.0
 
 Editing a selection by more than its date, a caret that stays where it was
