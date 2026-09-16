@@ -9,6 +9,7 @@ import { EstimateField } from './EstimateField';
 import { DateField } from './DateField';
 import { formatDay, formatDayOrName, toApiDate } from '@/domain/dates';
 import { readNaturalDate } from '@/domain/nlp';
+import { dueForDate, readRecurrence } from '@/domain/recurrence';
 import { dateSuggestions, type DateSuggestion } from '@/domain/dateWords';
 import { weekLabel } from '@/domain/types';
 import { markerStyle } from '@/domain/colors';
@@ -46,6 +47,7 @@ export function TaskActions({ item, childrenOf, onOpen }: TaskActionsProps) {
   const confirm = useConfirm();
   const snapshot = useStore((s) => s.snapshot);
   const apply = useStore((s) => s.apply);
+  const setRecurrence = useStore((s) => s.setRecurrence);
   const toast = useStore((s) => s.toast);
   const dateFormat = useStore((s) => s.prefs.dateFormat);
   const [menu, setMenu] = useState<'none' | 'schedule' | 'more' | 'estimate' | 'move'>('none');
@@ -120,12 +122,22 @@ export function TaskActions({ item, childrenOf, onOpen }: TaskActionsProps) {
    */
   const reading = useMemo(() => (typed.trim() ? readNaturalDate(typed) : null), [typed]);
 
+  /* The same field reads a repeat rule. It has to: this menu is the fastest
+     way to a task's date, and "every monday" is a date in the sense that
+     matters — the answer to when does this happen. */
+  const repeat = useMemo(() => (typed.trim() ? readRecurrence(typed) : null), [typed]);
+
   /* What the words could still turn into. Narrowing as you type is the whole
      point: "to" is both today and tomorrow, "tom" is only one of them. */
   const suggestions = useMemo(() => dateSuggestions(typed, locale), [typed, locale]);
   const chosen = pick >= 0 ? suggestions[pick] : undefined;
 
   function commitTyped(override?: DateSuggestion) {
+    /* A rule wins over a date. Nothing else can have been meant: a suggestion
+       list narrowing on "every" has nothing in it, and the words that make a
+       recurrence are the same words that make a single day. */
+    if (!override && repeat) return commitRecurrence();
+
     const iso = override?.date ?? chosen?.date ?? currentReading()?.date;
     if (!iso) return;
     setMenu('none');
@@ -133,13 +145,9 @@ export function TaskActions({ item, childrenOf, onOpen }: TaskActionsProps) {
 
     const before = { due: item.due, labels: item.labels };
     const update = {
-      due: {
-        date: iso,
-        timezone: item.due?.timezone ?? null,
-        string: iso,
-        lang: item.due?.lang ?? 'en',
-        is_recurring: item.due?.is_recurring ?? false,
-      },
+      // Keeps the rule when there is one, so dating an occurrence of a
+      // recurring task moves that occurrence instead of ending the series.
+      due: dueForDate(item.due, iso),
       /* A real date and the week tag on the same task is the contradiction the
          app reports rather than resolves, so giving it a day takes the tag off
          — exactly as every other way of dating a task here does. */
@@ -163,18 +171,40 @@ export function TaskActions({ item, childrenOf, onOpen }: TaskActionsProps) {
   /** The reading the field currently stands for, so the commit path has one. */
   function currentReading() { return reading; }
 
+  /**
+   * Replacing the repeat rule from the same field.
+   *
+   * No date goes with it. Todoist works out which day the new rule lands on,
+   * and sending one of our own alongside would fix the first occurrence to a
+   * date the rule may not even contain.
+   */
+  function commitRecurrence() {
+    if (!repeat) return;
+    setMenu('none');
+    setTyped('');
+
+    const before = { due: item.due, labels: item.labels };
+    const patch = (fields: Record<string, unknown>) => (snap: Snapshot): Snapshot => ({
+      ...snap,
+      items: { ...snap.items, [item.id]: { ...snap.items[item.id], ...fields } as Item },
+    });
+
+    /* A real date and the week tag on the same task is the contradiction the
+       app reports rather than resolves, and a rule is a date in that sense. */
+    const labels = item.labels.filter((l) => l.toLowerCase() !== weekLabel().toLowerCase());
+    if (labels.length !== item.labels.length) void updateTask(item.id, { labels });
+
+    void setRecurrence(item.id, repeat).then(() => {
+      toast(t('task.repeats', { rule: repeat.string }), () => {
+        void apply([updateItem(item.id, before)], patch(before));
+      });
+    });
+  }
+
   function schedule(date: Date | null) {
     setMenu('none');
     void updateTask(item.id, {
-      due: date
-        ? {
-            date: toApiDate(date),
-            timezone: item.due?.timezone ?? null,
-            string: toApiDate(date),
-            lang: item.due?.lang ?? 'en',
-            is_recurring: item.due?.is_recurring ?? false,
-          }
-        : null,
+      due: date ? dueForDate(item.due, toApiDate(date)) : null,
     });
   }
 

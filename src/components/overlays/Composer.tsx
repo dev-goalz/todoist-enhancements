@@ -10,7 +10,7 @@ import { useStore } from '@/store/store';
 import { estimateLabel } from '@/domain/estimates';
 import { markerStyle } from '@/domain/colors';
 import { toTodoistPriority, type DisplayPriority } from '@/domain/types';
-import { parseShorthand } from '@/domain/shorthand';
+import { parseShorthand, type Shorthand } from '@/domain/shorthand';
 
 interface ComposerProps {
   open: boolean;
@@ -44,6 +44,7 @@ export function Composer({
   const [sectionId, setSectionId] = useState('');
   const [priority, setPriority] = useState<DisplayPriority>(4);
   const [date, setDate] = useState('');
+  const [recurrence, setRecurrence] = useState<Shorthand['recurrence']>(null);
   const [deadline, setDeadline] = useState('');
   const [labels, setLabels] = useState<string[]>([]);
   const [minutes, setMinutes] = useState<number | null>(null);
@@ -64,6 +65,7 @@ export function Composer({
     setProjectId(defaultProjectId ?? snapshot.user?.inbox_project_id ?? '');
     setSectionId(defaultSectionId ?? '');
     setDate(defaultDate ?? '');
+    setRecurrence(null);
     setDeadline('');
   }, [open, defaultProjectId, defaultSectionId, defaultDate, snapshot.user?.inbox_project_id]);
 
@@ -94,10 +96,13 @@ export function Composer({
    * afterwards stays changed until the name says something new.
    */
   const { date: readDate, projectId: readProject, priority: readPriority,
-    minutes: readMinutes } = parsed;
+    minutes: readMinutes, recurrence: readRepeat } = parsed;
   const readLabels = parsed.labels.join('\u0000');
 
   useEffect(() => { if (readDate) setDate(readDate); }, [readDate]);
+  /* Depends on the rule's text, not on the object: the parser builds a new one
+     on every keystroke and the effect would never stop firing. */
+  useEffect(() => { if (readRepeat) setRecurrence(readRepeat); }, [readRepeat?.string]);
   useEffect(() => { if (readProject) setProjectId(readProject); }, [readProject]);
   useEffect(() => { if (readPriority) setPriority(readPriority); }, [readPriority]);
   useEffect(() => { if (readMinutes !== null) setMinutes(readMinutes); }, [readMinutes]);
@@ -118,6 +123,7 @@ export function Composer({
        argument value" to — which is a task that never gets created. */
     const targetProject = projectId || snapshot.user?.inbox_project_id;
     const dueDate = date;
+    const repeat = recurrence;
     const pending = subtaskDraft.trim();
     const allSubtasks = pending ? [...subtasks, pending] : subtasks;
 
@@ -128,9 +134,15 @@ export function Composer({
       section_id: sectionId || undefined,
       priority: toTodoistPriority(priority),
       labels: allLabels,
-      due: dueDate
-        ? { date: dueDate, timezone: null, string: dueDate, lang: 'en', is_recurring: false }
-        : undefined,
+      /* A recurrence is sent as the rule and nothing else. Todoist resolves
+         it, and a date sent alongside would pin the first occurrence to
+         whatever this device worked out — which is the one number the app has
+         no business computing. */
+      due: repeat
+        ? { string: repeat.string, lang: repeat.lang, is_recurring: true }
+        : dueDate
+          ? { date: dueDate, timezone: null, string: dueDate, lang: 'en', is_recurring: false }
+          : undefined,
       deadline: deadline ? { date: deadline, lang: 'en' } : undefined,
       subtasks: allSubtasks,
     });
@@ -160,9 +172,28 @@ export function Composer({
         />
 
         <div className="composer-fields">
+          {/* A repeat answers the same question a date does, so it stands in
+              the date's own slot rather than beside it — a task cannot be both
+              on Tuesday and every Monday, and two fields offering to make it
+              both is the contradiction, not the fix. */}
           <span className="cfield">
-            <span className="fselect-label">{t('composer.date')}</span>
-            <DateField value={date} onChange={setDate} label={t('composer.date')} />
+            <span className="fselect-label">
+              {recurrence ? t('detail.recurring') : t('composer.date')}
+            </span>
+            {recurrence ? (
+              <button
+                type="button"
+                className="crepeat"
+                onClick={() => setRecurrence(null)}
+                title={t('composer.clearRepeat')}
+              >
+                <Icon name="repeat" size="sm" />
+                <span>{recurrence.string}</span>
+                <Icon name="close" size="sm" />
+              </button>
+            ) : (
+              <DateField value={date} onChange={setDate} label={t('composer.date')} />
+            )}
           </span>
 
           <span className="cfield">

@@ -10,11 +10,85 @@ import {
 } from '@/domain/estimates';
 import { deadlineDate, dueDate, formatRelativeDay, toApiDate } from '@/domain/dates';
 import { renderMarkdown } from '@/domain/markdown';
+import { dueForDate, readRecurrence } from '@/domain/recurrence';
 import { EstimateField } from '../EstimateField';
 import { Select } from '../Select';
 import { DateField } from '../DateField';
 import { markerStyle } from '@/domain/colors';
-import { toDisplayPriority, toTodoistPriority, type DisplayPriority } from '@/domain/types';
+import { toDisplayPriority, toTodoistPriority, type DisplayPriority, type Item } from '@/domain/types';
+
+/**
+ * The repeat rule, as a rule rather than as a reading of one.
+ *
+ * What is typed here is handed to Todoist whole: it resolves the rule, and it
+ * is the only thing that can, since where the next occurrence falls depends on
+ * when this one is completed. The field's whole job is to refuse a phrase the
+ * app cannot vouch for rather than send it and find out — a rule read wrongly
+ * does not fail, it moves every future occurrence and says nothing.
+ *
+ * Emptying it stops the repeat without losing the date: the occurrence the
+ * task is sitting on becomes its due date, once.
+ */
+function RecurrenceField({ item }: { item: Item }) {
+  const { t } = useT();
+  const updateTask = useStore((s) => s.updateTask);
+  const setRecurrence = useStore((s) => s.setRecurrence);
+  const rule = item.due?.is_recurring ? item.due.string : '';
+  const [draft, setDraft] = useState(rule);
+  const [refused, setRefused] = useState(false);
+
+  // A rule Todoist rewrote on save — "every mon" comes back "every monday" —
+  // is the truth, so the field follows the task rather than the typing.
+  useEffect(() => { setDraft(rule); setRefused(false); }, [rule, item.id]);
+
+  function commit() {
+    const typed = draft.trim();
+    if (typed === rule.trim()) { setRefused(false); return; }
+
+    if (!typed) {
+      setRefused(false);
+      if (!item.due?.is_recurring) return;
+      // The occurrence it is on becomes the date it keeps.
+      const date = item.due.date;
+      void updateTask(item.id, {
+        due: { date, timezone: item.due.timezone, string: date, lang: item.due.lang, is_recurring: false },
+      });
+      return;
+    }
+
+    const read = readRecurrence(typed);
+    if (!read) { setRefused(true); return; }
+    setRefused(false);
+    void setRecurrence(item.id, read);
+  }
+
+  return (
+    <div className="repeatfield">
+      <span className="repeatinput">
+        <Icon name="repeat" size="sm" />
+        <input
+          value={draft}
+          onChange={(event) => { setDraft(event.target.value); setRefused(false); }}
+          onBlur={commit}
+          onKeyDown={(event) => {
+            /* Enter commits outright rather than blurring and letting the blur
+               commit: a refusal has to be able to keep the caret in the field
+               that is being refused, and blurring gives it away first. */
+            if (event.key === 'Enter') { event.preventDefault(); commit(); }
+            if (event.key === 'Escape') { setDraft(rule); setRefused(false); }
+          }}
+          placeholder={t('detail.recurringPlaceholder')}
+          aria-label={t('detail.recurring')}
+          aria-invalid={refused}
+        />
+      </span>
+      {refused && <small className="repeatrefused">{t('detail.recurringRefused')}</small>}
+      {!refused && item.due?.is_recurring && item.due.string.includes('!') && (
+        <small className="repeathint">{t('detail.recurringFromCompletion')}</small>
+      )}
+    </div>
+  );
+}
 
 interface TaskDetailProps {
   taskId: string | null;
@@ -363,16 +437,11 @@ export function TaskDetail({ taskId, onClose, onOpen }: TaskDetailProps) {
               label={t('detail.startDate')}
               placeholder={t('date.pick')}
               onChange={(value) => {
+                /* Keeps the rule. Writing the date into `due.string` is what
+                   ends a series, and picking a day in a calendar is never a
+                   request to stop something repeating — the field below is. */
                 void updateTask(item.id, {
-                  due: value
-                    ? {
-                        date: value,
-                        timezone: null,
-                        string: value,
-                        lang: locale,
-                        is_recurring: item.due?.is_recurring ?? false,
-                      }
-                    : null,
+                  due: value ? dueForDate(item.due, value) : null,
                 });
               }}
             />
@@ -486,12 +555,10 @@ export function TaskDetail({ taskId, onClose, onOpen }: TaskDetailProps) {
             )}
           </div>
 
-          {item.due?.is_recurring && (
-            <div className="prop">
-              <span>{t('detail.recurring')}</span>
-              <strong><Icon name="repeat" size="sm" />{item.due.string}</strong>
-            </div>
-          )}
+          <div className="prop">
+            <span>{t('detail.recurring')}</span>
+            <RecurrenceField item={item} />
+          </div>
         </aside>
       </div>
     </Overlay>

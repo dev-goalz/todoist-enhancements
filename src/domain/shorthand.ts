@@ -1,4 +1,5 @@
 import { readNaturalDate } from './nlp';
+import { readRecurrence, type RecurrenceLang } from './recurrence';
 import { parseDurationInput } from './estimates';
 import type { DisplayPriority, Snapshot } from './types';
 
@@ -18,7 +19,8 @@ import type { DisplayPriority, Snapshot } from './types';
  * is the only part the caller can switch off.
  */
 
-export type HighlightKind = 'date' | 'project' | 'priority' | 'label' | 'duration';
+export type HighlightKind =
+  'date' | 'recurrence' | 'project' | 'priority' | 'label' | 'duration';
 
 export interface Highlight {
   start: number;
@@ -34,6 +36,13 @@ export interface Shorthand {
   labels: string[];
   /** `yyyy-MM-dd`, or with a time when one was given. */
   date: string | null;
+  /**
+   * A repeat rule, as typed, to be sent on as `due.string`.
+   *
+   * Never resolved to a date here: Todoist owns what "every 3 days" lands on,
+   * and computing it twice is how the two answers come to disagree.
+   */
+  recurrence: { string: string; lang: RecurrenceLang; fromCompletion: boolean } | null;
   /** An estimate in minutes, written in brackets: "Call Anne (25)". */
   minutes: number | null;
   /** Where each of the above sits in the original string. */
@@ -89,6 +98,21 @@ export function parseShorthand(
     break;
   }
 
+  /* The recurrence is read before the date and out of the same text, because
+     the two compete for the same words: "every monday" contains a weekday the
+     date reader would otherwise take for next Monday, dating the task once
+     instead of repeating it forever. Claiming the range first settles it. */
+  let recurrence: Shorthand['recurrence'] = null;
+  if (naturalDates) {
+    const repeat = readRecurrence(mask(raw, ranges));
+    if (repeat) {
+      recurrence = {
+        string: repeat.string, lang: repeat.lang, fromCompletion: repeat.fromCompletion,
+      };
+      claim(repeat.index, repeat.matched.length, 'recurrence');
+    }
+  }
+
   let date: string | null = null;
   if (naturalDates) {
     /* The date is read from what the explicit syntax has not already claimed,
@@ -108,7 +132,7 @@ export function parseShorthand(
   const clean = dedupe(ranges);
   return {
     content: strip(raw, clean),
-    projectId, priority, labels, date, minutes,
+    projectId, priority, labels, date, recurrence, minutes,
     ranges: clean,
   };
 }

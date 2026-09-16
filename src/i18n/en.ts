@@ -466,6 +466,11 @@ export const en = {
   'insights.perBucketHint': 'Against the same stretch one period earlier',
 
   'composer.subtaskPlaceholder': 'Add a subtask, then press Enter',
+  'detail.recurringPlaceholder': 'every monday, every 3 days…',
+  'detail.recurringRefused': 'Not a repeat this app will read. Try "every monday", "every 3 days", "every 15th".',
+  'detail.recurringFromCompletion': 'Counts from the day it is completed, not from the date it was due.',
+  'task.repeats': 'Repeats {rule}',
+  'composer.clearRepeat': 'Remove the repeat',
   'composer.reads': 'Read from the name',
   'settings.density': 'Density',
   'settings.densityHint': 'How much room a list gives each task. Compact closes the space around a row without taking anything out of it.',

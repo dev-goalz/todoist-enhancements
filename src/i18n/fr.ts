@@ -468,6 +468,11 @@ export const fr: Record<TranslationKey, string> = {
   'insights.perBucketHint': 'Comparé à la même durée, une période plus tôt',
 
   'composer.subtaskPlaceholder': 'Ajouter une sous-tâche, puis Entrée',
+  'detail.recurringPlaceholder': 'tous les lundis, tous les 3 jours…',
+  'detail.recurringRefused': 'Répétition que l’application ne sait pas lire. Essayez « tous les lundis », « tous les 3 jours », « tous les 15 ».',
+  'detail.recurringFromCompletion': 'Compté à partir du jour où la tâche est terminée, pas de la date prévue.',
+  'task.repeats': 'Se répète {rule}',
+  'composer.clearRepeat': 'Retirer la répétition',
   'composer.reads': 'Lu dans le nom',
   'settings.density': 'Densité',
   'settings.densityHint': 'L’espace qu’une liste accorde à chaque tâche. Compact resserre autour de la ligne sans rien lui retirer.',

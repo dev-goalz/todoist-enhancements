@@ -13,6 +13,8 @@ import {
   type DisplayPriority, type Item, type Snapshot, type ViewPrefs,
 } from '@/domain/types';
 import { withEstimate } from '@/domain/estimates';
+import { toApiDate } from '@/domain/dates';
+import type { RecurrenceReading } from '@/domain/recurrence';
 import { detectLocale, translate, type Locale } from '@/i18n';
 import { dropMutation, type DropTarget } from '@/domain/dnd';
 import { buildDemoSnapshot } from '@/demo/demoData';
@@ -20,6 +22,20 @@ import {
   defaultPreferences, hydratePreferences, viewPrefs as readViewPrefs,
   type Preferences,
 } from './prefs';
+
+/**
+ * A due the rest of the app can read.
+ *
+ * A recurrence is sent to Todoist as a rule with no date on it, on purpose.
+ * The row the app draws in the meantime still has to have one, so today fills
+ * in until the sync response says where the rule actually landed. Nothing is
+ * sent anywhere from here: this value never leaves the local snapshot.
+ */
+const provisionalDue = (due: Item['due'] | undefined): Item['due'] => {
+  if (!due) return null;
+  if (due.date) return due;
+  return { ...due, date: toApiDate(new Date()), timezone: due.timezone ?? null };
+};
 
 const PREFS_KEY = 'preferences';
 /** How often the app asks Todoist what changed while the tab is in the foreground. */
@@ -84,6 +100,8 @@ interface AppState {
   /* Mutations */
   apply: (commands: Command[], optimistic: (snapshot: Snapshot) => Snapshot) => Promise<void>;
   updateTask: (id: string, args: Record<string, unknown>) => Promise<void>;
+  /** Gives a task a repeat rule, leaving the date for Todoist to resolve. */
+  setRecurrence: (id: string, rule: RecurrenceReading) => Promise<void>;
   /**
    * Writes several estimates at once, as one request.
    *
@@ -478,6 +496,35 @@ export const useStore = create<AppState>((set, get) => ({
     await get().apply([updateItem(id, args)], (snapshot) => patchItem(snapshot, id, args));
   },
 
+  /**
+   * Gives a task a repeat rule.
+   *
+   * Two different objects, deliberately. What goes to Todoist is the rule and
+   * nothing else, because Todoist resolves where the rule lands and a date
+   * sent from here would pin the first occurrence to this device's guess at
+   * it. What goes into the local snapshot has to be a complete due all the
+   * same — every list in the app reads `due.date`, and one without it takes
+   * the page down — so it keeps the date the task is already sitting on until
+   * the sync response arrives with the one the rule really resolves to.
+   */
+  async setRecurrence(id, rule) {
+    const item = get().snapshot.items[id];
+    if (!item) return;
+
+    const due = { string: rule.string, lang: rule.lang, is_recurring: true };
+    const local = {
+      due: {
+        ...due,
+        date: item.due?.date ?? toApiDate(new Date()),
+        timezone: item.due?.timezone ?? null,
+      },
+    };
+
+    await get().apply([updateItem(id, { due })], (snapshot) => patchItem(snapshot, id, local));
+    // Only Todoist knows the date the rule resolves to; this is how it arrives.
+    await get().refresh();
+  },
+
   async setEstimates(entries) {
     const snapshot = get().snapshot;
     const changes = entries
@@ -693,7 +740,10 @@ export const useStore = create<AppState>((set, get) => ({
       content: String(args.content ?? ''),
       description: String(args.description ?? ''),
       priority: (args.priority as 1 | 2 | 3 | 4) ?? 1,
-      due: (args.due as Item['due']) ?? null,
+      /* A task created from a repeat rule is sent without a date, so that
+         Todoist resolves it — but the row drawn a moment later still has to
+         have one to read. Today stands in until the real one comes back. */
+      due: provisionalDue(args.due as Item['due']),
       deadline: (args.deadline as Item['deadline']) ?? null,
       duration: null,
       labels: (args.labels as string[]) ?? [],
