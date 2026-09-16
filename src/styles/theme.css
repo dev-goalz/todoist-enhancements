@@ -2143,3 +2143,14 @@
   .tour-card{left:12px!important;right:12px;width:auto!important;
     top:auto!important;bottom:12px}
 }
+
+/* A task dragged out to the right over a row goes inside it. The same accent
+   line the sidebar draws for a nested project, pushed in to where a subtask
+   starts. */
+.task.nesttarget::after{
+  content:"";position:absolute;left:30px;right:0;bottom:-1px;height:2px;
+  border-radius:1px;background:var(--accent);pointer-events:none;
+}
+
+/* A subtask pulled out to the left says so before it is let go. */
+.dragoverlay.outdent{box-shadow:inset 3px 0 0 var(--accent)}

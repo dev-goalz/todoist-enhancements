@@ -84,12 +84,14 @@ export function dropMutation(item: Item, target: DropTarget): DropMutation | nul
     case 'someday':
       return { update: { due: null, labels: withoutWeek(item.labels) } };
 
+    /* A subtask dropped on the place it already lives in is lifted out of its
+       parent, so the same list it came from is still a real destination. */
     case 'project':
-      if (item.project_id === target.projectId) return null;
+      if (item.project_id === target.projectId && !item.parent_id) return null;
       return { move: { project_id: target.projectId } };
 
     case 'section':
-      if (item.section_id === target.sectionId) return null;
+      if (item.section_id === target.sectionId && !item.parent_id) return null;
       return { move: { project_id: target.projectId, section_id: target.sectionId } };
 
     case 'label': {
@@ -102,6 +104,57 @@ export function dropMutation(item: Item, target: DropTarget): DropMutation | nul
     default:
       return null;
   }
+}
+
+/**
+ * The droppable id of a task row that accepts another task as its subtask.
+ *
+ * Kept apart from `DropTarget`: nesting is not a destination with a mutation
+ * of its own but a change of parent, and it needs the parent row to find the
+ * project and section the task follows it into.
+ */
+const NEST_PREFIX = 'nest:';
+export const nestTargetId = (itemId: string): string => `${NEST_PREFIX}${itemId}`;
+export const decodeNestTarget = (id: string): string | null =>
+  id.startsWith(NEST_PREFIX) ? id.slice(NEST_PREFIX.length) : null;
+
+/**
+ * How many levels of subtasks Todoist keeps under a task. It refuses a move
+ * that would go deeper, and the row would jump back on the next sync.
+ */
+export const MAX_SUBTASK_DEPTH = 4;
+
+/** How many parents a task has above it. */
+function depthOf(items: Record<string, Item>, id: string): number {
+  let depth = 0;
+  for (let at = items[id]; at?.parent_id; at = items[at.parent_id]) depth += 1;
+  return depth;
+}
+
+/** How many levels of open subtasks hang below a task; 0 for none. */
+function heightOf(items: Record<string, Item>, id: string): number {
+  let height = 0;
+  for (const other of Object.values(items)) {
+    if (other.parent_id === id && !other.is_deleted) {
+      height = Math.max(height, 1 + heightOf(items, other.id));
+    }
+  }
+  return height;
+}
+
+/**
+ * Whether a task may go inside another one: not inside itself, not inside
+ * something already below it, not where it already is, and not so deep that
+ * it or its own subtasks would pass the limit.
+ */
+export function canNest(items: Record<string, Item>, itemId: string, parentId: string): boolean {
+  const item = items[itemId];
+  const parent = items[parentId];
+  if (!item || !parent || item.parent_id === parentId) return false;
+  for (let at: Item | undefined = parent; at; at = at.parent_id ? items[at.parent_id] : undefined) {
+    if (at.id === itemId) return false;
+  }
+  return depthOf(items, parentId) + 1 + heightOf(items, itemId) <= MAX_SUBTASK_DEPTH;
 }
 
 /**

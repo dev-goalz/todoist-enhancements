@@ -1,5 +1,7 @@
+import { useDraggable } from '@dnd-kit/core';
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Icon } from './Icon';
+import { useNestTarget } from './dnd/useNestTarget';
 import { TaskActions } from './TaskActions';
 import { useT } from '@/hooks/useT';
 import { useStore } from '@/store/store';
@@ -35,15 +37,23 @@ interface TaskRowProps {
   item: Item;
   childrenOf: (id: string) => Item[];
   onOpen: (id: string) => void;
-  /** Subtasks render indented under their parent and hide the drag handle. */
+  /** Subtasks render indented under their parent. */
   depth?: number;
   showProject?: boolean;
   dragHandleProps?: Record<string, unknown>;
+  /** Whether another task can be dropped onto this row to become its subtask. */
+  nestable?: boolean;
+  /** Registers the row itself as the thing being dragged, for a subtask. */
+  dragRef?: (node: HTMLElement | null) => void;
+  /** The row is the one in flight. */
+  lifted?: boolean;
 }
 
 export function TaskRow({
-  item, childrenOf, onOpen, depth = 0, showProject = true, dragHandleProps,
+  item, childrenOf, onOpen, depth = 0, showProject = true, dragHandleProps, nestable = false,
+  dragRef, lifted = false,
 }: TaskRowProps) {
+  const { setNestRef, nestOver } = useNestTarget(item.id, nestable);
   const { t, locale } = useT();
   const snapshot = useStore((s) => s.snapshot);
   const hour12 = useStore((s) => s.prefs.hour12);
@@ -94,7 +104,8 @@ export function TaskRow({
   return (
     <>
       <div
-        className={`task${settling ? ' done settling' : ''}${picked ? ' picked' : ''}`}
+        ref={(node) => { setNestRef(node); dragRef?.(node); }}
+        className={`task${settling ? ' done settling' : ''}${picked ? ' picked' : ''}${nestOver ? ' nesttarget' : ''}${lifted ? ' dragging' : ''}`}
         role="button"
         tabIndex={0}
         /* The tour lights up a parent together with the children under it,
@@ -128,7 +139,7 @@ export function TaskRow({
           }
         }}
       >
-        {depth === 0 && (
+        {dragHandleProps && (
           <span className="drag" title={t('task.drag')} {...dragHandleProps}>
             <Icon name="drag" />
           </span>
@@ -243,15 +254,43 @@ export function TaskRow({
 
       {showSubtasks && expanded &&
         openChildren.map((child) => (
-          <TaskRow
+          <SubtaskRow
             key={child.id}
             item={child}
             childrenOf={childrenOf}
             onOpen={onOpen}
             depth={depth + 1}
             showProject={showProject}
+            nestable={nestable}
           />
         ))}
     </>
+  );
+}
+
+/** Prefixes the id a subtask row is picked up by. */
+export const SUBTASK_DRAG_PREFIX = 'sub:';
+
+/**
+ * A subtask that can be picked up by its handle.
+ *
+ * Dragged out to the left, or onto a group, it becomes a task of its own;
+ * dragged out to the right over another row, it moves under that one. The id
+ * is prefixed because a task can be drawn twice, as a row of its own and under
+ * its parent, and the drag registry keeps one entry per id. No wrapper goes
+ * around the row: a board card styles its subtasks as the rows that follow
+ * its first one, and a wrapper would turn each of them into a card of its own.
+ */
+function SubtaskRow(props: TaskRowProps) {
+  const { setNodeRef, attributes, listeners, isDragging } = useDraggable({
+    id: `${SUBTASK_DRAG_PREFIX}${props.item.id}`,
+  });
+  return (
+    <TaskRow
+      {...props}
+      dragHandleProps={{ ...attributes, ...listeners }}
+      dragRef={setNodeRef}
+      lifted={isDragging}
+    />
   );
 }

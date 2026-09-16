@@ -786,7 +786,6 @@ ul{margin:0;padding:0;list-style:none}
 
 .subtasks{margin-left:28px;padding-left:var(--s3);border-left:1px solid var(--border)}
 .subtasks .task{min-height:48px;padding-block:9px;margin-left:0;width:100%;padding-left:10px;grid-template-columns:18px minmax(0,1fr) auto}
-.subtasks .drag{display:none}
 .subtasks .check{width:14px;height:14px;border-radius:var(--r-full);border-style:dashed}
 .addrow{width:100%;padding:9px 8px;display:flex;align-items:center;gap:6px;margin-top:2px;
   border-radius:var(--r-sm);color:var(--muted);font-size:var(--fs-13);text-align:left}

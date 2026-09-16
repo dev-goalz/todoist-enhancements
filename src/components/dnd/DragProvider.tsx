@@ -5,8 +5,9 @@ import {
 } from '@dnd-kit/core';
 import type { Modifier } from '@dnd-kit/core';
 import { useStore } from '@/store/store';
-import { decodeTarget, dropMutation, moveArgs } from '@/domain/dnd';
+import { canNest, decodeNestTarget, decodeTarget, dropMutation, moveArgs } from '@/domain/dnd';
 import { siblingOrder } from '@/store/selectors';
+import { SUBTASK_DRAG_PREFIX } from '@/components/TaskRow';
 import { updateItem, moveItem } from '@/api/commands';
 import type { Item } from '@/domain/types';
 
@@ -67,9 +68,13 @@ const ACCEPTS: Record<ReturnType<typeof dragKind>, Array<ReturnType<typeof dropK
  */
 const collisionsForKind: CollisionDetection = (args) => {
   const accepted = ACCEPTS[dragKind(String(args.active.id))];
-  return pointerWithin(args).filter(
+  const hits = pointerWithin(args).filter(
     (collision) => accepted.includes(dropKind(String(collision.id))),
   );
+  /* A row that takes a subtask lies inside the droppable of its group, so the
+     pointer is within both; the row is the narrower, deliberate answer. */
+  const rows = hits.filter((c) => decodeNestTarget(String(c.id)) !== null);
+  return rows.length ? rows : hits;
 };
 
 /**
@@ -84,14 +89,18 @@ export const dragClock = {
 };
 
 /**
- * How far right a sidebar project has to be dragged before the drop nests it
- * rather than reordering it.
+ * How far right a sidebar project, or a task row, has to be dragged before the
+ * drop nests it rather than reordering or moving it.
  *
  * The same gesture means two things, told apart by direction: straight down
  * the list moves it, out to the right puts it inside. It is the indent every
  * outliner uses, and it costs no second handle and no modifier key.
  */
 export const NEST_THRESHOLD_PX = 28;
+
+/** A dragged item's task id, whether it was picked up as a row or a subtask. */
+const taskIdOf = (activeId: string): string =>
+  activeId.startsWith(SUBTASK_DRAG_PREFIX) ? activeId.slice(SUBTASK_DRAG_PREFIX.length) : activeId;
 
 /**
  * Drag and drop across the whole app.
@@ -112,6 +121,8 @@ export function DragProvider({ children }: { children: ReactNode }) {
   const nestProject = useStore((s) => s.nestProject);
   const setNesting = useStore((s) => s.setNesting);
   const setDraggingProject = useStore((s) => s.setDraggingProject);
+  /** A subtask pulled out to the left: on release it becomes a task of its own. */
+  const [outdenting, setOutdenting] = useState(false);
 
   // A short distance threshold keeps a plain click on a task from starting a drag.
   const sensors = useSensors(
@@ -127,7 +138,7 @@ export function DragProvider({ children }: { children: ReactNode }) {
     /* None of these is a task being filed somewhere, so the "a task is in
        flight" flag stays down and the empty drop zones stay closed. A subtask
        being reordered is moving inside its parent, not out of it. */
-    setDragging(isSection || isProject || isSubtask ? null : id);
+    setDragging(isSection || isProject || isSubtask ? null : taskIdOf(id));
     setDraggingSection(isSection ? id.slice('section:'.length) : null);
     setDraggingProject(isProject ? id.slice('project-row:'.length) : null);
   }
@@ -135,8 +146,10 @@ export function DragProvider({ children }: { children: ReactNode }) {
   /* The indent has to be visible while it is being made, not discovered on
      release, so the row under the pointer is told what the drop would mean. */
   function onDragMove(event: DragMoveEvent) {
-    if (!String(event.active.id).startsWith('project-row:')) return;
+    const id = String(event.active.id);
+    if (id.startsWith('section:')) return;
     setNesting(event.delta.x >= NEST_THRESHOLD_PX);
+    setOutdenting(id.startsWith(SUBTASK_DRAG_PREFIX) && event.delta.x <= -NEST_THRESHOLD_PX);
   }
 
   async function onDragEnd(event: DragEndEvent) {
@@ -147,7 +160,19 @@ export function DragProvider({ children }: { children: ReactNode }) {
     setDraggingSection(null);
     const nesting = useStore.getState().nesting;
     setNesting(false);
+    setOutdenting(false);
     setDraggingProject(null);
+
+    /* Pulled out to the left, a subtask leaves its parent and stays where it
+       is otherwise: same project, same section, now at the top level. The
+       pointer may well be over nothing by then, so this comes first. */
+    if (activeId.startsWith(SUBTASK_DRAG_PREFIX) && outdenting) {
+      const sub = snapshot.items[taskIdOf(activeId)];
+      if (sub?.parent_id && !(event.over && decodeNestTarget(String(event.over.id)))) {
+        await promoteTask(sub);
+        return;
+      }
+    }
     if (!event.over) return;
 
     /* A section is dragged whole, into a slot between two others. It is not a
@@ -220,7 +245,13 @@ export function DragProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    const item = snapshot.items[activeId];
+    const item = snapshot.items[taskIdOf(activeId)];
+    const parentId = decodeNestTarget(String(event.over.id));
+    if (item && parentId) {
+      await nestTask(item, parentId);
+      return;
+    }
+
     const target = decodeTarget(String(event.over.id));
     if (!item || !target) return;
 
@@ -229,6 +260,7 @@ export function DragProvider({ children }: { children: ReactNode }) {
 
     // Captured before the change so the undo can put every field back.
     const before = {
+      parent_id: item.parent_id,
       due: item.due,
       labels: item.labels,
       project_id: item.project_id,
@@ -243,24 +275,84 @@ export function DragProvider({ children }: { children: ReactNode }) {
     if (mutation.update) {
       await apply([updateItem(item.id, mutation.update)], patch(mutation.update));
     } else if (mutation.move) {
-      await apply([moveItem(item.id, moveArgs(mutation.move))], patch(mutation.move));
+      // A move to a project or a section lands at its top level.
+      await apply([moveItem(item.id, moveArgs(mutation.move))], patch({ ...mutation.move, parent_id: null }));
     }
 
     /* A move is undone by a move. `item_update` does not take a project or a
        section, so undoing a drop between columns used to put the card back on
        screen and leave it where it was dropped on the server. */
-    const undo = mutation.move
-      ? moveItem(item.id, moveArgs({ project_id: before.project_id, section_id: before.section_id }))
-      : updateItem(item.id, { due: before.due, labels: before.labels });
+    const undo = !mutation.move
+      ? updateItem(item.id, { due: before.due, labels: before.labels })
+      : before.parent_id
+        ? moveItem(item.id, { parent_id: before.parent_id })
+        : moveItem(item.id, moveArgs({ project_id: before.project_id, section_id: before.section_id }));
     toast(item.content, () => {
       void apply([undo], patch(before));
+    });
+  }
+
+  /* Dropped indented onto another row: the task becomes its subtask, and
+     follows it into its project and section, taking its own subtasks along. */
+  async function nestTask(item: Item, parentId: string) {
+    const parent = snapshot.items[parentId];
+    if (!parent || !canNest(snapshot.items, item.id, parent.id)) return;
+
+    const below = new Set<string>();
+    for (let grew = true; grew;) {
+      grew = false;
+      for (const other of Object.values(snapshot.items)) {
+        if (other.parent_id && (other.parent_id === item.id || below.has(other.parent_id)) && !below.has(other.id)) {
+          below.add(other.id);
+          grew = true;
+        }
+      }
+    }
+
+    const place = (fields: Pick<Item, 'parent_id' | 'project_id' | 'section_id'>) =>
+      (snap: typeof snapshot) => {
+        const items = { ...snap.items, [item.id]: { ...snap.items[item.id], ...fields } };
+        for (const id of below) {
+          items[id] = { ...items[id], project_id: fields.project_id, section_id: fields.section_id };
+        }
+        return { ...snap, items };
+      };
+
+    const before = { parent_id: item.parent_id, project_id: item.project_id, section_id: item.section_id };
+    await apply(
+      [moveItem(item.id, { parent_id: parent.id })],
+      place({ parent_id: parent.id, project_id: parent.project_id, section_id: parent.section_id }),
+    );
+
+    // Moving to a project or a section puts a task back at its top level.
+    const undo = before.parent_id
+      ? moveItem(item.id, { parent_id: before.parent_id })
+      : moveItem(item.id, moveArgs({ project_id: before.project_id, section_id: before.section_id }));
+    toast(item.content, () => {
+      void apply([undo], place(before));
+    });
+  }
+
+  async function promoteTask(item: Item) {
+    const parentId = item.parent_id;
+    if (!parentId) return;
+    const patch = (parent_id: string | null) => (snap: typeof snapshot) => ({
+      ...snap,
+      items: { ...snap.items, [item.id]: { ...snap.items[item.id], parent_id } },
+    });
+    await apply(
+      [moveItem(item.id, moveArgs({ project_id: item.project_id, section_id: item.section_id }))],
+      patch(null),
+    );
+    toast(item.content, () => {
+      void apply([moveItem(item.id, { parent_id: parentId })], patch(parentId));
     });
   }
 
   const dragging = draggingId?.startsWith('subtask:')
     ? snapshot.items[draggingId.slice('subtask:'.length)]
     : draggingId && !draggingId.startsWith('section:')
-      ? snapshot.items[draggingId]
+      ? snapshot.items[taskIdOf(draggingId)]
       : null;
   const draggingSection = draggingId?.startsWith('section:')
     ? snapshot.sections[draggingId.slice('section:'.length)]
@@ -278,7 +370,9 @@ export function DragProvider({ children }: { children: ReactNode }) {
       {/* Without a modifier the preview stays at the row's original position
           instead of following the pointer. */}
       <DragOverlay dropAnimation={null} modifiers={[anchorLeftOfCursor]}>
-        {dragging && <div className="dragoverlay">{dragging.content}</div>}
+        {dragging && (
+          <div className={`dragoverlay${outdenting ? ' outdent' : ''}`}>{dragging.content}</div>
+        )}
         {draggingSection && (
           <div className="dragoverlay section">{draggingSection.name || '—'}</div>
         )}

@@ -44,6 +44,9 @@ export function DraggableTask({
         onOpen={onOpen}
         showProject={showProject}
         dragHandleProps={{ ...attributes, ...listeners }}
+        /* A board card is moved sideways between columns all the time; a
+           drift to the right there must not read as "put it inside". */
+        nestable={!card}
       />
     </div>
   );
