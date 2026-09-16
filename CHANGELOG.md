@@ -6,6 +6,17 @@ Every line is marked with what it is: 🆕 something the app did not do before,
 🎨 something it already did, drawn, worded or done differently, 🐛 something
 that was wrong. New first, then changed, then fixed.
 
+## 1.2.1
+
+🐛 **The app icon, actually.** 1.2.0 drew the icons correctly and put them in
+`icons/`, and that folder has now been dropped by an upload twice — the second
+time leaving a directory on the server that Apache could no longer read into,
+so re-uploading could not repair it. Every icon still answered 404, so browsers
+still refused to offer the install and an installed copy still had no icon of
+its own. They live at the root of the site now, beside `favicon.svg` and
+`og-image.png`, which have never once failed to arrive. Delete the old `icons/`
+folder from the server; nothing points at it any more.
+
 ## 1.2.0
 
 Dark mode, a colour of your own, and recurring dates the app can finally

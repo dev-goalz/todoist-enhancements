@@ -21,6 +21,12 @@
  * favicon.svg keeps its own rounding, because a browser tab masks nothing and
  * a hard square would be the odd one out there.
  *
+ * They are written to public/ rather than public/icons/ on purpose. A folder
+ * is one more thing an upload can drop, and this one was dropped twice — the
+ * second time leaving a directory on the server that Apache could no longer
+ * read into, so re-uploading could not repair it either. Root-level files
+ * have never once failed to arrive. The manifest points at them there.
+ *
  * The maskable pair carries the same mark smaller. Android may crop to any
  * shape inside the icon, guaranteeing only the middle 80% by diameter, so the
  * capsules are scaled until the furthest of their corners sits inside that
@@ -32,7 +38,7 @@ import { writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const OUT = join(dirname(fileURLToPath(import.meta.url)), '..', 'public', 'icons');
+const OUT = join(dirname(fileURLToPath(import.meta.url)), '..', 'public');
 
 /** The brand red. The icon does not follow the accent setting: it is the app's
  *  identity on a home screen, not this device's preference. */

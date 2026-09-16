@@ -13,7 +13,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'icons/apple-touch-icon.png'],
+      includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       /* The service worker is a build artefact only. The plugin can serve a
          development one, but under this app's relative `base` it fails to
          register and fills the console with an error about a script it cannot
@@ -33,10 +33,10 @@ export default defineConfig({
         start_url: './',
         scope: './',
         icons: [
-          { src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
-          { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+          { src: 'icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+          { src: 'icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
           {
-            src: 'icons/icon-maskable-192.png',
+            src: 'icon-maskable-192.png',
             sizes: '192x192',
             type: 'image/png',
             purpose: 'maskable',
@@ -45,7 +45,7 @@ export default defineConfig({
              it needs its own full-bleed square. The rounded one was losing its
              corners to the mask. */
           {
-            src: 'icons/icon-maskable-512.png',
+            src: 'icon-maskable-512.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'maskable',
