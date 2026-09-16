@@ -777,3 +777,19 @@
 /* The finished panel centres everything and caps its paragraphs at 48ch; the
    line is not one of those paragraphs. */
 .reviewdone .coffeeline{max-width:none;width:100%;font-size:var(--fs-12);color:var(--faint)}
+
+/* ---------- Moving a task by typing where it goes ---------- */
+/* The field and the list below it are the schedule menu's shape, because they
+   ask the same thing: type, narrow, Enter. */
+/* The field stays put and the list under it scrolls, so filtering never
+   pushes the field you are typing in off the top of the menu. */
+.movemenu{min-width:252px;padding:6px;max-height:none;overflow:visible}
+.movelist{display:grid;gap:2px;padding:6px 0 0;max-height:248px;overflow-y:auto}
+.movemenu .opt{min-height:30px;justify-content:space-between;gap:var(--s3)}
+.movemenu .opt small{color:var(--faint);font-size:var(--fs-12);white-space:nowrap}
+/* A section is shown under the project it belongs to, and reads as its child. */
+.movemenu .opt.sectionopt > span{padding-left:14px;color:var(--muted)}
+.movemenu .opt.sectionopt .icon{color:var(--faint)}
+.movemenu .opt.on{background:var(--accent-soft);color:var(--accent-dark)}
+.movemenu .opt.on small{color:var(--accent-dark)}
+.movemenu .menuhint{padding:6px 8px}

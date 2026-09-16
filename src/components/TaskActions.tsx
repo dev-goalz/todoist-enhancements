@@ -13,7 +13,7 @@ import { dueForDate, readRecurrence } from '@/domain/recurrence';
 import { dateSuggestions, type DateSuggestion } from '@/domain/dateWords';
 import { weekLabel } from '@/domain/types';
 import { markerStyle } from '@/domain/colors';
-import { dropMutation, type DropTarget } from '@/domain/dnd';
+import { dropMutation, moveArgs, type DropTarget } from '@/domain/dnd';
 import { updateItem, moveItem } from '@/api/commands';
 import type { Item, Snapshot } from '@/domain/types';
 
@@ -22,10 +22,24 @@ const weekdayName = (date: Date, locale: 'en' | 'fr'): string =>
   new Intl.DateTimeFormat(locale === 'fr' ? 'fr-FR' : 'en-GB', { weekday: 'long' })
     .format(date);
 
+/** A word with its case and accents set aside, so "Été" is found by "ete". */
+const fold = (value: string): string =>
+  value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
 /** Two words that are the same word once accents and case are set aside. */
-const sameWord = (a: string, b: string): boolean =>
-  a.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-  === b.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+const sameWord = (a: string, b: string): boolean => fold(a) === fold(b);
+
+/** Somewhere a task can be sent: a project, or a section inside one. */
+interface Destination {
+  key: string;
+  target: DropTarget;
+  /** The project's name, or the section's. */
+  label: string;
+  /** The project a section belongs to, so a match on the section says where. */
+  hint?: string;
+  colour?: string;
+  current: boolean;
+}
 
 interface TaskActionsProps {
   item: Item;
@@ -55,11 +69,15 @@ export function TaskActions({ item, childrenOf, onOpen }: TaskActionsProps) {
   const [typed, setTyped] = useState('');
   /** Which suggestion the keyboard is on; -1 means "what I typed". */
   const [pick, setPick] = useState(-1);
+  /** What has been typed to narrow the destinations, and where the keyboard is. */
+  const [dest, setDest] = useState('');
+  const [destPick, setDestPick] = useState(-1);
   const ref = useRef<HTMLSpanElement>(null);
 
   // A menu that opens holding the last thing typed into it is a menu lying
   // about what it will do if you press Enter.
   useEffect(() => { if (menu !== 'schedule') { setTyped(''); setPick(-1); } }, [menu]);
+  useEffect(() => { if (menu !== 'move') { setDest(''); setDestPick(-1); } }, [menu]);
 
   useEffect(() => {
     if (menu === 'none') return;
@@ -77,11 +95,64 @@ export function TaskActions({ item, childrenOf, onOpen }: TaskActionsProps) {
 
   const { minutes, computed } = effectiveEstimate(item, childrenOf);
 
-  /* Moving a task means moving it to another project. Where it sits in time is
-     the schedule menu's business, which is the button next to this one. */
-  const projects = Object.values(snapshot.projects)
-    .filter((p) => !p.is_deleted && !p.is_archived && !p.is_folder)
-    .sort((a, b) => a.child_order - b.child_order);
+  /* Moving a task means moving it somewhere it can live. Where it sits in time
+     is the schedule menu's business, which is the button next to this one. */
+  const projects = useMemo(
+    () => Object.values(snapshot.projects)
+      .filter((p) => !p.is_deleted && !p.is_archived && !p.is_folder)
+      .sort((a, b) => a.child_order - b.child_order),
+    [snapshot.projects],
+  );
+
+  /**
+   * Every place the task could go, a project and its sections alike.
+   *
+   * A section is a destination in Todoist, so it is one here: moving a task
+   * into "Design / In review" used to take two gestures, the move and then a
+   * drag down the page into the right group.
+   */
+  const destinations = useMemo<Destination[]>(() => {
+    const sections = Object.values(snapshot.sections)
+      .filter((s) => !s.is_deleted && !s.is_archived)
+      .sort((a, b) => a.section_order - b.section_order);
+
+    return projects.flatMap((project) => [
+      {
+        key: project.id,
+        /* The project itself, said as "this project, no section" rather than
+           as a bare project: a task already in the project but sitting in one
+           of its sections is going somewhere when it picks this, and a plain
+           project destination reads as "already there" and does nothing. */
+        target: {
+          kind: 'section', projectId: project.id, sectionId: null,
+        } as DropTarget,
+        label: project.name,
+        colour: project.color,
+        current: project.id === item.project_id && item.section_id === null,
+      },
+      ...sections
+        .filter((s) => s.project_id === project.id)
+        .map((section) => ({
+          key: `${project.id}:${section.id}`,
+          target: {
+            kind: 'section', projectId: project.id, sectionId: section.id,
+          } as DropTarget,
+          label: section.name || t('section.untitled'),
+          hint: project.name,
+          current: section.id === item.section_id,
+        })),
+    ]);
+  }, [projects, snapshot.sections, item.project_id, item.section_id, t]);
+
+  /* Typing narrows the list, on the section's name or on the project's, so
+     "rev" finds "In review" wherever it lives. */
+  const matches = useMemo(() => {
+    const needle = fold(dest.trim());
+    if (!needle) return destinations;
+    return destinations.filter(
+      (d) => fold(d.label).includes(needle) || (d.hint ? fold(d.hint).includes(needle) : false),
+    );
+  }, [destinations, dest]);
 
   /**
    * Sends the task to a view.
@@ -95,7 +166,13 @@ export function TaskActions({ item, childrenOf, onOpen }: TaskActionsProps) {
     const mutation = dropMutation(item, target);
     if (!mutation) return;
 
-    const before = { due: item.due, labels: item.labels };
+    // Captured before the change so the undo can put every field back.
+    const before = {
+      due: item.due,
+      labels: item.labels,
+      project_id: item.project_id,
+      section_id: item.section_id,
+    };
     const patch = (fields: Record<string, unknown>) => (snap: Snapshot): Snapshot => ({
       ...snap,
       items: { ...snap.items, [item.id]: { ...snap.items[item.id], ...fields } as Item },
@@ -104,11 +181,22 @@ export function TaskActions({ item, childrenOf, onOpen }: TaskActionsProps) {
     if (mutation.update) {
       await apply([updateItem(item.id, mutation.update)], patch(mutation.update));
     } else if (mutation.move) {
-      await apply([moveItem(item.id, mutation.move)], patch(mutation.move));
+      /* One destination per move: a section implies its project, and sending
+         both is how `item_move` is refused. */
+      await apply([moveItem(item.id, moveArgs(mutation.move))], patch(mutation.move));
     }
 
+    /* A move is undone by a move. `item_update` takes neither a project nor a
+       section, so undoing one used to put the task back on screen and leave it
+       where it had been sent on the server. */
+    const undo = mutation.move
+      ? moveItem(item.id, moveArgs({
+          project_id: before.project_id, section_id: before.section_id,
+        }))
+      : updateItem(item.id, { due: before.due, labels: before.labels });
+
     toast(t('task.movedTo', { destination }), () => {
-      void apply([updateItem(item.id, before)], patch(before));
+      void apply([undo], patch(before));
     });
   }
 
@@ -397,21 +485,71 @@ export function TaskActions({ item, childrenOf, onOpen }: TaskActionsProps) {
 
       {menu === 'move' && (
         <div className="popover rowmenu movemenu" role="menu">
-          <h5>{t('task.moveToProject')}</h5>
-          {projects.map((project) => (
-            <button
-              key={project.id}
-              className="opt"
-              aria-checked={project.id === item.project_id}
-              onClick={() =>
-                void moveTo({ kind: 'project', projectId: project.id }, project.name)}
-            >
-              <span>
-                <span className="hash" style={markerStyle(project.color)}>#</span>
-                {project.name}
-              </span>
-            </button>
-          ))}
+          {/* Typing is how you find one project among forty, so the field is
+              the first thing here and it already has the caret — the same
+              gesture the schedule menu asks for. The heading goes: the field's
+              placeholder says what the menu is for. */}
+          <input
+            className="schedulefield"
+            autoFocus
+            value={dest}
+            placeholder={t('task.typeDestination')}
+            aria-label={t('task.moveToProject')}
+            onChange={(e) => { setDest(e.target.value); setDestPick(-1); }}
+            onKeyDown={(e) => {
+              e.stopPropagation();
+              if (e.key === 'ArrowDown' && matches.length > 0) {
+                e.preventDefault();
+                setDestPick((at) => (at + 1) % matches.length);
+                return;
+              }
+              if (e.key === 'ArrowUp' && matches.length > 0) {
+                e.preventDefault();
+                setDestPick((at) => (at <= 0 ? matches.length - 1 : at - 1));
+                return;
+              }
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                /* Nothing is highlighted until you arrow onto it, so Enter on
+                   an untouched list would move the task somewhere you never
+                   looked at. It commits the first match only once you have
+                   typed enough to make "the first match" mean something. */
+                const chosenDest = destPick >= 0
+                  ? matches[destPick]
+                  : dest.trim() ? matches[0] : undefined;
+                if (chosenDest) void moveTo(chosenDest.target, chosenDest.label);
+                return;
+              }
+              if (e.key === 'Escape') setMenu('none');
+            }}
+          />
+
+          <div className="movelist" role="listbox">
+            {matches.map((destination, at) => (
+              <button
+                key={destination.key}
+                role="option"
+                aria-selected={at === destPick}
+                aria-checked={destination.current}
+                className={`opt${destination.hint ? ' sectionopt' : ''}${at === destPick ? ' on' : ''}`}
+                onMouseEnter={() => setDestPick(at)}
+                onClick={() => void moveTo(destination.target, destination.label)}
+              >
+                <span>
+                  {destination.hint ? (
+                    <Icon name="group" size="sm" />
+                  ) : (
+                    <span className="hash" style={markerStyle(destination.colour)}>#</span>
+                  )}
+                  {destination.label}
+                </span>
+                {/* Only while filtering: in the full list the section sits
+                    under its project and saying so twice is noise. */}
+                {destination.hint && dest.trim() !== '' && <small>{destination.hint}</small>}
+              </button>
+            ))}
+            {matches.length === 0 && <p className="menuhint">{t('search.noResults')}</p>}
+          </div>
         </div>
       )}
 
