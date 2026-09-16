@@ -224,9 +224,11 @@ const ACTIONS: Record<ReviewStepId, ReviewAction[]> = {
   /* The Inbox is not about when. A task is in it because it has no project,
      so what it is missing is a project — see `fileable` below. */
   inbox: [],
-  /* Already committed to the week: the only question left is whether it is
-     today, and saying it is not is an answer too. */
-  anytime: ['today', 'anytime'],
+  /* Already committed to the week. Whether it is today is the usual question,
+     and "still this week" is an answer — but so is deciding the week was
+     optimistic, which is why the week can be left from here rather than only
+     from the step that already regrets it. */
+  anytime: ['today', 'anytime', 'someday'],
   someday: ['today', 'anytime', 'someday'],
   unestimated: [],
   /* The last step of the day used to offer nothing at all: if the day was

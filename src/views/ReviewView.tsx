@@ -342,7 +342,13 @@ export function ReviewView({ onOpen }: ReviewViewProps) {
     const project = snapshot.projects[item.project_id];
     const { minutes } = effectiveEstimate(item, childrenOf);
     const due = dueDate(item);
-    const current = chosen[item.id] ?? null;
+    /* The button naming the list you are looking at starts pressed, because it
+       is already true: a task in the week step is in the week, and a row of
+       buttons where none is on reads as a question that has not been answered
+       yet. Only steps whose own bucket is one of their answers get this —
+       nothing is pre-selected on Overdue, where every option is a change. */
+    const settled = s.actions.find((a) => a === s.id) ?? null;
+    const current = chosen[item.id] ?? settled;
 
     return (
       <div className="reviewrow">
@@ -394,6 +400,9 @@ export function ReviewView({ onOpen }: ReviewViewProps) {
                 className={`btn quiet${current === action ? ' on' : ''}`}
                 aria-pressed={current === action}
                 onClick={() => {
+                  // Pressing the state it is already in is not a change, and
+                  // sending it would put an undo toast on a no-op.
+                  if (action === current) return;
                   setChosen((prev) => ({ ...prev, [item.id]: action }));
                   void sendTo(item.id, targetFor(action), null);
                 }}

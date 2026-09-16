@@ -10,19 +10,28 @@
  * sits so the caller can mark and strip it, and say which language it was read
  * in so the right parser is asked for on the other end.
  *
- * The grammar is deliberately smaller than Todoist's. Every form it does not
- * cover is refused rather than guessed at, and a refusal costs the user a task
- * that keeps its name — while a wrong guess moves a whole series to a date
- * nobody asked for, silently, and only shows up weeks later. So:
+ * The grammar follows the list Todoist publishes, because that list is the
+ * contract: a phrase this reads is a phrase their parser has to resolve, and
+ * one it invents is a series moved to a date nobody asked for. What is covered:
  *
- *   read    every day / daily, every N days|weeks|months|years,
- *           every other <unit>, every <weekday>[, <weekday>...],
- *           every weekday|workday|weekend, every <N>th (day of the month),
- *           every <month> <N> / every <N> <month>, and "every!" on any of them
+ *   every day / daily, every N hours|days|weeks|months|quarters|years
+ *   every other <unit>, every week|month|quarter|year, quarterly
+ *   every <weekday>[, <weekday>...], every weekday|workday|weekend
+ *   every <N>th and lists of them — "every 2, 15, 27"
+ *   every <month> <N> / every <N> <month>, and lists — "every 14 jan, 14 apr"
+ *   every 1st|2nd|last <weekday>, every first|15th|last workday
+ *   a time on the end — "at 9am", "at 20:00", "at noon", "à 9h30"
+ *   a bound on the end — starting / until / ending / for N weeks
+ *   "every!" on any of it
  *
- *   refuse  every 2nd monday, every last friday, times of day inside the
- *           phrase, "starting"/"until"/"for 3 weeks", holidays, and anything
- *           else with an "every" in it that the grammar above does not match
+ * Still refused: anything resting on a calendar we do not have (holidays,
+ * "the workday after"), and any phrase containing "every" that none of the
+ * above matches. A refusal costs a task that keeps its name. A wrong reading
+ * costs a series, silently, and shows up weeks later.
+ *
+ * The phrase goes to Todoist as typed, in the language it was read in, with
+ * one exception marked below where French word order has no counterpart in
+ * anything Todoist documents and the canonical English form is sent instead.
  *
  * `every` and `every!` differ in where the next occurrence is counted from —
  * the current due date, or the day it was actually completed — which is why an
@@ -59,70 +68,80 @@ interface Words {
   every: string;
   /** "every other", where the language has a phrase for it. */
   other: string;
-  day: string; week: string; month: string; year: string;
+  hour: string; day: string; week: string; month: string;
+  quarter: string; year: string;
   /** Working days, and the two days that are not. */
   workday: string; weekend: string;
   /** One-word recurrences: "daily", "quotidien". */
-  shorthand: Record<string, string>;
+  shorthand: string[];
   weekdays: string[];
   months: string[];
-  /** "1st", "2e" — a day of the month, not a position in one. */
+  /** "1st", "2e" — a day of the month, written as a number. */
   ordinal: string;
+  /** "first", "last" — a position within the month, written as a word. */
+  position: string;
+  /** "at", for a time of day. */
+  at: string;
+  /** Named times Todoist understands. */
+  clockWords: string;
+  /** Words that open a bound: starting, until, for three weeks. */
+  bound: string;
 }
 
 const EN: Words = {
   every: '(?:every|each)',
   other: 'other',
-  day: 'days?', week: 'weeks?', month: 'months?', year: 'years?',
+  hour: 'hours?', day: 'days?', week: 'weeks?', month: 'months?',
+  quarter: 'quarters?', year: 'years?',
   workday: '(?:weekdays?|workdays?|working days?)',
   weekend: 'weekends?',
-  shorthand: { daily: 'day', weekly: 'week', monthly: 'month', yearly: 'year', annually: 'year' },
+  shorthand: ['daily', 'weekly', 'monthly', 'quarterly', 'yearly', 'annually', 'hourly'],
   weekdays: ['sunday|sun', 'monday|mon', 'tuesday|tues|tue', 'wednesday|weds|wed',
     'thursday|thurs|thur|thu', 'friday|fri', 'saturday|sat'],
   months: ['january|jan', 'february|feb', 'march|mar', 'april|apr', 'may', 'june|jun',
     'july|jul', 'august|aug', 'september|sept|sep', 'october|oct', 'november|nov',
     'december|dec'],
-  ordinal: '(\\d{1,2})(?:st|nd|rd|th)',
+  ordinal: '\\d{1,2}(?:st|nd|rd|th)',
+  position: '(?:first|second|third|fourth|fifth|last)',
+  at: '(?:at|@)',
+  clockWords: '(?:noon|midday|midnight|morning|afternoon|evening|night)',
+  bound: '(?:starting|start(?:ing)? (?:on|from)|from|ending|end(?:ing)? on|until|till|til)',
 };
 
 const FR: Words = {
-  every: '(?:tous les|toutes les|chaque)',
+  every: '(?:tous les|toutes les|tous le|chaque)',
   other: 'deux',
-  day: 'jours?', week: 'semaines?', month: 'mois', year: '(?:ans?|annees?)',
-  workday: '(?:jours? ouvres?|jours? ouvrables?)',
-  weekend: '(?:week-?ends?)',
-  shorthand: { quotidien: 'day', hebdomadaire: 'week', mensuel: 'month', annuel: 'year' },
+  hour: 'heures?', day: 'jours?', week: 'semaines?', month: 'mois',
+  quarter: 'trimestres?', year: '(?:ans?|annees?)',
+  /* "jours de semaine" is the one people actually type for the working week —
+     "jours ouvrés" is what a payroll system says. */
+  workday: '(?:jours? ouvres?|jours? ouvrables?|jours? de semaine|jours? de la semaine)',
+  weekend: '(?:week-?ends?|fins? de semaine)',
+  shorthand: ['quotidien(?:ne)?', 'hebdomadaire', 'mensuel(?:le)?',
+    'trimestriel(?:le)?', 'annuel(?:le)?'],
   weekdays: ['dimanches?|dim', 'lundis?|lun', 'mardis?|mar', 'mercredis?|mer',
     'jeudis?|jeu', 'vendredis?|ven', 'samedis?|sam'],
   months: ['janvier|janv', 'fevrier|fevr', 'mars', 'avril|avr', 'mai', 'juin',
     'juillet|juil', 'aout', 'septembre|sept', 'octobre|oct', 'novembre|nov',
     'decembre|dec'],
-  ordinal: '(\\d{1,2})(?:er|eme|e)',
+  ordinal: '\\d{1,2}(?:ers?|emes?|es?)',
+  position: '(?:premiers?|1ers?|deuxiemes?|troisiemes?|quatriemes?|derniers?|dernieres?|premieres?)',
+  at: '(?:a|vers)',
+  clockWords: '(?:midi|minuit|matin|apres-midi|soir|nuit)',
+  bound: '(?:a partir (?:du|de)|des le|jusqu(?:\\u2019|\')?au?|jusqua|pendant)',
 };
 
 const LANGS: Array<[RecurrenceLang, Words]> = [['en', EN], ['fr', FR]];
 
 /**
- * Forms the grammar deliberately will not read.
+ * Forms the grammar will not read.
  *
- * Checked before anything else, and on the phrase as a whole: several of these
- * begin with something the grammar *can* read — "every monday" is the opening
- * of "every 2nd monday" — so matching greedily and hoping would produce a
- * recurrence that means something other than what was typed.
+ * Short, now that the grammar covers what Todoist documents. What is left
+ * either needs a calendar this app does not have, or is a bound whose own
+ * shape Todoist does not define.
  */
 const REFUSED = [
-  // A weekday counted within the month: "every 2nd monday", "every last friday".
-  /\b(?:\d{1,2}(?:st|nd|rd|th)|first|second|third|fourth|last|premier|deuxieme|dernier|derniere)\s+(?:sun|mon|tues?|wed|thur?s?|fri|sat|dim|lun|mar|mer|jeu|ven|sam)/,
-  // A bound on the series. Todoist reads these; we would have to show them.
-  /\b(?:starting|ending|until|from|for the next|a partir|jusqu|pendant)\b/,
-  /\bfor \d+\s+(?:days?|weeks?|months?)\b/,
-  // A time of day inside the recurrence: it belongs to the date field, and
-  // reading it here would put the same information in two places.
-  /\b(?:at|a)\s*\d{1,2}\s*(?::\d{2}|[h.]\d{2}|h\b|am\b|pm\b)/,
-  /\b\d{1,2}\s*(?:am|pm)\b/,
-  /\b(?:noon|midnight|morning|afternoon|evening|midi|minuit|matin|soir)\b/,
-  // Anything resting on a calendar we do not have.
-  /\b(?:holiday|holidays|workday after|ferie|feries)\b/,
+  /\b(?:holidays?|bank holiday|workday after|jours? feries?|ferie)\b/,
 ];
 
 /**
@@ -134,6 +153,7 @@ const REFUSED = [
  */
 export function readRecurrence(raw: string): RecurrenceReading | null {
   const text = fold(raw);
+  if (REFUSED.some((pattern) => pattern.test(text))) return null;
 
   for (const [lang, w] of LANGS) {
     const reading = readIn(raw, text, lang, w);
@@ -151,60 +171,109 @@ function readIn(
      Mondays. The same holds for "mar" against "mars" in French. */
   const weekday = `(?:${w.weekdays.join('|')})\\b`;
   const month = `(?:${w.months.join('|')})\\b`;
-  const unit = `(?:${w.day}|${w.week}|${w.month}|${w.year})\\b`;
-  // `every!` is the same word with a bang on it, in both languages.
+  const unit = `(?:${w.hour}|${w.day}|${w.week}|${w.month}|${w.quarter}|${w.year})\\b`;
   const every = `${w.every}(!)?`;
+  const sep = '\\s*(?:,|and|et|&)\\s*';
 
-  /* In order. The first that matches wins, so the longer forms — a list of
-     weekdays, a date in a month — come before the ones that are a prefix of
-     them. */
-  const forms = [
-    // every 3 days, every 2 weeks, tous les 3 jours
+  /* A clock time, and a bound, both optional and both allowed to trail any
+     core form. They are part of the match rather than left behind, because a
+     phrase half-taken is a task named "at 9am" with a rule that does not say
+     when. */
+  const clock = `\\d{1,2}(?:[:h.]\\d{2}|h)?\\s*(?:am|pm)?`;
+  const time = `(?:\\s+(?:${w.at}\\s*)?(?:${clock}|${w.clockWords}))?`;
+  const datish = `(?:\\d{1,2}\\s+${month}|${month}\\s+\\d{1,2}|\\d{1,2}[/-]\\d{1,2}(?:[/-]\\d{2,4})?|\\d{4}-\\d{2}-\\d{2}|[a-z]+(?:\\s+\\d{1,2})?)`;
+  const span = `(?:\\s+(?:for|pendant)\\s+\\d{1,3}\\s+${unit})`;
+  const bound = `(?:${span}|\\s+${w.bound}\\s+${datish})*`;
+  /* "of the month" trailing an ordinal weekday. Optional in English, where
+     "every 1st monday" already says it, and the usual way to say it at all in
+     French, where the month comes after the day rather than before it. */
+  const ofMonth = `(?:\\s+(?:of\\s+(?:the|each|every)\\s+month|du mois|de chaque mois|des mois|par mois))?`;
+
+  /* The core forms, longest first. Order is the whole correctness argument
+     here: "every monday" is a prefix of "every monday, friday" and of "every
+     1st monday", so a shorter form matching first would silently truncate a
+     longer one and change what it means. */
+  const cores = [
+    /* An ordinal weekday written the way French writes it, with the article in
+       front and the month behind: "le premier dimanche de chaque mois". There
+       is no "tous les" to open it, so none of the forms below can reach it. */
+    `(?:les?\\s+)?(?:${w.position}|${w.ordinal})\\s+${weekday}\\s+(?:de|du|des)\\s+(?:chaque\\s+)?mois`,
+    // every 1st wed jan — an ordinal weekday pinned to a month
+    `${every}\\s+(?:${w.ordinal}|${w.position})\\s+${weekday}\\s+${month}`,
+    // every 1st wed, every last friday, every first workday, every 15th workday
+    `${every}\\s+(?:${w.ordinal}|${w.position})\\s+(?:${weekday}|${w.workday})${ofMonth}`,
+    // every 14 jan, 14 apr — dates in a year, possibly several
+    `${every}\\s+\\d{1,2}\\s+${month}(?:${sep}\\d{1,2}\\s+${month})*`,
+    `${every}\\s+${month}\\s+\\d{1,2}(?:${sep}${month}\\s+\\d{1,2})*`,
+    // every mon, wed, fri
+    `${every}\\s+${weekday}(?:${sep}${weekday})*`,
+    // every 3 days, every 12 hours
     `${every}\\s+\\d{1,3}\\s+${unit}`,
-    // every other week, tous les deux jours
-    `${every}\\s+${w.other}\\s+${unit}`,
-    // every mon, wed, fri — the list is greedy so it takes all of them
-    `${every}\\s+${weekday}(?:\\s*(?:,|and|et)\\s*${weekday})*`,
-    // every 14 jan, every jan 14
-    `${every}\\s+\\d{1,2}\\s+${month}`,
-    `${every}\\s+${month}\\s+\\d{1,2}`,
-    // every 15th, tous les 15
-    `${every}\\s+${w.ordinal}`,
-    `${every}\\s+\\d{1,2}(?!\\s*\\d)(?!\\s*${unit})`,
+    // every other week, every other friday
+    `${every}\\s+${w.other}\\s+(?:${unit}|${weekday})`,
     // every weekday, every weekend
     `${every}\\s+(?:${w.workday}|${w.weekend})`,
-    // every day, every week, every month, every year
+    // every 2, 15, 27 — days of the month
+    `${every}\\s+(?:${w.ordinal}|\\d{1,2})(?:${sep}(?:${w.ordinal}|\\d{1,2}))*(?!\\s*${unit})`,
+    // every day, every week, every quarter
     `${every}\\s+${unit}`,
+    // daily, quarterly, hebdomadaire
+    `(?:${w.shorthand.join('|')})\\b`,
   ];
 
-  for (const form of forms) {
-    const match = text.match(new RegExp(`\\b${form}`, 'i'));
+  for (const core of cores) {
+    const match = text.match(new RegExp(`\\b${core}${time}${bound}`, 'i'));
     if (!match) continue;
-    if (REFUSED.some((pattern) => pattern.test(text))) return null;
+    const matched = raw.slice(match.index!, match.index! + match[0].length).trim();
     return {
-      matched: raw.slice(match.index!, match.index! + match[0].length),
+      matched,
       index: match.index!,
-      string: raw.slice(match.index!, match.index! + match[0].length).trim(),
-      lang,
+      string: canonical(matched, lang, w),
+      lang: canonical(matched, lang, w) === matched ? lang : 'en',
       fromCompletion: match[1] === '!',
     };
   }
 
-  // "daily", "weekly", "quotidien" — one word, no "every" in front of it.
-  for (const [word] of Object.entries(w.shorthand)) {
-    const match = text.match(new RegExp(`\\b${word}\\b`, 'i'));
-    if (!match) continue;
-    if (REFUSED.some((pattern) => pattern.test(text))) return null;
-    return {
-      matched: raw.slice(match.index!, match.index! + match[0].length),
-      index: match.index!,
-      string: raw.slice(match.index!, match.index! + match[0].length).trim(),
-      lang,
-      fromCompletion: false,
-    };
-  }
-
   return null;
+}
+
+/**
+ * The phrase as Todoist should receive it.
+ *
+ * Almost always exactly what was typed: Todoist parses French, and a rule
+ * echoed back in the language it was written in is the one the reader will
+ * recognise in their own Todoist afterwards.
+ *
+ * The exception is the French ordinal weekday — "le premier dimanche de chaque
+ * mois". Todoist documents "every 1st wed" and gives no French counterpart,
+ * and French puts the month at the end where their grammar expects it at the
+ * front, so passing it through is a guess about somebody else's parser. The
+ * parts are unambiguous once matched, so the documented English form is built
+ * from them instead. It is the one place a reader will see a rule they did not
+ * type, which is the price of it landing on the right day.
+ */
+function canonical(matched: string, lang: RecurrenceLang, w: Words): string {
+  if (lang !== 'fr') return matched;
+
+  const text = fold(matched);
+  const position = text.match(new RegExp(`\\b(${w.position}|${w.ordinal})\\s+(${w.weekdays.join('|')})\\b`, 'i'));
+  if (!position) return matched;
+
+  const ORDINALS: Record<string, string> = {
+    premier: '1st', premiers: '1st', premiere: '1st', premieres: '1st',
+    '1er': '1st', '1ers': '1st',
+    deuxieme: '2nd', deuxiemes: '2nd', troisieme: '3rd', troisiemes: '3rd',
+    quatrieme: '4th', quatriemes: '4th',
+    dernier: 'last', derniers: 'last', derniere: 'last', dernieres: 'last',
+  };
+  const DAYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+
+  const rank = ORDINALS[position[1]] ?? position[1].replace(/(?:er|eme|e)s?$/, 'th');
+  const dayIndex = w.weekdays.findIndex((names) =>
+    new RegExp(`^(?:${names})$`, 'i').test(position[2]));
+  if (dayIndex < 0) return matched;
+
+  return `every ${rank} ${DAYS[dayIndex]}`;
 }
 
 /**
