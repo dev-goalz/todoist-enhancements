@@ -2033,99 +2033,52 @@
   .reviewfile{grid-column:2;justify-self:stretch}
   .reviewfile .fselect-face{min-width:0;max-width:none}
 }
-
 /* ==========================================================================
    Walkthrough — the first run
    ==========================================================================
-   A dialog the width of the composer, holding the same choosers Settings
-   holds. It deliberately does not fill the window: the app has to stay
-   visible behind it, because every choice in here changes that page and
-   watching it change is the explanation. */
-.walkthrough{display:grid;gap:var(--s4);padding:var(--s5) var(--s5) var(--s4)}
-
-.wt-head{display:flex;align-items:center;justify-content:space-between;gap:var(--s3)}
-/* Four dots rather than "3 of 4": the number of steps is the reassurance,
-   and it is small enough to be counted at a glance. */
-.wt-steps{display:flex;align-items:center;gap:6px}
-.wt-steps i{
-  width:7px;height:7px;border-radius:var(--r-full);
-  background:var(--border-strong);transition:background .18s ease-out,width .18s ease-out;
+   One page: a greeting, three choices, one button. It deliberately does not
+   fill the window — the app stays visible behind it, because every choice in
+   here changes that page and watching it change is the explanation. */
+.walkthrough{
+  display:grid;gap:var(--s4);padding:var(--s5) var(--s5) var(--s4);
+  max-height:min(82vh,760px);
 }
-.wt-steps i.done{background:var(--accent-badge)}
-.wt-steps i.on{width:20px;border-radius:var(--r-full);background:var(--accent)}
+
+.wt-head{display:flex;align-items:flex-start;gap:var(--s3)}
+.wt-head > div{flex:1;min-width:0}
+.wt-head h2{font-size:var(--fs-20);font-weight:700;letter-spacing:-.022em}
+.wt-head p{margin-top:4px;max-width:58ch;color:var(--muted);font-size:var(--fs-13);line-height:1.55}
+.wt-mark{
+  width:44px;height:44px;flex:0 0 auto;display:grid;place-items:center;
+  border-radius:14px;color:#fff;background:var(--accent);
+}
+.wt-mark .ic{width:22px;height:22px;stroke-width:2}
 .wt-skip{
-  padding:4px 8px;border-radius:var(--r-sm);
+  flex:0 0 auto;padding:4px 8px;border-radius:var(--r-sm);
   color:var(--muted);font-size:var(--fs-12);font-weight:600;
 }
 .wt-skip:hover{background:var(--hover);color:var(--text)}
 
-.wt-body{min-height:232px}
-.wt-body h2{font-size:var(--fs-20);font-weight:700;letter-spacing:-.022em}
-.wt-body > p{
-  margin-top:6px;margin-bottom:var(--s4);max-width:62ch;
-  color:var(--muted);font-size:var(--fs-13);line-height:1.6;
+/* Three sections on one page, so the page scrolls rather than the dialog
+   growing past the bottom of a laptop screen. */
+.wt-body{display:grid;gap:var(--s5);min-height:0;overflow-y:auto;padding-right:2px}
+.wt-body h3{
+  color:var(--muted);font-size:var(--fs-12);font-weight:700;
+  letter-spacing:.04em;text-transform:uppercase;
 }
-/* The choosers arrive with a top margin meant for a settings row. Inside the
-   dialog the heading above them already provides it. */
+/* The choosers carry a top margin meant for a settings row; the heading above
+   them already provides it. */
 .wt-body .themechoice,
 .wt-body .accentchoice,
-.wt-body .denschoice,
-.wt-body .wkchoice{margin-top:0}
-.wt-body .accentchoice{margin-top:var(--s4)}
-
-.wt-welcome{display:grid;justify-items:center;gap:var(--s3);padding:var(--s5) 0;text-align:center}
-.wt-welcome p{max-width:52ch;color:var(--muted);font-size:var(--fs-13);line-height:1.6}
-.wt-mark{
-  width:52px;height:52px;display:grid;place-items:center;
-  border-radius:16px;color:#fff;background:var(--accent);
-}
-.wt-mark .ic{width:26px;height:26px;stroke-width:2}
+.wt-body .denschoice{margin-top:10px}
 
 .wt-foot{display:flex;align-items:center;justify-content:flex-end;gap:var(--s2)}
-.wt-foot .btn:disabled{opacity:.4;pointer-events:none}
-
-/* ---------- The shape of the week ---------- */
-.wkchoice{display:flex;gap:var(--s3);margin-top:var(--s3);flex-wrap:wrap}
-.wkcard{
-  flex:0 1 168px;display:grid;gap:8px;padding:10px;
-  border:1px solid var(--border);border-radius:var(--r-md);
-  background:var(--surface);text-align:left;
-}
-.wkcard:hover{border-color:var(--border-strong)}
-.wkcard:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.wkcard.selected{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
-
-.wkpreview{
-  display:flex;flex-direction:column;gap:6px;
-  height:86px;padding:10px;justify-content:center;
-  border-radius:var(--r-sm);background:var(--subtle);
-}
-.wkrow{display:flex;align-items:center;gap:7px}
-.wkdot{width:8px;height:8px;flex:0 0 auto;border-radius:2px;background:var(--border-strong)}
-.wkrow.on .wkdot{background:var(--accent)}
-.wkbar{height:5px;flex:1;border-radius:3px;background:var(--border-strong)}
-.wkbar.short{flex:0 1 55%}
-/* Seven days under the week row. The first is today: inside the week on two
-   of the three layouts, and drawn as a gap on the one that takes it out. */
-.wkdays{display:flex;gap:3px;margin-top:2px;padding-left:15px}
-.wkdays i{width:8px;height:12px;border-radius:2px;background:var(--border)}
-.wkdays i.today{background:var(--accent-badge)}
-.wkdays i.out{background:transparent;box-shadow:inset 0 0 0 1px var(--border)}
-
-.wklabel{
-  display:flex;align-items:flex-start;justify-content:space-between;gap:6px;
-  color:var(--text);font-size:var(--fs-12);font-weight:600;line-height:1.35;
-}
-.wklabel .ic{flex:0 0 auto;margin-top:1px}
-.wkcard.selected .wklabel{color:var(--accent-dark)}
-.wkcard.selected .wklabel .ic{color:var(--accent)}
-.wkcard:not(.selected) .wklabel .ic{display:none}
 
 @media (max-width:560px){
-  .walkthrough{padding:var(--s4)}
-  .wt-body{min-height:0}
-  .wkcard,.themecard,.accentcard{flex:1 1 140px}
+  .walkthrough{padding:var(--s4);max-height:88vh}
+  .themecard,.accentcard,.denscard{flex:1 1 140px}
 }
+
 
 /* ==========================================================================
    Tour — the app, with one thing lit

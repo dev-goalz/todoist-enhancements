@@ -63,9 +63,27 @@ function measure(target: string): Hole | null {
   if (!el) return null;
   const r = el.getBoundingClientRect();
   if (r.width < 4 || r.height < 4) return null;
+
+  /* Some things are more than one element. A parent task and the subtasks
+     under it are siblings, not a nest, so an element can ask for the ones
+     that follow it to be taken in — and the highlight is drawn around all of
+     them rather than around the first. */
+  let [top, left, right, bottom] = [r.top, r.left, r.right, r.bottom];
+  if (el.dataset.tourExtend === 'siblings') {
+    let next = el.nextElementSibling;
+    while (next instanceof HTMLElement && next.dataset.depth) {
+      const c = next.getBoundingClientRect();
+      top = Math.min(top, c.top);
+      left = Math.min(left, c.left);
+      right = Math.max(right, c.right);
+      bottom = Math.max(bottom, c.bottom);
+      next = next.nextElementSibling;
+    }
+  }
+
   return {
-    top: r.top - PAD, left: r.left - PAD,
-    width: r.width + PAD * 2, height: r.height + PAD * 2,
+    top: top - PAD, left: left - PAD,
+    width: right - left + PAD * 2, height: bottom - top + PAD * 2,
   };
 }
 
