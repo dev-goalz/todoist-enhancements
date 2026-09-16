@@ -14,6 +14,8 @@ export const fr: Record<TranslationKey, string> = {
   'nav.addTask': 'Ajouter une tâche',
   'nav.feedback': 'Signaler un bug ou une idée',
   'nav.coffee': 'Offrez-moi un café',
+  'coffee.free': 'Gratuit, sans publicité, et rien ici ne quitte votre navigateur.',
+  'coffee.offer': 'M’offrir un café',
   'nav.openTodoist': 'Ouvrir Todoist',
   'nav.signOut': 'Déconnecter',
   'nav.collapseSidebar': 'Réduire le panneau',
