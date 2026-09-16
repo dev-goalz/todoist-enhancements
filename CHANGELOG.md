@@ -35,6 +35,14 @@ menu's date field reads one too. The grammar follows the list Todoist
 publishes, in both languages, and refuses what it cannot vouch for rather
 than guessing.
 
+🆕 **A first run, once.** Connecting an account for the first time — or
+opening the demo — asks three questions on one page: light or dark, which
+colour, how much room a task gets. Each answer applies to the page behind
+the dialog as you make it. It is then followed by a short tour that lights
+up four things in the app itself rather than describing them. It is
+remembered per Todoist account rather than per browser, so disconnecting and
+reconnecting does not ask again, and Settings has a "Run it again".
+
 🆕 **Someday, from the daily review's week step.** It offered Today and This
 week, so the one thing you sometimes want to say — this is not happening
 this week — had nowhere to go.
