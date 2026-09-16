@@ -76,7 +76,7 @@
 .tdesc{color:var(--faint)}
 
 /* The drag handle lives in the left gutter so it never shifts the row. */
-.drag{left:-24px}
+.drag{left:-30px}
 
 /* ---------- Sidebar ---------- */
 .sidebar{border-right:1px solid var(--border)}
@@ -307,8 +307,12 @@
    undone here so a section's frame can wrap its rows without drifting. */
 .task{margin-left:0;width:100%;padding-left:0}
 .ghead,.sectionadd{padding-left:0}
-/* The drag handle is taken out of flow, so it costs the row no width. */
-.drag{position:absolute;left:-24px}
+/* The drag handle is taken out of flow, so it costs the row no width. It is
+   centred on the checkbox rather than on the row, so a row with a meta line or
+   a description keeps its handle level with the title, and it keeps a few
+   pixels clear of the checkbox. --task-pt mirrors the row's top padding. */
+.task{--task-pt:14px}
+.drag{position:absolute;left:-30px;top:calc(var(--task-pt) + 11px)}
 
 /* Collapsed sections need room between them to read as separate blocks. */
 .group{margin-top:34px}
@@ -1502,7 +1506,7 @@
 /* ---------- List rows ----------
    The row keeps its full 18px control and its whole meta line; what goes is
    the air above and below them. */
-[data-density="compact"] .task{padding-top:7px;padding-bottom:7px;min-height:0}
+[data-density="compact"] .task{padding-top:7px;padding-bottom:7px;min-height:0;--task-pt:7px}
 [data-density="compact"] .meta{margin-top:3px;gap:3px 8px}
 [data-density="compact"] .tdesc{margin-top:1px}
 [data-density="compact"] .subtasks{margin-top:0}
