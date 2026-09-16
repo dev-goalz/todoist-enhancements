@@ -22,6 +22,17 @@ export function Overlay({
   const sheetRef = useRef<HTMLDivElement>(null);
   const restoreTo = useRef<HTMLElement | null>(null);
 
+  /* Escape has to reach whichever `onClose` is current, but the effect below
+     must not be torn down and set up again merely because the caller passed a
+     fresh arrow — and every caller passes a fresh arrow, on every render of
+     the page behind the dialog. Setting it up again moved the focus back to
+     the top of the sheet, which for someone typing a description or filling a
+     column of estimates meant the caret left mid-word and the rest of the
+     sentence landed in the first field. Hence the ref: the handler stays put,
+     the callback it reads does not. */
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
+
   useEffect(() => {
     if (!open) return;
 
@@ -32,7 +43,7 @@ export function Overlay({
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.stopPropagation();
-        onClose();
+        closeRef.current();
       }
     };
     document.addEventListener('keydown', onKey);
@@ -52,7 +63,8 @@ export function Overlay({
       document.body.style.overflow = overflow;
       restoreTo.current?.focus?.();
     };
-  }, [open, onClose]);
+    /* `open` and nothing else. See closeRef above. */
+  }, [open]);
 
   if (!open) return null;
 

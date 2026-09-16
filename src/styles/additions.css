@@ -588,8 +588,30 @@
 }
 .bulkbar .btn.danger:hover{background:var(--accent-tint);border-color:var(--accent)}
 .bulkbar .btn.danger .ic{color:currentColor}
+/* One button per property, each opening its panel upwards: the bar is pinned
+   to the foot of the window, so a menu dropping out of it would open off the
+   bottom of the page. */
+.bulkmenu{position:relative}
+.bulkmenu > .btn{gap:6px}
+.bulkpop{bottom:calc(100% + 8px);left:0;top:auto;max-width:300px}
+/* Near the right-hand end of the bar, so it opens back into the bar rather
+   than off the edge of the window. */
+.bulkmenu:nth-last-of-type(1) .bulkpop{left:auto;right:0}
+.bulkpop-list{max-height:280px;overflow:auto}
+.bulkpop-date{padding:2px}
+.bulkpop-date .datefield{width:100%}
+.bulkpop .opt > span{display:inline-flex;align-items:center;gap:8px;min-width:0}
+.bulkpop .opt .hash{flex:0 0 auto}
+.bulkflag.p1{color:var(--p1)}
+.bulkflag.p2{color:var(--p2)}
+.bulkflag.p3{color:var(--p3)}
+.bulkflag.p4{color:var(--faint)}
 @media (max-width: 720px){
   .bulkbar{left:10px;right:10px;transform:none;flex-wrap:wrap;justify-content:center;bottom:78px}
+  /* Wrapped onto two rows, a panel anchored to its button can hang off the
+     side; centre it on the bar instead. */
+  .bulkpop{left:50%;right:auto;transform:translateX(-50%)}
+  .bulkmenu:nth-last-of-type(1) .bulkpop{left:50%;right:auto}
 }
 
 
@@ -734,3 +756,24 @@
 
 /* The mail step stopped asking to be ticked: Next already means "done". */
 .reviewmail{padding-bottom:var(--s5)}
+
+/* The coffee line.
+
+   Faint, small, and the same at every one of its two homes: a footnote at the
+   end of something that has finished, never a banner and never a thing to be
+   dismissed. The link is the only part that carries any colour, and only
+   under the pointer. */
+.coffeeline{
+  display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;
+  margin-top:var(--s6);padding-top:var(--s4);border-top:1px solid var(--border);
+  color:var(--faint);font-size:var(--fs-12);text-align:center;
+}
+.coffeeline a{
+  display:inline-flex;align-items:center;gap:5px;
+  color:var(--muted);text-decoration:none;border-bottom:1px solid var(--border);
+}
+.coffeeline a:hover{color:var(--accent-dark);border-bottom-color:var(--accent)}
+.coffeeline .ic{width:14px;height:14px}
+/* The finished panel centres everything and caps its paragraphs at 48ch; the
+   line is not one of those paragraphs. */
+.reviewdone .coffeeline{max-width:none;width:100%;font-size:var(--fs-12);color:var(--faint)}
